@@ -149,7 +149,7 @@ They should be quite self explanatory by their name, but anyways here's e few hi
   * LSN stands for $LogFile Sequence Number.
   * RecordOffset refers to the hex offset inside the $MFT itself, and not on the physical disk. Only meant as a helper when quickly looking up abnormalities found in the csv.
   * Those starting with GUID belongs to the $OBJECT_ID attribute.
-  * Those starting with INVALID_FILENAME* is when illegal characters are found in the filename. For example, sometimes control characters like line feeds etc exist in filename.
+  * Those starting with INVALID_FILENAME is when illegal characters are found in the filename. For example, sometimes control characters like line feeds etc exist in filename.
 
 = About the speed issue =
 
