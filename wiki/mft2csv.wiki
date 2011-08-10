@@ -2,7 +2,7 @@
 
 = Introduction =
 
-This AutoIt script is parsing, decoding and logging information from the Master File Table ($MFT) to a csv. Before you go any further you should be aware of the fact that this script was never meant to be fast in terms of performance. It is slow and I know that, lets focus on the large amount of information it is logging instead. And also the easyness of understanding the script and of course adding stuff yourself. 
+This AutoIt script is parsing, decoding and logging information from the Master File Table ($MFT) to a csv. It is logging a large amount of data and that has been the main purpose from the very start. Because of that it is not fast. On my 95 Mb sized MFT it took about 10 minutes finish completely. Having all this data in a csv is therefore nice for easy further analysis. What also should make it appealing is the easyness of understanding the script and the ability for easy customization of it. 
 
 = Details =
 
@@ -18,6 +18,7 @@ The focus have been on the attributes $STANDARD_INFORMATION, $FILE_NAME, $DATA a
   * SI_FilePermission
   * FN_Flags
   * FN_NameType
+  * DATA_Number(ADS)
   * SI_CTime
   * SI_ATime
   * SI_MTime
@@ -150,6 +151,10 @@ They should be quite self explanatory by their name, but anyways here's e few hi
   * RecordOffset refers to the hex offset inside the $MFT itself, and not on the physical disk. Only meant as a helper when quickly looking up abnormalities found in the csv.
   * Those starting with GUID belongs to the $OBJECT_ID attribute.
   * Those starting with INVALID_FILENAME is when illegal characters are found in the filename. For example, sometimes control characters like line feeds etc exist in filename.
+
+= Alternate Data Streams =
+
+These streams can be identified in the second $DATA attribute. That is under those fields starting with DATA and ending with either 2 or 3. So if a second ADS is attached to a file, it will show up with the details under the third $DATA attribute. As far as I know there do not exist any limit on number of ADS's tied to a file.  For that reason, my limit on support for 3 $DATA attributes per file may miss out on those cases with more than 2 ADS's on the same file (not that I have seen this in multiple though). But to fix this I added a variable that counts the number of $DATA present. It is shown in the csv under DATA_Number(ADS). Note that ADS's can only be attached to the $DATA attribute of a file. It is not possible to create ADS's on any of the other attributes. That may not be surpising as it should be obvious as it's named Alternate *Data* Stream, instead of Alternate File_Name Stream.
 
 = About the speed issue =
 
