@@ -1,0 +1,173 @@
+#summary Extract $MFT record info and log it to a csv file.
+
+= Introduction =
+
+This AutoIt script is parsing, decoding and logging information from the Master File Table ($MFT) to a csv. Before you go any further you should be aware of the fact that this script was never meant to be fast in terms of performance. It is slow and I know that, lets focus on the large amount of information it is logging instead. And also the easyness of understanding the script and of course adding stuff yourself. 
+
+= Details =
+
+The focus have been on the attributes $STANDARD_INFORMATION, $FILE_NAME, $DATA and $VOLUME_ID as well as the file record headers themselves. More attributes will be added for sure.  Here is the listing of data that is currently covered (more descriptive names may be chosen in the future);
+  * RecordOffset
+  * HEADER_MFTREcordNumber
+  * HEADER_SequenceNo
+  * FN_ParentReferenceNo
+  * FN_ParentSequenceNo
+  * FN_FileName
+  * HEADER_Flags
+  * RecordActive
+  * SI_FilePermission
+  * FN_Flags
+  * FN_NameType
+  * SI_CTime
+  * SI_ATime
+  * SI_MTime
+  * SI_RTime
+  * MSecTest
+  * FN_CTime
+  * FN_ATime
+  * FN_MTime
+  * FN_RTime
+  * CTimeTest
+  * FN_AllocSize
+  * FN_RealSize
+  * SI_USN
+  * DATA_Name
+  * DATA_Flags
+  * DATA_LengthOfAttribute
+  * DATA_IndexedFlag
+  * DATA_VCNs
+  * DATA_NonResidentFlag
+  * DATA_CompressionUnitSize
+  * HEADER_LSN
+  * HEADER_RecordRealSize
+  * HEADER_RecordAllocSize
+  * HEADER_FileRef
+  * HEADER_NextAttribID
+  * DATA_AllocatedSize
+  * DATA_RealSize
+  * DATA_InitializedStreamSize
+  * SI_HEADER_Flags
+  * SI_MaxVersions
+  * SI_VersionNumber
+  * SI_ClassID
+  * SI_OwnerID
+  * SI_SecurityID
+  * FN_CTime_2
+  * FN_ATime_2
+  * FN_MTime_2
+  * FN_RTime_2
+  * FN_AllocSize_2
+  * FN_RealSize_2
+  * FN_Flags_2
+  * FN_NameLength_2
+  * FN_NameType_2
+  * FN_FileName_2
+  * GUID_ObjectID
+  * GUID_BirthVolumeID
+  * GUID_BirthObjectID
+  * GUID_BirthDomainID
+  * VOLUME_NAME_NAME
+  * VOL_INFO_NTFS_VERSION
+  * VOL_INFO_FLAGS
+  * FN_CTime_3
+  * FN_ATime_3
+  * FN_MTime_3
+  * FN_RTime_3
+  * FN_AllocSize_3
+  * FN_RealSize_3
+  * FN_Flags_3
+  * FN_NameLength_3
+  * FN_NameType_3
+  * FN_FileName_3
+  * FN_CTime_4
+  * FN_ATime_4
+  * FN_MTime_4
+  * FN_RTime_4
+  * FN_AllocSize_4
+  * FN_RealSize_4
+  * FN_Flags_4
+  * FN_NameLength_4
+  * FN_NameType_4
+  * FN_FileName_4
+  * DATA_Name_2
+  * DATA_NonResidentFlag_2
+  * DATA_Flags_2
+  * DATA_LengthOfAttribute_2
+  * DATA_IndexedFlag_2
+  * DATA_StartVCN_2
+  * DATA_LastVCN_2
+  * DATA_VCNs_2
+  * DATA_CompressionUnitSize_2
+  * DATA_AllocatedSize_2
+  * DATA_RealSize_2
+  * DATA_InitializedStreamSize_2
+  * DATA_Name_3
+  * DATA_NonResidentFlag_3
+  * DATA_Flags_3
+  * DATA_LengthOfAttribute_3
+  * DATA_IndexedFlag_3
+  * DATA_StartVCN_3
+  * DATA_LastVCN_3
+  * DATA_VCNs_3
+  * DATA_CompressionUnitSize_3
+  * DATA_AllocatedSize_3
+  * DATA_RealSize_3
+  * DATA_InitializedStreamSize_3
+  * STANDARD_INFORMATION_ON
+  * ATTRIBUTE_LIST_ON
+  * FILE_NAME_ON
+  * OBJECT_ID_ON
+  * SECURITY_DESCRIPTOR_ON
+  * VOLUME_NAME_ON
+  * VOLUME_INFORMATION_ON
+  * DATA_ON
+  * INDEX_ROOT_ON
+  * INDEX_ALLOCATION_ON
+  * BITMAP_ON
+  * REPARSE_POINT_ON
+  * EA_INFORMATION_ON
+  * EA_ON
+  * PROPERTY_SET_ON
+  * LOGGED_UTILITY_STREAM_ON
+  * INVALID_FILENAME
+  * INVALID_FILENAME_2
+  * INVALID_FILENAME_3
+
+= Explanation =
+
+They should be quite self explanatory by their name, but anyways here's e few hints;
+  * Those ending with a _ON is just to indicate whether the attribute was used in the record.
+  * Those ending with _2 or _3 or _4 are indicating they are number 2, 3 or 4 in the row of the same attribute on the same record.
+  * Prefix of FN_ means $FILE_NAME.
+  * Prefix of SI_ means $STANDARD_INFORMATION
+  * Prefix of HEADER_ means the record header.
+  * CTime means Create Time.
+  * ATime means Access Time.
+  * MTime means Modified Time.
+  * RTime means Read Time.
+  * USN stands for Update Sequence Number.
+  * LSN stands for $LogFile Sequence Number.
+  * RecordOffset refers to the hex offset inside the $MFT itself, and not on the physical disk. Only meant as a helper when quickly looking up abnormalities found in the csv.
+  * Those starting with GUID belongs to the $OBJECT_ID attribute.
+  * Those starting with INVALID_FILENAME* is when "illegal characters are found in the filename. For example, sometimes control characters like line feeds etc exist in filename.
+
+= About the speed issue =
+
+It could be from me not being world class programmer as well as that AutoIt is chosen as scripting language. Reducing the amount of information to be decoded/logged, does not significantly impact on the performance. Ie, it is minimal.
+
+= ToDo =
+
+  * Move attribute header analysis out as a separate part.
+  * Solve full path of file with B+ trees.
+  * Security attribute.
+  * Verify timestamps.
+  * Group the data in a more sensible way.
+  * Improve the speed.
+
+= Thanks and credits =
+
+  * AutoIt forums (KaFu & trancexx) where the starter code was provided; http://www.autoitscript.com/forum/topic/94269-mft-access-reading-parsing-the-master-file-table-on-ntfs-filesystems/
+  * Ascend4nt's AutoIt wintimefunctions; http://sites.google.com/site/ascend4ntscode/
+  * David Kovar's nice analyzeMFT.py python script; http://www.integriography.com/
+  * jennico's extended hex to dec conversion AutoIt udf
+  * The "ntfs-cmd" project; http://code.google.com/p/ntfs-cmd/
