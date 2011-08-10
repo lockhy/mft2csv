@@ -136,11 +136,11 @@ The focus have been on the attributes $STANDARD_INFORMATION, $FILE_NAME, $DATA a
 = Explanation =
 
 They should be quite self explanatory by their name, but anyways here's e few hints;
-  * Those ending with a _ON is just to indicate whether the attribute was used in the record.
-  * Those ending with _2 or _3 or _4 are indicating they are number 2, 3 or 4 in the row of the same attribute on the same record.
-  * Prefix of FN_ means $FILE_NAME.
-  * Prefix of SI_ means $STANDARD_INFORMATION
-  * Prefix of HEADER_ means the record header.
+  * Those ending with a ON is just to indicate whether the attribute was used in the record.
+  * Those ending with 2 or 3 or 4 are indicating they are number 2, 3 or 4 in the row of the same attribute on the same record.
+  * Prefix of FN means $FILE_NAME.
+  * Prefix of SI means $STANDARD_INFORMATION
+  * Prefix of HEADER means the record header.
   * CTime means Create Time.
   * ATime means Access Time.
   * MTime means Modified Time.
@@ -149,7 +149,7 @@ They should be quite self explanatory by their name, but anyways here's e few hi
   * LSN stands for $LogFile Sequence Number.
   * RecordOffset refers to the hex offset inside the $MFT itself, and not on the physical disk. Only meant as a helper when quickly looking up abnormalities found in the csv.
   * Those starting with GUID belongs to the $OBJECT_ID attribute.
-  * Those starting with INVALID_FILENAME* is when "illegal characters are found in the filename. For example, sometimes control characters like line feeds etc exist in filename.
+  * Those starting with INVALID_FILENAME* is when illegal characters are found in the filename. For example, sometimes control characters like line feeds etc exist in filename.
 
 = About the speed issue =
 
