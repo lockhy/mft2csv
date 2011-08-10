@@ -1,0 +1,9 @@
+#summary A systemfile (metafile) extraction utility for NTFS.
+
+= Description =
+
+It is basically using a handfull of winapi to read from physicaldisk and write backup to external file(s). It is not efficient in terms of speed for a number of reasons, but is easy to work with and customize, which is really the whole point besides learning. The application has a gui and will detect NTFS volumes which will be presented in a dropdown menu. Some verbose information will be displayed in the lower pane. The systemfiles will be saved in the current directory with the original attribute filenames and a ".bin" extension. It is possible to choose between 2 extraction modes: one to extract $MFT only, and one to extract all. The interesting thing here (for those not already familiar), is that by using this method of carving files through the $DATA attribute in $MFT you can copy files otherwise locked (ie the SAM or SYSTEM hive). It's main purpose is to provide input ($MFT) for the mft2csv application.
+
+= Limitations =
+
+Some limitations are present. Only $DATA attribute is currently supported, which means that for instance the $SECURITY_DESCRIPTOR is missed. That is on the ToDo list. The $LogFile is currently excluded until I've figured out why I run into memory allocation issues with large files (this issue may also occur if $MFT is large enough and not fragmented).
