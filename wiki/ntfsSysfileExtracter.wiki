@@ -12,6 +12,15 @@ Actually, there is a third extraction method available, where you can extract an
 
 Some limitations are present. Only $DATA attribute is currently supported, which means that for instance the $SECURITY_DESCRIPTOR is missed. That is on the ToDo list. The $LogFile is currently excluded until I've figured out why I run into memory allocation issues with large files (this issue may also occur if $MFT is large enough and not fragmented).
 
+= Latest Version =
+
+v1.1
+
+= Changelog =
+
+v1.1. Tiny error inside the function _GetAllRuns() as well as when calling it. Wrong variabel name was used pluss a wrong offset. I believe runs are correctly solved now as my SOFTWARE hive is extractable and mountable. But because $MFT fragmentation is not really working I've temporarily put a hardcoded exit after record 1000, until it's fixed.
+
+
 = ToDo =
 
   * Fix the memory allocation stuff and large files.
