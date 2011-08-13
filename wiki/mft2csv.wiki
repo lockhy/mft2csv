@@ -159,7 +159,7 @@ These streams can be identified in the second $DATA attribute. That is under tho
 
 = Timestamps =
 
-The timestamps are given at the precision of milliseconds. That is given by the SYSTEMTIME structure when working it out through the native win api. Currently I'm not sure how to also add the nanoseconds to the timestamp, but is on the todo list. Prior to processing, there is also an option to set how timestamps will be presented in the csv. That is whether in UTC 00:00 or in local time. The configured setting is visible in the csv header. The current format of the timestamp is April 19, 2009 03:45:57:140. Options for more formats is also on the todo list.
+The timestamps are given at the precision of milliseconds. That is given by the SYSTEMTIME structure when working it out through the native win api. Currently I'm not sure how to also add the nanoseconds to the timestamp, but is on the todo list. Prior to processing, there is also an option to set how timestamps will be presented in the csv. That is whether in UTC 00:00 or in local time. The configured setting is visible in the csv header. The current format of the timestamp is April 19, 2009 03:45:57:140. Options for more formats is also on the todo list. Just beware that with the current timestamp generation the timezone configuration on the system where mft2csv is run will affect the output. So if timezone configuration differ, then timestamps will be wrong by the difference of the timezone configurations (that's regardless of if you chose UTC or local time). If settings are identical, then everthing is correct.
 
 = Latest Version =
 
