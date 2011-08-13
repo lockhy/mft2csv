@@ -157,11 +157,16 @@ They should be quite self explanatory by their name, but anyways here's e few hi
 
 These streams can be identified in the second $DATA attribute. That is under those fields starting with DATA and ending with either 2 or 3. So if a second ADS is attached to a file, it will show up with the details under the third $DATA attribute. As far as I know there do not exist any limit on number of ADS's tied to a file.  For that reason, my limit on support for 3 $DATA attributes per file may miss out on those cases with more than 2 ADS's on the same file (not that I have seen this in multiple though). But to fix this I added a variable that counts the number of $DATA present. It is shown in the csv under Alternate_Data_Streams. Note that ADS's can only be attached to the $DATA attribute of a file. It is not possible to create ADS's on any of the other attributes. That may not be surpising as it should be obvious as it's named Alternate *Data* Stream, instead of Alternate File_Name Stream.
 
+= Timestamps =
+
+The timestamps are given at the precision of milliseconds. That is given by the SYSTEMTIME structure when working it out through the native win api. Currently I'm not sure how to also add the nanoseconds to the timestamp, but is on the todo list. Prior to processing, there is also an option to set how timestamps will be presented in the csv. That is whether in UTC 00:00 or in local time. The configured setting is visible in the csv header. The current format of the timestamp is April 19, 2009 03:45:57:140. Options for more formats is also on the todo list.
+
 = Latest Version =
 
-v1.1
-
+v1.2
 = Changelog =
+
+v1.2 Fixed timestamps where a 0 was erronously put in before the milliseconds. Modified version Ascend4nt's (_WinTimeFunctions1.au3) UDF is attached (where the error originated from). Also added an option to choose before processing whether to set timestamps in UTC or local time.
 
 v1.1. Fixed a mixup of ContinueLoop with ContinueCase in the main record processing loop. The error lead to an infinite loop when ADS was more than 3 or $FILE_NAME more than 4 per file. Added a new variable to the csv as the file size (FileSizeBytes). Basically it is the $DATA size, but I thought it was better to have the file size put into one place instead of spread across two (resident vs non-resident). This is only for the first $DATA attribute.
 
