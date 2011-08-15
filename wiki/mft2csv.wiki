@@ -179,7 +179,8 @@ It could be from me not being world class programmer as well as that AutoIt is c
   * Move attribute header analysis out as a separate part.
   * Solve full path of file with B+ trees.
   * Security attribute.
-  * Verify timestamps.
+  * Add nanoseconds to timestamp.
+  * Resolve timezone difference before decode.
   * Group the data in a more sensible way.
   * Improve the speed.
 
