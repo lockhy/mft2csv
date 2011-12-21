@@ -2,7 +2,7 @@
 
 = Description =
 
-It is basically using a handfull of winapi to read from physicaldisk and write backup to external file(s). It is not efficient in terms of speed for a number of reasons, but is easy to work with and customize, which is really the whole point besides learning. The application has a gui and will detect NTFS volumes which will be presented in a dropdown menu. Some verbose information will be displayed in the lower pane. The systemfiles will be saved in the current directory with the original attribute filenames and a ".bin" extension. It is possible to choose between 2 extraction modes: one to extract $MFT only, and one to extract all. The interesting thing here (for those not already familiar), is that by using this method of carving files through the $DATA attribute in $MFT you can copy files otherwise locked (ie the SAM or SYSTEM hive). It's main purpose is to provide input ($MFT) for the mft2csv application.
+It is basically using a handfull of winapi to read from physicaldisk and write backup to external file(s). It is not efficient in terms of speed for a number of reasons, but is easy to work with and customize, which is really the whole point besides learning. The application has a gui and will detect NTFS volumes which will be presented in a dropdown menu. Some verbose information will be displayed in the lower pane. A FileSelectFolder dialog will let you choose where to save output. It is possible to choose between 2 extraction modes: one to extract $MFT only, and one to extract all. The interesting thing here (for those not already familiar), is that by using this method of carving files through the $DATA attribute in $MFT you can copy files otherwise locked (ie the SAM or SYSTEM hive). It's main purpose is to provide input ($MFT) for the mft2csv application.
 
 = Experiment =
 
@@ -14,9 +14,11 @@ Some limitations are present. Only $DATA attribute is currently supported, which
 
 = Latest Version =
 
-v1.2
+v1.3
 
 = Changelog =
+
+v1.3 Added a FileSelectFolder function to specify where to save the output. Removed the default ".bin" extension, so that the outputted extension is as given in $MFT.
 
 v1.2 Large files are now supported, because extraction split chunks in 40 MB each at most. That means the $LogFile or any other large file can be exported fine. Also fixed fragmentation in $MFT itself when attempting raw extract functionality by record number. That means it should now work regardless of size and fragmentation in either $MFT or target file. The extraction now also targets real size as opposed to allocated size, and prevents slack data to be appended.
 
