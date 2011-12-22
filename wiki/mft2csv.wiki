@@ -8,6 +8,8 @@ This AutoIt script is parsing, decoding and logging information from the Master 
 
 The focus have been on the attributes $STANDARD_INFORMATION, $FILE_NAME, $DATA and $VOLUME_ID as well as the file record headers themselves. More attributes will be added for sure.  Here is the listing of data that is currently covered (more descriptive names may be chosen in the future);
   * RecordOffset
+  * Signature
+  * IntegrityCheck
   * HEADER_MFTREcordNumber
   * HEADER_SequenceNo
   * FN_ParentReferenceNo
@@ -150,6 +152,8 @@ They should be quite self explanatory by their name, but anyways here's e few hi
   * USN stands for Update Sequence Number.
   * LSN stands for $LogFile Sequence Number.
   * RecordOffset refers to the hex offset inside the $MFT itself, and not on the physical disk. Only meant as a helper when quickly looking up abnormalities found in the csv.
+  * Signature refers to whether the record signature equals 0x46494C45 or not.
+  * IntegrityCheck refers to a record integrity check by comparing the Update Sequence number to the record page end markers (2 bytes at 2 places).
   * Those starting with GUID belongs to the $OBJECT_ID attribute.
   * Those starting with INVALID_FILENAME is when illegal characters are found in the filename. For example, sometimes control characters like line feeds etc exist in filename.
 
@@ -163,9 +167,11 @@ The timestamps are now at the precision of nanoseconds. Prior to processing, the
 
 = Latest Version =
 
-v1.3
+v1.4
 
 = Changelog =
+
+v1.4 Fixed a bug in the record signature evaluation. Added csv entry for record signature evaluation. Added record integrity check by comparing the Update Sequence number to the record page end markers (2 bytes at 2 places). Some other cosmetic changes.
 
 v1.3 Added nanoseconds to the datetime variables. Changed default datetime format to "YYYY-MM-DD HH:MM:SS:MSMSMS:NSNSNSNS". MSecTest changed to evaluate the last 7 digits (msec + nsec). 64-bit support.
 
@@ -184,6 +190,7 @@ It could be from me not being world class programmer as well as that AutoIt is c
   * Security attribute.
   * Group the data in a more sensible way.
   * Improve the speed.
+  * Look into "fixups".
 
 = Thanks and credits =
 
