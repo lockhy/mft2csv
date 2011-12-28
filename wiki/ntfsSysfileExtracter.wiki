@@ -14,9 +14,11 @@ Some limitations are present. Only $DATA attribute is currently supported, which
 
 = Latest Version =
 
-v1.3
+v1.4
 
 = Changelog =
+
+v1.4 Solved several bugs in the solution that calculated runs. Negative moves where reloved wrongly. And very fragmented files with runs located past record offset 0x1fd was also incorrectly solved. Actually that last fix also fixed decoding of attributes extending over that same offset. Note however that compressed and/or sparse files are not yet supported for extraction. I therefore added a break when trying to extract such a file.
 
 v1.3 Added a FileSelectFolder function to specify where to save the output. Removed the default ".bin" extension, so that the outputted extension is as given in $MFT.
 
