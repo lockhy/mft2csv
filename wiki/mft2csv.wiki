@@ -167,9 +167,22 @@ The timestamps are now at the precision of nanoseconds. Prior to processing, the
 
 = Latest Version =
 
-v1.4
+v1.5
 
 = Changelog =
+
+v1.5 Changed record signature detection to:
+
+46494C45 = GOOD (although FILE is strictly speaking the correct one)
+44414142 = BAAD
+00000000 = ZERO
+all other = UNKNOWN
+
+Added header flag interpretation:
+0x9 = FILE+INDEX_SECURITY (ALLOCATED)
+0xD = FILE+INDEX_OTHER (ALLOCATED)
+
+Fixed crash on decoding of certain corrupt $MFT, by skipping decode of those records.
 
 v1.4 Fixed a bug in the record signature evaluation. Added csv entry for record signature evaluation. Added record integrity check by comparing the Update Sequence number to the record page end markers (2 bytes at 2 places). Some other cosmetic changes.
 
