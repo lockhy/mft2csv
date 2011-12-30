@@ -14,9 +14,13 @@ Some limitations are present. Only $DATA attribute is currently supported, which
 
 = Latest Version =
 
-v1.5
+v1.6
 
 = Changelog =
+
+v1.6 Temporary fix for $MFT record size, now fixed at 1024 bytes (2 sectors) (but must be changed to correct formula later anyway), that caused issues on certain volumes. Also fixed support for unicode names in output. 
+
+Added preliminary/experimental support for extraction of compressed files.
 
 v1.5 Fixed extraction of resident data. Temporarily forgot that ReadFile on physical disks only handle chunks of data aligned to sector size.
 
