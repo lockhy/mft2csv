@@ -22,7 +22,7 @@ Global $FN_CTime_2,$FN_ATime_2,$FN_MTime_2,$FN_RTime_2,$FN_AllocSize_2,$FN_RealS
 Global $DATA_NameLength,$DATA_NameRelativeOffset,$DATA_Flags,$DATA_NameSpace,$DATA_Name,$RecordActive,$DATA_CompressionUnitSize,$DATA_ON,$DATA_CompressedSize
 Global $List[30], $Drive = DriveGetDrive('All'), $BrowsedFile
 Global $tSTORAGE_DEVICE_NUMBER, $Volume, $hFile, $SectorsPerCluster, $testfile, $MFT_Record_Size, $RunListOffset
-Global $RUN_Cluster[1], $RUN_Sectors[1], $MFT_RUN_Cluster[1], $MFT_RUN_Sectors[1]
+Global $RUN_Cluster[1], $RUN_Sectors[1], $MFT_RUN_Cluster[1], $MFT_RUN_Sectors[1], $RUN_Sparse[1], $MFT_RUN_Sparse[1], $RUN_Complete[1][4], $MFT_RUN_Complete[1][4]
 Global $nBytes, $MFT_Offset, $bytes_to_read, $tBuffer, $hdd_handle, $hFile, $MFTFull;, $MFTEntry
 Global Const $RecordSignature = '46494C45' ; FILE signature
 Global Const $RecordSignatureBad = '44414142' ; BAAD signature
@@ -76,7 +76,7 @@ Global Const $tagUNICODESTRING = "ushort Length;ushort MaximumLength;ptr Buffer"
 Global Const $tagFILEINTERNALINFORMATION = "int IndexNumber;"
 Global $outputpath = FileSelectFolder("Select output folder.", "",7,@scriptdir)
 If @error Then Exit
-$Form = GUICreate("NTFS Systemfiles extractor - by Joakim Schicht", 520, 250, -1, -1)
+$Form = GUICreate("NTFS File Extracter v1.9 - by Joakim Schicht", 520, 250, -1, -1)
 $Combo1 = GUICtrlCreateCombo("", 20, 20, 400, 25)
 $ButtonRefresh = GUICtrlCreateButton("Refresh", 440, 20, 60, 20)
 $ButtonGetMFT = GUICtrlCreateButton("Extract $MFT", 20, 50, 100, 20)
@@ -85,12 +85,14 @@ $ButtonBrowse = GUICtrlCreateButton("Browse for file", 260, 50, 120, 20)
 $LabelMFTnumber = GUICtrlCreateLabel("Set MFT record number:",20,90,120,20)
 $InputMFTnumber = GUICtrlCreateInput("0",150,90,100,20)
 $ButtonMFTnumber = GUICtrlCreateButton("Extract Record numbers $DATA", 270, 90, 170, 20)
+Global $checkRuns = GUICtrlCreateCheckbox("Display runs", 400, 50, 100, 20)
+GUICtrlSetState($checkRuns, $GUI_CHECKED)
 ;GUICtrlSetState($ButtonMFTnumber,$GUI_DISABLE)
 ;$Combo2 = GUICtrlCreateCombo("", 20, 75, 400, 25)
 ;GUICtrlSetState($Combo2,$GUI_DISABLE)
 ;$ButtonExtract = GUICtrlCreateButton("Extract systemfile", 20, 100, 100, 20)
 ;GUICtrlSetState($ButtonExtract,$GUI_DISABLE)
-$myctredit = GUICtrlCreateEdit("Extracting system (meta) files from NTFS formatted volumes.." & @CRLF, 0, 125, 520, 125, $ES_AUTOVSCROLL + $WS_VSCROLL)
+$myctredit = GUICtrlCreateEdit("Extracting files directly from Physical Disk.." & @CRLF, 0, 125, 520, 125, $ES_AUTOVSCROLL + $WS_VSCROLL)
 _GUICtrlEdit_SetLimitText($myctredit, 128000)
 _DisplayInfo("" & @CRLF)
 _DisplayInfo("Selected output folder: " & $outputpath & @CRLF)
@@ -216,8 +218,8 @@ ConsoleWrite("Harddisk Handle: " & $hFile & @crlf)
 If $TARGET_SYSFILE = "$MFT" Then
 	$ExpectedRecords = 0
 ElseIf $TARGET_SYSFILE = "ALL" Then
-	$ExpectedRecords = 30
-ElseIf $TARGET_SYSFILE <> "$MFT" AND $TARGET_SYSFILE <> "ALL" Then
+	$ExpectedRecords = 26
+Else;If $TARGET_SYSFILE <> "$MFT" AND $TARGET_SYSFILE <> "ALL" Then
 	$ExpectedRecords = $TARGET_SYSFILE
 EndIf
 ConsoleWrite("$ExpectedRecords = " & $ExpectedRecords & @CRLF)
@@ -225,7 +227,7 @@ If $MFTmode = 1 Then
 	For $i = 0 to $ExpectedRecords
 		$RecordOffsetDec = $MFT_Offset + $MFT_Record_Size * $i
 		If $i > 15 AND $i < 24 Then ContinueLoop
-		If $i > 26 Then ExitLoop
+;		If $i > 26 Then ExitLoop
 		_WinAPI_SetFilePointerEx($hFile, $RecordOffsetDec)
 		_WinAPI_ReadFile($hFile, DllStructGetPtr($tBuffer), $MFT_Record_Size, $nBytes)
 		$MFTEntry = DllStructGetData($tBuffer, 1)
@@ -460,7 +462,7 @@ Select
 	Case $HEADER_Flags = '0300'
 		$HEADER_Flags = 'FOLDER'
 		$RecordActive = 'ALLOCATED'
-	Case $HEADER_Flags <> '0000' AND $HEADER_Flags <> '0100' AND $HEADER_Flags <> '0200' AND $HEADER_Flags <> '0300'
+	Case Else ;$HEADER_Flags <> '0000' AND $HEADER_Flags <> '0100' AND $HEADER_Flags <> '0200' AND $HEADER_Flags <> '0300'
 		$HEADER_Flags = 'UNKNOWN'
 		$RecordActive = 'UNKNOWN'
 EndSelect
@@ -593,8 +595,11 @@ While $AttributeKnown = 1
 			$LOGGED_UTILITY_STREAM_ON = "TRUE"
 ;			_Get_LoggedUtilityStream()
 
-		Case $AttributeType <> $LOGGED_UTILITY_STREAM AND $AttributeType <> $EA AND $AttributeType <> $EA_INFORMATION AND $AttributeType <> $REPARSE_POINT AND $AttributeType <> $BITMAP AND $AttributeType <> $INDEX_ALLOCATION AND $AttributeType <> $INDEX_ROOT AND $AttributeType <> $DATA AND $AttributeType <> $VOLUME_INFORMATION AND $AttributeType <> $VOLUME_NAME AND $AttributeType <> $SECURITY_DESCRIPTOR AND $AttributeType <> $OBJECT_ID AND $AttributeType <> $FILE_NAME AND $AttributeType <> $ATTRIBUTE_LIST AND $AttributeType <> $STANDARD_INFORMATION AND $AttributeType <> $PROPERTY_SET
+		Case $AttributeType = $ATTRIBUTE_END_MARKER
 			$AttributeKnown = 0
+
+;		Case $AttributeType <> $LOGGED_UTILITY_STREAM AND $AttributeType <> $EA AND $AttributeType <> $EA_INFORMATION AND $AttributeType <> $REPARSE_POINT AND $AttributeType <> $BITMAP AND $AttributeType <> $INDEX_ALLOCATION AND $AttributeType <> $INDEX_ROOT AND $AttributeType <> $DATA AND $AttributeType <> $VOLUME_INFORMATION AND $AttributeType <> $VOLUME_NAME AND $AttributeType <> $SECURITY_DESCRIPTOR AND $AttributeType <> $OBJECT_ID AND $AttributeType <> $FILE_NAME AND $AttributeType <> $ATTRIBUTE_LIST AND $AttributeType <> $STANDARD_INFORMATION AND $AttributeType <> $PROPERTY_SET
+;			$AttributeKnown = 0
 ;			ConsoleWrite("All attributes processed in the record for: " & $FN_FileName & @CRLF)
 ;			_DisplayInfo("All attributes processed in the record for: " & $FN_FileName & @crlf)
 
@@ -615,25 +620,27 @@ EndFunc
 
 Func _Get_Data($MFTEntry,$DATA_Offset,$DATA_Size,$DATA_Number,$MFTMode)
 Local $IsCompressed = 0, $RunListSectorsTotal, $NewRunOffsetBase
-$maxarr = Ubound($RUN_Cluster)
-If $maxarr > 1 Then ; Seems necessary when more than 1 file is to be ripped
-	For $j = 1 To $maxarr
+;$maxarr = Ubound($RUN_Cluster)
+;If $maxarr > 1 Then ; Seems necessary when more than 1 file is to be ripped
+;	For $j = 1 To $maxarr
+;		_ArrayDelete($RUN_Cluster,$maxarr-$j)
+;		_ArrayDelete($RUN_Sectors,$maxarr-$j)
+;		_ArrayDelete($RUN_Sparse,$maxarr-$j)
 ;		If $maxarr-$j=1 Then ExitLoop
-		_ArrayDelete($RUN_Cluster,$maxarr-$j)
-		_ArrayDelete($RUN_Sectors,$maxarr-$j)
-		If $maxarr-$j=1 Then ExitLoop
-	Next
-EndIf
+;	Next
+;EndIf
+Global $RUN_Cluster[1], $RUN_Sectors[1], $RUN_Sparse[1]
 If $MFTMode = 2 Then
-	$MFTmaxarr = Ubound($MFT_RUN_Cluster)
-	If $MFTmaxarr > 1 Then ; Seems necessary when more than 1 file is to be ripped
-		For $j = 1 To $MFTmaxarr
-;			If $maxarr-$j=1 Then ExitLoop
-			_ArrayDelete($MFT_RUN_Cluster,$MFTmaxarr-$j)
-			_ArrayDelete($MFT_RUN_Sectors,$MFTmaxarr-$j)
-			If $MFTmaxarr-$j=1 Then ExitLoop
-		Next
-	EndIf
+;	$MFTmaxarr = Ubound($MFT_RUN_Cluster)
+;	If $MFTmaxarr > 1 Then ; Seems necessary when more than 1 file is to be ripped
+;		For $j = 1 To $MFTmaxarr
+;			_ArrayDelete($MFT_RUN_Cluster,$MFTmaxarr-$j)
+;			_ArrayDelete($MFT_RUN_Sectors,$MFTmaxarr-$j)
+;			_ArrayDelete($MFT_RUN_Sparse,$MFTmaxarr-$j)
+;			If $MFTmaxarr-$j=1 Then ExitLoop
+;		Next
+;	EndIf
+	Global $MFT_RUN_Cluster[1], $MFT_RUN_Sectors[1], $MFT_RUN_Sparse[1]
 EndIf
 If $DATA_Number = 1 Then
 ;ConsoleWrite("$DATA_Size = " & $DATA_Size & @crlf)
@@ -727,11 +734,15 @@ If $DATA_NonResidentFlag = '01' Then
 	ConsoleWrite("$RunListSectors = " & $RunListSectors & @crlf)
 	$r = 1
 	$entry = ''
-	If $RunListClusterLenght = 0 Then
+	If $RunListClusterLenght = 0 Then ; Then chunk is sparse
 		If $MFTMode = 2 Then
 			_ArrayInsert($MFT_RUN_Sectors,$r,0)
+			_ArrayInsert($MFT_RUN_Sparse,$r,Dec($RunListSectors))
+;			MsgBox(0,"Sparse MFT sectors:",$RunListSectors)
 		EndIf
 		_ArrayInsert($RUN_Sectors,$r,0)
+		_ArrayInsert($RUN_Sparse,$r,Dec($RunListSectors))
+;		MsgBox(0,"Sparse sectors:",$RunListSectors)
 		$RunListClusterNext = $RUN_Cluster[$r-1]
 		If $MFTMode = 2 Then
 			_ArrayInsert($MFT_RUN_Cluster,$r,$RunListClusterNext)
@@ -754,8 +765,10 @@ If $DATA_NonResidentFlag = '01' Then
 	$RunListSectors = Dec($entry)
 	If $MFTMode = 2 Then
 		_ArrayInsert($MFT_RUN_Sectors,1,$RunListSectors)
+		_ArrayInsert($MFT_RUN_Sparse,1,0)
 	EndIf
 	_ArrayInsert($RUN_Sectors,1,$RunListSectors)
+	_ArrayInsert($RUN_Sparse,1,0)
 	ConsoleWrite("$RunListSectors = " & $RunListSectors & @crlf)
 	$RunListCluster = StringMid($MFTEntry,$DATA_Offset+($RunListOffset*2)+2+($RunListSectorsLenght*2),$RunListClusterLenght*2)
 	ConsoleWrite("$RunListCluster = " & $RunListCluster & @crlf)
@@ -813,6 +826,7 @@ $maxarr = Ubound($RUN_Cluster)
 For $j = 1 To $maxarr
 	_ArrayDelete($RUN_Cluster,$maxarr-$j)
 	_ArrayDelete($RUN_Sectors,$maxarr-$j)
+	_ArrayDelete($RUN_Sparse,$maxarr-$j)
 	If $maxarr-$j=1 Then ExitLoop
 Next
 If $MFTMode = 2 Then
@@ -820,6 +834,7 @@ If $MFTMode = 2 Then
 	For $j = 1 To $MFTmaxarr
 		_ArrayDelete($MFT_RUN_Cluster,$MFTmaxarr-$j)
 		_ArrayDelete($MFT_RUN_Sectors,$MFTmaxarr-$j)
+		_ArrayDelete($MFT_RUN_Sparse,$MFTmaxarr-$j)
 		If $MFTmaxarr-$j=1 Then ExitLoop
 	Next
 EndIf
@@ -837,11 +852,15 @@ ConsoleWrite("$RunListClusterLenght = " & $RunListClusterLenght & @crlf)
 $RunListSectors = StringMid($MFTEntry,$DATA_Offset+($RunListOffset*2)+2,$RunListSectorsLenght*2)
 ConsoleWrite("$RunListSectors = " & $RunListSectors & @crlf)
 $r = 1
-If $RunListClusterLenght = 0 Then
+If $RunListClusterLenght = 0 Then ;Then chunk is sparse
 	If $MFTMode = 2 Then
 		_ArrayInsert($MFT_RUN_Sectors,$r,0)
+		_ArrayInsert($MFT_RUN_Sparse,$r,Dec($RunListSectors))
+;		MsgBox(0,"Sparse MFT sectors:",$RunListSectors)
 	EndIf
 	_ArrayInsert($RUN_Sectors,$r,0)
+	_ArrayInsert($RUN_Sparse,$r,Dec($RunListSectors))
+;	MsgBox(0,"Sparse sectors:",$RunListSectors)
 	$RunListClusterNext = $RUN_Cluster[$r-1]
 	If $MFTMode = 2 Then
 		_ArrayInsert($MFT_RUN_Cluster,$r,$RunListClusterNext)
@@ -865,8 +884,10 @@ $RunListSectors = Dec($entry)
 ConsoleWrite("$RunListSectors = " & $RunListSectors & @crlf)
 If $MFTMode = 2 Then
 	_ArrayInsert($MFT_RUN_Sectors,1,$RunListSectors)
+	_ArrayInsert($MFT_RUN_Sparse,1,0)
 EndIf
 _ArrayInsert($RUN_Sectors,1,$RunListSectors)
+_ArrayInsert($RUN_Sparse,1,0)
 ;MsgBox(0,"@error - $RUN_Sectors",@error)
 $RunListCluster = StringMid($MFTEntry,$DATA_Offset+($RunListOffset*2)+2+($RunListSectorsLenght*2),$RunListClusterLenght*2)
 ConsoleWrite("$RunListCluster = " & $RunListCluster & @crlf)
@@ -901,11 +922,15 @@ While $RunListSectors < $DATA_VCNs+1
 	ConsoleWrite("$RunListClusterLenght = " & $RunListClusterLenght & @crlf)
 	$RunListSectors = StringMid($MFTEntry,$NewRunOffsetBase+2,$RunListSectorsLenght*2)
 	ConsoleWrite("$RunListSectors = " & $RunListSectors & @crlf)
-	If $RunListClusterLenght = 0 Then
+	If $RunListClusterLenght = 0 Then; Then chunk is sparse
 		If $MFTMode = 2 Then
 			_ArrayInsert($MFT_RUN_Sectors,$r,0)
+			_ArrayInsert($MFT_RUN_Sparse,$r,Dec($RunListSectors))
+;			MsgBox(0,"Sparse MFT sectors:",$RunListSectors)
 		EndIf
 		_ArrayInsert($RUN_Sectors,$r,0)
+		_ArrayInsert($RUN_Sparse,$r,Dec($RunListSectors))
+;		MsgBox(0,"Sparse sectors:",$RunListSectors)
 ;		$RunListClusterNext = $RUN_Cluster[$r-1] + $RunListCluster
 ;		$RunListClusterNext = $RUN_Cluster[$r-1] + 0
 		$RunListClusterNext = $RUN_Cluster[$r-1]
@@ -933,8 +958,10 @@ While $RunListSectors < $DATA_VCNs+1
 	ConsoleWrite("$RunListSectors = " & $RunListSectors & @crlf)
 	If $MFTMode = 2 Then
 		_ArrayInsert($MFT_RUN_Sectors,$r,$RunListSectors)
+		_ArrayInsert($MFT_RUN_Sparse,$r,0)
 	EndIf
 	_ArrayInsert($RUN_Sectors,$r,$RunListSectors)
+	_ArrayInsert($RUN_Sparse,$r,0)
 	$RunListCluster = StringMid($MFTEntry,$NewRunOffsetBase+2+($RunListSectorsLenght*2),$RunListClusterLenght*2)
 	ConsoleWrite("$RunListCluster = " & $RunListCluster & @crlf)
 	$NegativeMove = 0
@@ -984,8 +1011,42 @@ Return
 EndFunc
 
 Func _ReassembleDataRuns($DATA_VCNs, $IsCompressed)
-Local $Decompressed, $FileName
+Local $Decompressed, $FileName, $NextSector1, $NextSector2, $MFTTotalRuns, $TotalRuns
 ConsoleWrite("Starting _ReassembleDataRuns()" & @crlf)
+;_ArrayDisplay($MFT_RUN_Cluster,"MFT_RUN_Cluster")
+;_ArrayDisplay($MFT_RUN_Sectors,"MFT_RUN_Sectors")
+;_ArrayDisplay($MFT_RUN_Sparse,"MFT_RUN_Sparse")
+;_ArrayDisplay($RUN_Cluster,"RUN_Cluster")
+;_ArrayDisplay($RUN_Sectors,"RUN_Sectors")
+;_ArrayDisplay($RUN_Sparse,"RUN_Sparse")
+Redim $MFT_RUN_Complete[Ubound($MFT_RUN_Cluster)+1][4]
+Redim $RUN_Complete[Ubound($RUN_Cluster)+1][4]
+$RUN_Complete[0][0] = "Sectors"
+$RUN_Complete[0][1] = "Cluster No"
+$RUN_Complete[0][2] = "Sector No"
+$RUN_Complete[0][3] = "Sparse sectors"
+$MFT_RUN_Complete[0][0] = "Sectors"
+$MFT_RUN_Complete[0][1] = "Cluster No"
+$MFT_RUN_Complete[0][2] = "Sector No"
+$MFT_RUN_Complete[0][3] = "Sparse sectors"
+For $MFTTotalRuns = 1 To Ubound($MFT_RUN_Cluster)
+	$MFT_RUN_Complete[$MFTTotalRuns][0] = $MFT_RUN_Sectors[$MFTTotalRuns-1]*$SectorsPerCluster
+	$MFT_RUN_Complete[$MFTTotalRuns][1] = $MFT_RUN_Cluster[$MFTTotalRuns-1]
+	$MFT_RUN_Complete[$MFTTotalRuns][2] = $MFT_RUN_Cluster[$MFTTotalRuns-1]*$SectorsPerCluster*512
+	$MFT_RUN_Complete[$MFTTotalRuns][3] = $MFT_RUN_Sparse[$MFTTotalRuns-1]
+Next
+For $TotalRuns = 1 To Ubound($RUN_Cluster)
+	$RUN_Complete[$TotalRuns][0] = $RUN_Sectors[$TotalRuns-1]*$SectorsPerCluster
+	$RUN_Complete[$TotalRuns][1] = $RUN_Cluster[$TotalRuns-1]
+	$RUN_Complete[$TotalRuns][2] = $RUN_Cluster[$TotalRuns-1]*$SectorsPerCluster*512
+	$RUN_Complete[$TotalRuns][3] = $RUN_Sparse[$TotalRuns-1]
+Next
+_ArrayDelete($MFT_RUN_Complete,1) ;Deleting left over
+_ArrayDelete($RUN_Complete,1) ;Deleting left over
+If GUICtrlRead($checkRuns) = 1 Then
+	_ArrayDisplay($MFT_RUN_Complete,"MFT_RUN_Complete")
+	_ArrayDisplay($RUN_Complete,"RUN_Complete")
+EndIf
 ;$testfile = _WinAPI_CreateFile(@ScriptDir & "\" & $FN_FileName & ".bin",3,6,7)
 If $FN_NameType = 'DOS' Then
 	$FileName = $FN_FileName_2
@@ -1022,11 +1083,11 @@ For $runs = 1 To Ubound($RUN_Cluster)-1
 	ConsoleWrite("Run " & $runs & " reassembling.." & @crlf)
 	_DisplayInfo("Run " & $runs & " reassembling.." & @crlf)
 	$StructSize = $RUN_Sectors[$runs]*$SectorsPerCluster*512
-	$MaxStructSize = 40000000
+	$MaxStructSize = 40000000 ; Max size of chunk to put into memory
 	If $runs = Ubound($RUN_Cluster)-1 Then
 		$StructSize = $StructSize-$SlackSize
 	EndIf
-	If $StructSize > $MaxStructSize Then
+	If $StructSize > $MaxStructSize Then ; Compare size of run against a preconfiured max value
 		$aa = $StructSize/$MaxStructSize
 		$ab = Ceiling($aa)
 		$ac = $aa-Floor($aa)
@@ -1052,14 +1113,17 @@ For $runs = 1 To Ubound($RUN_Cluster)-1
 			$MFTFragment1 = DllStructGetData($tBuffer1, 1)
 			ConsoleWrite("Size of buffer = " & DllStructGetSize($tBuffer1) & " for piece number: " & $StructFix & @crlf)
 			_DisplayInfo("Size of buffer = " & DllStructGetSize($tBuffer1) & " for piece number: " & $StructFix & @crlf)
+;			MsgBox(0,"$MFTFragment1",StringMid($MFTFragment1,1,512))
 ;			If $IsCompressed AND $NewStructSize > 0 Then
-			If $IsCompressed AND ($NewStructSize > 0) AND (StringMid($MFTFragment1,4,1)='B') Then
+			If $IsCompressed AND ($NewStructSize > 0) AND (StringMid($MFTFragment1,5,1)='B') Then
 				$Decompressed = _LZNTDecompress($MFTFragment1)
 				If $Decompressed[0] = "" Then
 					$Decompressed[1] = 0
 				Else
 					Local $DecompBuffer = DllStructCreate("byte[" & $Decompressed[1] & "]")
 					DllStructSetData($DecompBuffer, 1, $Decompressed[0])
+;					Local $DecompBuffer = DllStructCreate("byte[" & BinaryLen($MFTFragment1) & "]")
+;					DllStructSetData($DecompBuffer, 1, $MFTFragment1)
 				EndIf
 ;				MsgBox(0,"Decompressed",$Decompressed[0])
 				_WinAPI_WriteFile($testfile, DllStructGetPtr($DecompBuffer), DllStructGetSize($DecompBuffer), $nBytes)
@@ -1093,13 +1157,16 @@ For $runs = 1 To Ubound($RUN_Cluster)-1
 		ConsoleWrite("DllStructGetData" & @crlf)
 		ConsoleWrite("Size of buffer = " & DllStructGetSize($tBuffer1) & @crlf)
 		_DisplayInfo("Size of buffer = " & DllStructGetSize($tBuffer1) & @crlf)
-		If $IsCompressed AND ($NewStructSize > 0) AND (StringMid($MFTFragment1,4,1)='B') Then
+;		MsgBox(0,"$MFTFragment1",StringMid($MFTFragment1,1,512))
+		If $IsCompressed AND ($NewStructSize > 0) AND (StringMid($MFTFragment1,5,1)='B') Then; each block is preceded by a 2-byte length. The lower twelve bits are the >length, the higher 4 bits are of unknown purpose
 			$Decompressed = _LZNTDecompress($MFTFragment1)
 			If $Decompressed[0] = "" Then
 				$Decompressed[1] = 0
 			Else
 				Local $DecompBuffer = DllStructCreate("byte[" & $Decompressed[1] & "]")
 				DllStructSetData($DecompBuffer, 1, $Decompressed[0])
+;				Local $DecompBuffer = DllStructCreate("byte[" & BinaryLen($MFTFragment1) & "]")
+;				DllStructSetData($DecompBuffer, 1, $MFTFragment1)
 			EndIf
 ;			MsgBox(0,"Decompressed",$Decompressed[0])
 			_WinAPI_WriteFile($testfile, DllStructGetPtr($DecompBuffer), DllStructGetSize($DecompBuffer), $nBytes)
@@ -1187,7 +1254,7 @@ If $FN_Number = 1 Then
 			$FN_NameType = 'DOS'
 		Case $FN_NameType = '03'
 			$FN_NameType = 'DOS+WIN32'
-		Case $FN_NameType <> '00' AND $FN_NameType <> '01' AND $FN_NameType <> '02' AND $FN_NameType <> '03'
+		Case Else ;$FN_NameType <> '00' AND $FN_NameType <> '01' AND $FN_NameType <> '02' AND $FN_NameType <> '03'
 			$FN_NameType = 'UNKNOWN'
 	EndSelect
 	ConsoleWrite("$FN_NameType = " & $FN_NameType & @crlf)
@@ -1361,25 +1428,6 @@ $UniConv = _HexToString($UniConv)
 Return $UniConv
 EndFunc
 
-Func _DecToLittleEndian($DecimalInput)
-Local $dec = Hex($DecimalInput,8)
-$dec = StringMid($dec,7,2) & StringMid($dec,5,2) & StringMid($dec,3,2) & StringMid($dec,1,2)
-Return $dec
-EndFunc
-
-Func _SwapEndian($iHex)
-Local $iH, $iHexLen, $iHexTmp = "", $iHexTmp1 = ""
-If NOT IsInt((StringLen($iHex))/2) Then
-	$iHex = $iHex & '0'
-EndIf
-;ConsoleWrite("$iHex: " & $iHex & @CRLF)
-$iHexLen = StringLen($iHex)
-For $iH = 0 To $iHexLen step 2
-	$iHexTmp = StringMid($iHex,$iHexLen-($iH+1),2)
-	$iHexTmp1 &= $iHexTmp
-Next
-Return $iHexTmp1
-EndFunc
 
 ; #FUNCTION# ;===============================================================================
 ;
@@ -1507,3 +1555,27 @@ If @error Then
 EndIf
 _ExtractSystemfile(2,_DecToLittleEndian($bIndexNumber),1)
 EndFunc
+
+Func _DecToLittleEndian($DecimalInput)
+Local $dec = Hex($DecimalInput,8)
+$dec = StringMid($dec,7,2) & StringMid($dec,5,2) & StringMid($dec,3,2) & StringMid($dec,1,2)
+Return $dec
+EndFunc
+; This SwapEndian function was made to workaround 32-bit AutoIt limitation
+Func _SwapEndian($iHex)
+Local $iH, $iHexLen, $iHexTmp = "", $iHexTmp1 = ""
+If NOT IsInt((StringLen($iHex))/2) Then
+	$iHex = $iHex & '0'
+EndIf
+;ConsoleWrite("$iHex: " & $iHex & @CRLF)
+$iHexLen = StringLen($iHex)
+For $iH = 0 To $iHexLen step 2
+	$iHexTmp = StringMid($iHex,$iHexLen-($iH+1),2)
+	$iHexTmp1 &= $iHexTmp
+Next
+Return $iHexTmp1
+EndFunc
+; Original SwapEndian function
+;Func SwapEndian($Data)
+;    Return StringLeft(Hex(Binary($Data),4),8)
+;EndFunc

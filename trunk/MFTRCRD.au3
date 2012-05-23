@@ -1,10 +1,9 @@
 #RequireAdmin
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
-#AutoIt3Wrapper_UseX64=y
 #AutoIt3Wrapper_Change2CUI=y
 #AutoIt3Wrapper_Res_Comment=Quick $MFT record dump
 #AutoIt3Wrapper_Res_Description=Decode some of the attributes
-#AutoIt3Wrapper_Res_Fileversion=1.0.0.2
+#AutoIt3Wrapper_Res_Fileversion=1.0.0.3
 #AutoIt3Wrapper_Res_LegalCopyright=Joakim Schicht
 #AutoIt3Wrapper_Res_requestedExecutionLevel=asInvoker
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
@@ -58,7 +57,7 @@ Global $tDelta = _WinTime_GetUTCToLocalFileTimeDelta() ; in offline mode we must
 Global $List[30], $Drive = DriveGetDrive('All')
 Global $tSTORAGE_DEVICE_NUMBER, $Volume, $hFile, $SectorsPerCluster, $testfile, $MFT_Record_Size, $RunListOffset
 ;Global Const $HX_REF="0123456789ABCDEF"
-Global $RUN_Cluster[1], $RUN_Sectors[1], $MFT_RUN_Cluster[1], $MFT_RUN_Sectors[1]
+Global $RUN_Cluster[1], $RUN_Sectors[1], $MFT_RUN_Cluster[1], $MFT_RUN_Sectors[1], $RUN_Sparse[1], $MFT_RUN_Sparse[1], $RUN_Complete[1][4], $MFT_RUN_Complete[1][4]
 Global $nBytes, $MFT_Offset, $bytes_to_read, $tBuffer, $hdd_handle, $hFile, $MFTFull;, $MFTEntry
 Global Const $RecordSignature = '46494C45' ; FILE signature
 Global Const $RecordSignatureBad = '44414142' ; BAAD signature
@@ -103,10 +102,9 @@ Global Const $SI_FILE_PERM_INDEX_VIEW = 0x20000000
 Global $NeedLock = 0
 Dim $FormattedTimestamp
 
-ConsoleWrite("Starting MFTrcrd by Joakim Schicht" & @CRLF)
-ConsoleWrite("Version 1.0.0.2" & @CRLF)
+ConsoleWrite("Starting MFTRCRD by Joakim Schicht" & @CRLF)
+ConsoleWrite("Version 1.0.0.3" & @CRLF)
 ConsoleWrite("" & @CRLF)
-ConsoleWrite("Input is: " & $cmdline[1] & @CRLF)
 _validate_parameters()
 $drive = StringMid($cmdline[1],1,3)
 $filesystem = DriveGetFileSystem($drive)
@@ -129,6 +127,17 @@ Exit
 
 Func _validate_parameters()
 Local $FileAttrib
+If $cmdline[0] <> 2 Then
+	ConsoleWrite("Error: Wrong number of parameters supplied: " & $cmdline[0] & @CRLF)
+	ConsoleWrite("Usage: " & @CRLF)
+	ConsoleWrite("MFTRCRD param1 param2" & @CRLF)
+	ConsoleWrite("param1 is valid file path " & @CRLF)
+	ConsoleWrite("param2 can be -d or -a: " & @CRLF)
+	ConsoleWrite("-d means decode $MFT entry " & @CRLF)
+	ConsoleWrite("-a same as -d but also dumps the whole $MFT entry to console " & @CRLF)
+	ConsoleWrite("Example: MFTRCRD -d C:\boot.ini " & @CRLF)
+	Exit
+EndIf
 If $cmdline[2] <> "-d" AND $cmdline[2] <> "-a" Then
 	ConsoleWrite("Error: Wrong parameter 2 supplied: " & $cmdline[2] & @CRLF)
 EndIf
@@ -876,6 +885,7 @@ If $maxarr > 1 Then ; Seems necessary when more than 1 file is to be ripped
 ;		If $maxarr-$j=1 Then ExitLoop
 		_ArrayDelete($RUN_Cluster,$maxarr-$j)
 		_ArrayDelete($RUN_Sectors,$maxarr-$j)
+		_ArrayDelete($RUN_Sparse,$maxarr-$j)
 		If $maxarr-$j=1 Then ExitLoop
 	Next
 EndIf
@@ -886,6 +896,7 @@ If $MFTMode = 2 Then
 ;			If $maxarr-$j=1 Then ExitLoop
 			_ArrayDelete($MFT_RUN_Cluster,$MFTmaxarr-$j)
 			_ArrayDelete($MFT_RUN_Sectors,$MFTmaxarr-$j)
+			_ArrayDelete($MFT_RUN_Sparse,$MFTmaxarr-$j)
 			If $MFTmaxarr-$j=1 Then ExitLoop
 		Next
 	EndIf
@@ -994,8 +1005,10 @@ If $DATA_NonResidentFlag = '01' Then
 	If $RunListClusterLenght = 0 Then
 		If $MFTMode = 2 Then
 			_ArrayInsert($MFT_RUN_Sectors,$r,0)
+			_ArrayInsert($MFT_RUN_Sparse,$r,Dec($RunListSectors))
 		EndIf
 		_ArrayInsert($RUN_Sectors,$r,0)
+		_ArrayInsert($RUN_Sparse,$r,Dec($RunListSectors))
 		$RunListClusterNext = $RUN_Cluster[$r-1]
 		If $MFTMode = 2 Then
 			_ArrayInsert($MFT_RUN_Cluster,$r,$RunListClusterNext)
@@ -1018,8 +1031,10 @@ If $DATA_NonResidentFlag = '01' Then
 	$RunListSectors = Dec($entry)
 	If $MFTMode = 2 Then
 		_ArrayInsert($MFT_RUN_Sectors,1,$RunListSectors)
+		_ArrayInsert($MFT_RUN_Sparse,1,0)
 	EndIf
 	_ArrayInsert($RUN_Sectors,1,$RunListSectors)
+	_ArrayInsert($RUN_Sparse,1,0)
 ;	ConsoleWrite("$RunListSectors = " & $RunListSectors & @crlf)
 	$RunListCluster = StringMid($MFTEntry,$DATA_Offset+($RunListOffset*2)+2+($RunListSectorsLenght*2),$RunListClusterLenght*2)
 ;	ConsoleWrite("$RunListCluster = " & $RunListCluster & @crlf)
@@ -1258,6 +1273,7 @@ $maxarr = Ubound($RUN_Cluster)
 For $j = 1 To $maxarr
 	_ArrayDelete($RUN_Cluster,$maxarr-$j)
 	_ArrayDelete($RUN_Sectors,$maxarr-$j)
+	_ArrayDelete($RUN_Sparse,$maxarr-$j)
 	If $maxarr-$j=1 Then ExitLoop
 Next
 If $MFTMode = 2 Then
@@ -1265,6 +1281,7 @@ If $MFTMode = 2 Then
 	For $j = 1 To $MFTmaxarr
 		_ArrayDelete($MFT_RUN_Cluster,$MFTmaxarr-$j)
 		_ArrayDelete($MFT_RUN_Sectors,$MFTmaxarr-$j)
+		_ArrayDelete($MFT_RUN_Sparse,$MFTmaxarr-$j)
 		If $MFTmaxarr-$j=1 Then ExitLoop
 	Next
 EndIf
@@ -1285,8 +1302,10 @@ $r = 1
 If $RunListClusterLenght = 0 Then
 	If $MFTMode = 2 Then
 		_ArrayInsert($MFT_RUN_Sectors,$r,0)
+		_ArrayInsert($MFT_RUN_Sparse,$r,Dec($RunListSectors))
 	EndIf
 	_ArrayInsert($RUN_Sectors,$r,0)
+	_ArrayInsert($RUN_Sparse,$r,Dec($RunListSectors))
 	$RunListClusterNext = $RUN_Cluster[$r-1]
 	If $MFTMode = 2 Then
 		_ArrayInsert($MFT_RUN_Cluster,$r,$RunListClusterNext)
@@ -1310,8 +1329,10 @@ $RunListSectors = Dec($entry)
 ;ConsoleWrite("$RunListSectors = " & $RunListSectors & @crlf)
 If $MFTMode = 2 Then
 	_ArrayInsert($MFT_RUN_Sectors,1,$RunListSectors)
+	_ArrayInsert($MFT_RUN_Sparse,1,0)
 EndIf
 _ArrayInsert($RUN_Sectors,1,$RunListSectors)
+_ArrayInsert($RUN_Sparse,1,0)
 ;MsgBox(0,"@error - $RUN_Sectors",@error)
 $RunListCluster = StringMid($MFTEntry,$DATA_Offset+($RunListOffset*2)+2+($RunListSectorsLenght*2),$RunListClusterLenght*2)
 ;ConsoleWrite("$RunListCluster = " & $RunListCluster & @crlf)
@@ -1349,8 +1370,10 @@ While $RunListSectors < $DATA_VCNs+1
 	If $RunListClusterLenght = 0 Then
 		If $MFTMode = 2 Then
 			_ArrayInsert($MFT_RUN_Sectors,$r,0)
+			_ArrayInsert($MFT_RUN_Sparse,$r,Dec($RunListSectors))
 		EndIf
 		_ArrayInsert($RUN_Sectors,$r,0)
+		_ArrayInsert($RUN_Sparse,$r,Dec($RunListSectors))
 ;		$RunListClusterNext = $RUN_Cluster[$r-1] + $RunListCluster
 ;		$RunListClusterNext = $RUN_Cluster[$r-1] + 0
 		$RunListClusterNext = $RUN_Cluster[$r-1]
@@ -1378,8 +1401,10 @@ While $RunListSectors < $DATA_VCNs+1
 ;	ConsoleWrite("$RunListSectors = " & $RunListSectors & @crlf)
 	If $MFTMode = 2 Then
 		_ArrayInsert($MFT_RUN_Sectors,$r,$RunListSectors)
+		_ArrayInsert($MFT_RUN_Sparse,$r,0)
 	EndIf
 	_ArrayInsert($RUN_Sectors,$r,$RunListSectors)
+	_ArrayInsert($RUN_Sparse,$r,0)
 	$RunListCluster = StringMid($MFTEntry,$NewRunOffsetBase+2+($RunListSectorsLenght*2),$RunListClusterLenght*2)
 ;	ConsoleWrite("$RunListCluster = " & $RunListCluster & @crlf)
 	$NegativeMove = 0
@@ -2446,6 +2471,32 @@ If $AttributesArr[7][2] = "TRUE" Then
 	ConsoleWrite("FLAGS: " & $VOL_INFO_FLAGS & @CRLF)
 EndIf
 If $AttributesArr[8][2] = "TRUE" Then
+	Redim $MFT_RUN_Complete[Ubound($MFT_RUN_Cluster)+1][4]
+	Redim $RUN_Complete[Ubound($RUN_Cluster)+1][4]
+	$RUN_Complete[0][0] = "Sectors"
+	$RUN_Complete[0][1] = "Cluster No"
+	$RUN_Complete[0][2] = "Sector No"
+	$RUN_Complete[0][3] = "Sparse sectors"
+	$MFT_RUN_Complete[0][0] = "Sectors"
+	$MFT_RUN_Complete[0][1] = "Cluster No"
+	$MFT_RUN_Complete[0][2] = "Sector No"
+	$MFT_RUN_Complete[0][3] = "Sparse sectors"
+	For $MFTTotalRuns = 1 To Ubound($MFT_RUN_Cluster)
+		$MFT_RUN_Complete[$MFTTotalRuns][0] = $MFT_RUN_Sectors[$MFTTotalRuns-1]*$SectorsPerCluster
+		$MFT_RUN_Complete[$MFTTotalRuns][1] = $MFT_RUN_Cluster[$MFTTotalRuns-1]
+		$MFT_RUN_Complete[$MFTTotalRuns][2] = $MFT_RUN_Cluster[$MFTTotalRuns-1]*$SectorsPerCluster*512
+		$MFT_RUN_Complete[$MFTTotalRuns][3] = $MFT_RUN_Sparse[$MFTTotalRuns-1]
+	Next
+	For $TotalRuns = 1 To Ubound($RUN_Cluster)
+		$RUN_Complete[$TotalRuns][0] = $RUN_Sectors[$TotalRuns-1]*$SectorsPerCluster
+		$RUN_Complete[$TotalRuns][1] = $RUN_Cluster[$TotalRuns-1]
+		$RUN_Complete[$TotalRuns][2] = $RUN_Cluster[$TotalRuns-1]*$SectorsPerCluster*512
+		$RUN_Complete[$TotalRuns][3] = $RUN_Sparse[$TotalRuns-1]
+	Next
+	_ArrayDelete($MFT_RUN_Complete,1) ;Deleting left over
+;	_ArrayDisplay($MFT_RUN_Complete,"MFT_RUN_Complete")
+	_ArrayDelete($RUN_Complete,1) ;Deleting left over
+;	_ArrayDisplay($RUN_Complete,"RUN_Complete")
 	$p = 1
 	If $DataArr[1][1] <> "" Then
 		ConsoleWrite(@CRLF)
@@ -2458,11 +2509,13 @@ If $AttributesArr[8][2] = "TRUE" Then
 	If $DataArr[2][1] = "01" Then
 		ConsoleWrite(@CRLF)
 		ConsoleWrite("Interpretation of runs for $DATA 1:" & @CRLF)
-;		_arraydisplay($RUN_Sectors,"$RUN_Sectors")
-;		_arraydisplay($RUN_Cluster,"$RUN_Cluster")
+;		For $p = 1 To UBound($RUN_Cluster)-1
+;			$NextSector += $RUN_Sectors[$p]
+;			ConsoleWrite("Run " & $p & ": " & $RUN_Sectors[$p]*$SectorsPerCluster & " sectors found at cluster number " & $RUN_Cluster[$p] & " (sector number " & $RUN_Cluster[$p]*$SectorsPerCluster*512 & ") sparse sectors: " & @CRLF)
+;		Next
 		For $p = 1 To UBound($RUN_Cluster)-1
 			$NextSector += $RUN_Sectors[$p]
-			ConsoleWrite("Run " & $p & ": " & $RUN_Sectors[$p] & " sectors at cluster number " & $RUN_Cluster[$p] & " (sector number " & $RUN_Cluster[$p]*$SectorsPerCluster*512 & ")" & @CRLF)
+			ConsoleWrite("Run " & $p & ": " & $RUN_Complete[$p][0] & " sectors found at cluster number " & $RUN_Complete[$p][1] & " (sector number " & $RUN_Complete[$p][2] & ") sparse sectors: " & $RUN_Complete[$p][3] & @CRLF)
 		Next
 	EndIf
 	$p = 1
