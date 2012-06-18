@@ -1,3 +1,7 @@
+#Region ;**** Directives created by AutoIt3Wrapper_GUI ****
+#AutoIt3Wrapper_UseX64=y
+#AutoIt3Wrapper_Res_requestedExecutionLevel=asInvoker
+#EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
 #include <winapi.au3>
 #Include <String.au3>
 #include "_WinTimeFunctions2.au3";Ascend4nt
@@ -369,13 +373,14 @@ WEnd
 EndFunc
 
 Func _WinAPI_SetFilePointerEx($hFile, $iPos, $iMethod = 0)
-    Local $aResult
 
-    $aResult = DllCall("kernel32.dll", "dword", "SetFilePointerEx", "hwnd", $hFile, "uint64", $iPos, "uint64*", 0, "dword", $iMethod)
-    If @error Then Return SetError(1, 0, -1)
-    If $aResult[0] = $__WINAPCONSTANT_INVALID_SET_FILE_POINTER Then Return SetError(2, 0, -1)
-    Return $aResult[0]
-EndFunc   ;==>_WinAPI_SetFilePointer
+	Local $Ret = DllCall('kernel32.dll', 'int', 'SetFilePointerEx', 'ptr', $hFile, 'int64', $iPos, 'int64*', 0, 'dword', $iMethod)
+
+	If (@error) Or (Not $Ret[0]) Then
+		Return SetError(1, 0, 0)
+	EndIf
+	Return 1
+EndFunc
 
 Func _HexEncode($bInput)
     Local $tInput = DllStructCreate("byte[" & BinaryLen($bInput) & "]")
