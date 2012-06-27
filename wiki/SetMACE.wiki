@@ -25,6 +25,28 @@ Interestingly, only after writing v1006 of SetMACE I truly realized how importan
   * Works on both 32-bit and 64-bit, from XP to Windows 8.
   * Accuracy down to the nanosec level.
   * $FILE_NAME timestamps in addition to $STANDARD_INFORMATION.
-
+  * Supports both files and directories.
+  * Clone timestamps from a second file.
 
 You may find it handy to use MFTRCRD to dump the file record and see if your new timestamps are present.
+
+
+= Syntax explanation =
+
+*Parameter 1* is input/target file. Must be full path like "%CD%\file.ext" or "c:\folder\file.ext"
+
+*Parameter 2* is determining which timestamp to update.
+  * "-m" = LastWriteTime
+  * "-a" = LastAccessTime
+  * "-c" = CreationTime
+  * "-e" = ChangeTime (in $MFT)
+  * "-z" = all 4
+  * "-g" = Copy timestamp from a second file ; only supported with $STANDARD_INFORMATION
+  * "-d" = Dump existing timestamps (in UTC and adjusted for timezone configuration)
+
+*Parameter 3* is the wanted new timestamp. Format must be strictly followed like; "1954:04:01:22:39:44:666:1234". That is YYYY:MM:DD:HH:MM:SS:MSMSMS:NSNSNSNS. The smallest possible value to set is; "1601:01:01:00:00:00:000:0001". Timestamps are written as UTC and thus will show up in explorer as interpreted by your timezone location. If parameter 2 is "-g" then this one should be a valid path+filename. Note that nanoseconds are supported.
+
+*Parameter 4* determines if $STANDARD_INFORMATION or $FILE_NAME attribute or both should be modified.
+  * "-si" will only update timestamps in $STANDARD_INFORMATION (4 timestamps), or just LastWriteTime, LastAccessTime and CreationTime (3 timestamps) for non-NTFS.
+  * "-fn" will only update timestamps in $FILE_NAME (4 timestamps for short names and 8 timestamps for long names), and only for NTFS.
+  * "-x" will update timestamps in both $FILE_NAME and $STANDARD_INFORMATION (8 or 12 timestamps depending on filename length).
