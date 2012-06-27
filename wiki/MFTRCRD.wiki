@@ -6,6 +6,8 @@ This tool will decode the $MFT record for a given file. It is a combination of m
 
 It supports both file name+path and IndexNumber (MFT record) as input. Also choose between 2 switches. One to dump the core decode, and one to also dump a formatted hex dump of the record, the attribute and core attribute list. Also it will display detailed runs information, so you can easily trace the various file fragments on the disk. 
 
+Here is a sample console dump: http://mft2csv.googlecode.com/files/dump_MTFRCRD.zip 
+
 
 = How to run MFTRCRD =
 
