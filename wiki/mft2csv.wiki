@@ -167,9 +167,11 @@ The timestamps are now at the precision of nanoseconds. Prior to processing, the
 
 = Latest Version =
 
-v1.5
+v1.7
 
 = Changelog =
+
+v1.7. Removed the record slack option as it was not working. Fixed compilation issues on recent AutoIt version. Fixups was implemented in the previous version I believe.
 
 v1.5 Changed record signature detection to:
 
@@ -192,9 +194,6 @@ v1.2 Fixed timestamps where a 0 was erronously put in before the milliseconds. M
 
 v1.1. Fixed a mixup of ContinueLoop with ContinueCase in the main record processing loop. The error lead to an infinite loop when ADS was more than 3 or $FILE_NAME more than 4 per file. Added a new variable to the csv as the file size (FileSizeBytes). Basically it is the $DATA size, but I thought it was better to have the file size put into one place instead of spread across two (resident vs non-resident). This is only for the first $DATA attribute.
 
-= About the speed issue =
-
-It could be from me not being world class programmer as well as that AutoIt is chosen as scripting language. Reducing the amount of information to be decoded/logged, does not significantly impact on the performance. Ie, it is minimal.
 
 = ToDo =
 
@@ -203,7 +202,6 @@ It could be from me not being world class programmer as well as that AutoIt is c
   * Security attribute.
   * Group the data in a more sensible way.
   * Improve the speed.
-  * Look into "fixups".
 
 = Thanks and credits =
 
