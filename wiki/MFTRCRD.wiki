@@ -14,6 +14,7 @@ It is command line and the syntax is:
 Usage: "MFTRCRD param1 param2"
 
 param1 can be a valid file path or an IndexNumber ($MFT record number)
+
 param2 can be -d or -a:
         -d means just decode $MFT entry
         -a same as -d but also dumps the whole $MFT entry to console
