@@ -19,14 +19,14 @@ param2 can be -d or -a:
 -d means just decode $MFT entry
 -a same as -d but also dumps the whole $MFT entry to console
 
-Example for dumping an $MFT decode for boot.ini:
+=== Example for dumping an $MFT decode for boot.ini: ===
 
 MFTRCRD C:\boot.ini -d
 
-Example for dumping an $MFT decode + a 1024 byte $MFT record dump for $MFT itself from the C: drive:
+=== Example for dumping an $MFT decode + a 1024 byte $MFT record dump for $MFT itself from the C: drive: ===
 
 MFTRCRD C:0 -a
 
-Example for dumping an $MFT decode for $LogFile from the D: drive:
+=== Example for dumping an $MFT decode for $LogFile from the D: drive: ===
 
 MFTRCRD D:2 -d
