@@ -22,6 +22,12 @@ This tool has been extensively tested and should be able to extract any file. AD
 
 basefile.ext[adsname.ext]
 
+The tools have been tested on almost all recent Windows version, from 32-bit XP to 64-bit Windows 8, and it works great. 
+
+= Possibility =
+
+With a little more effort on this code, it can be used to create a quit good data recovery application for NTFS I believe. 
+
 
 = Limitations =
 
@@ -29,9 +35,11 @@ Some limitations are present. Only $DATA attributes is currently supported, whic
 
 = Latest Version =
 
-v3.0 (coming soon)
+v3.0
 
 = Changelog =
+
+v3.0 With quite substantial support from DDan, much of the code was reorganized and improved. Most importantly, compression and sparse files are now fully supported. Complete $ATTRIBUTE_LIST is also solved. Full support for ADS's are also added. Plus a lot more that makes the code easier to reuse.
 
 v1.6 Temporary fix for $MFT record size, now fixed at 1024 bytes (2 sectors) (but must be changed to correct formula later anyway), that caused issues on certain volumes. Also fixed support for unicode names in output. 
 
