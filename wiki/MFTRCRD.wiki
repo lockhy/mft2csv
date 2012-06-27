@@ -11,7 +11,7 @@ It supports both file name+path and IndexNumber (MFT record) as input. Also choo
 
 It is command line and the syntax is:
 
-Usage: "MFTRCRD param1 param2"
+=== Usage: "MFTRCRD param1 param2" ===
 
 param1 can be a valid file path or an IndexNumber ($MFT record number)
 
