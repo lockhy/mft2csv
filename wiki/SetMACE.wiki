@@ -57,20 +57,20 @@ You may find it handy to use MFTRCRD to dump the file record and see if your new
 ===Setting all 4 timestamps in both $FILE_NAME and $STANDARD_INFORMATION attributes for a file. If target FS is FAT* then only 3 timestamps are changed:===
 setmace.exe "%CD%\file.txt" -z "2000:01:01:00:00:00:789:1234" -x
 
-=Setting all 8 timestamps in the $FILE_NAME attribute for a file with long filename. If target FS is FAT* then nothing is done:=
+===Setting all 8 timestamps in the $FILE_NAME attribute for a file with long filename. If target FS is FAT* then nothing is done:===
 setmace.exe "%CD%\alongfilename.txt" -z "2000:01:01:00:00:00:789:1234" -fn
 
-=Setting 2 timestamps ($MFT creation time * 2) in the $FILE_NAME attribute for a file with long filename. If target FS is FAT* then nothing is done:=
+===Setting 2 timestamps ($MFT creation time * 2) in the $FILE_NAME attribute for a file with long filename. If target FS is FAT* then nothing is done:===
 setmace.exe "%CD%\alongfilename.txt" -e "2000:01:01:00:00:00:789:1234" -fn
 
-=Setting all 4 timestamps in $STANDARD_INFORMATION attribute for a directory. If target FS is FAT* then only 3 timestamps are changed:=
+===Setting all 4 timestamps in $STANDARD_INFORMATION attribute for a directory. If target FS is FAT* then only 3 timestamps are changed:===
 setmace.exe "D:\tmp" -z "2000:01:01:00:00:00:789:1234" -si
 
-=Setting the LastWriteTime in the $STANDARD_INFORMATION attribute=
+===Setting the LastWriteTime in the $STANDARD_INFORMATION attribute:===
 setmace.exe "%CD%\file.txt" -m "2000:01:01:00:00:00:789:1234" -si
 
-=Dumping all timestamps for a file:=
+===Dumping all timestamps for a file:===
 setmace.exe "%CD%\file.txt" -d
 
-=Copy $STANDARD_INFORMATION timestamps from secondfile.txt and apply them to file.txt:=
+===Copy $STANDARD_INFORMATION timestamps from secondfile.txt and apply them to file.txt:===
 setmace.exe "%CD%\file.txt" -g "%CD%\secondfile.txt"
