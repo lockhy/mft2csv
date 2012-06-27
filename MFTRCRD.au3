@@ -3,7 +3,7 @@
 #AutoIt3Wrapper_Change2CUI=y
 #AutoIt3Wrapper_Res_Comment=Quick $MFT record dump
 #AutoIt3Wrapper_Res_Description=Decode some of the attributes
-#AutoIt3Wrapper_Res_Fileversion=1.0.0.5
+#AutoIt3Wrapper_Res_Fileversion=1.0.0.6
 #AutoIt3Wrapper_Res_LegalCopyright=Joakim Schicht
 #AutoIt3Wrapper_Res_requestedExecutionLevel=asInvoker
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
@@ -20,6 +20,7 @@
 #Include <Date.au3>
 #include <Array.au3>
 #Include <String.au3>
+#include <Debug.au3>
 ;Opt("MustDeclareVars", 1)
 Global Const $FileBasicInformation = 4
 Global Const $FileInternalInformation = 6
@@ -34,8 +35,8 @@ Global Const $tagUNICODESTRING = "ushort Length;ushort MaximumLength;ptr Buffer"
 Global Const $tagFILEINTERNALINFORMATION = "int IndexNumber;"
 Global $IsMFT = 0
 Global $file = ""
-Global $file2 = ""
-Global $IsDirectory = 0, $AttributesArr[18][4], $SIArr[13][4], $FNArr[14][1], $RecordHdrArr[15][2], $FinalOffset, $ObjectIDArr[5][2], $DataArr[20][2]
+Global $file2 = "", $bIndexNumber, $AttrQ, $IsolatedAttributeList, $ALInnerCouner, $AttribListNonResident=0
+Global $IsDirectory = 0, $AttributesArr[18][4], $SIArr[13][4], $FNArr[14][1], $RecordHdrArr[15][2], $FinalOffset, $ObjectIDArr[5][2], $DataArr[20][2], $AttribListArr[9][2]
 Global $FormattedTimestamp, $FormattedTimestamp1, $filesystem, $drive, $CreationTime2, $LastAccessTime2, $LastWriteTime2, $ChangeTime2, $IsDirectory
 Global $CreationTime, $LastAccessTime, $LastWriteTime, $ChangeTime, $CreationTime3, $LastAccessTime3, $LastWriteTime3, $ChangeTime3
 Global $HEADER_LSN,$HEADER_SequenceNo,$HEADER_Flags,$HEADER_RecordRealSize,$HEADER_RecordAllocSize,$HEADER_FileRef,$HEADER_NextAttribID,$HEADER_MFTREcordNumber,$Header_HardLinkCount
@@ -105,11 +106,11 @@ Dim $FormattedTimestamp
 
 ConsoleWrite("" & @CRLF)
 ConsoleWrite("Starting MFTRCRD by Joakim Schicht" & @CRLF)
-ConsoleWrite("Version 1.0.0.5" & @CRLF)
+ConsoleWrite("Version 1.0.0.6" & @CRLF)
 ConsoleWrite("" & @CRLF)
 _validate_parameters()
-If StringIsDigit($cmdline[1]) Then
-	$drive = StringMid(@AutoItExe,1,3)
+If StringIsDigit(StringMid($cmdline[1],3)) Then
+	$drive = StringMid($cmdline[1],1,2)&"\"
 Else
 	$drive = StringMid($cmdline[1],1,3)
 EndIf
@@ -120,8 +121,8 @@ Else
 	ConsoleWrite("Error: filesystem on " & $drive & " is " & $filesystem & @CRLF)
 	Exit
 EndIf
-If StringIsDigit($cmdline[1]) Then
-	ConsoleWrite("File IndexNumber: " & $cmdline[1] & @CRLF)
+If StringIsDigit(StringMid($cmdline[1],3)) Then
+	ConsoleWrite("File IndexNumber: " & StringMid($cmdline[1],3) & @CRLF)
 Else
 	ConsoleWrite("File IndexNumber: " & _GetIndexNumber($cmdline[1], $IsDirectory) & @CRLF)
 EndIf
@@ -150,15 +151,18 @@ If $cmdline[0] <> 2 Then
 	ConsoleWrite("Example for dumping an $MFT decode for boot.ini:" & @CRLF)
 	ConsoleWrite("MFTRCRD C:\boot.ini -d" & @CRLF)
 	ConsoleWrite("" & @CRLF)
-	ConsoleWrite("Example for dumping an $MFT decode + a 1024 byte $MFT record dump for $MFT itself:" & @CRLF)
-	ConsoleWrite("MFTRCRD 0 -a" & @CRLF)
+	ConsoleWrite("Example for dumping an $MFT decode + a 1024 byte $MFT record dump for $MFT itself from the C: drive:" & @CRLF)
+	ConsoleWrite("MFTRCRD C:0 -a" & @CRLF)
+	ConsoleWrite("" & @CRLF)
+	ConsoleWrite("Example for dumping an $MFT decode for $LogFile from the D: drive:" & @CRLF)
+	ConsoleWrite("MFTRCRD D:2 -d" & @CRLF)
 	Exit
 EndIf
 If $cmdline[2] <> "-d" AND $cmdline[2] <> "-a" Then
 	ConsoleWrite("Error: Wrong parameter 2 supplied: " & $cmdline[2] & @CRLF)
 EndIf
-If FileExists($cmdline[1]) <> 1 OR StringMid($cmdline[1],2,2) <> ":\" Then
-	If StringIsDigit($cmdline[1]) <> 1 Then
+If FileExists($cmdline[1]) <> 1 OR StringMid($cmdline[1],2,1) <> ":" Then
+	If StringIsDigit(StringMid($cmdline[1],3)) <> 1 Then
 		ConsoleWrite("Error: Param1 is not valid: " & $cmdline[1] & @CRLF)
 		Exit
 	EndIf
@@ -214,8 +218,8 @@ $AttributesArr[15][0] = "PROPERTY_SET"
 $AttributesArr[16][0] = "LOGGED_UTILITY_STREAM"
 $AttributesArr[17][0] = "ATTRIBUTE_END_MARKER"
 $AttributesArr[0][1] = "Internal offset:"
-If StringIsDigit($cmdline[1]) Then
-	$bIndexNumber = $cmdline[1]
+If StringIsDigit(StringMid($cmdline[1],3)) Then
+	$bIndexNumber = StringMid($cmdline[1],3)
 Else
 	$bIndexNumber = _GetIndexNumber($cmdline[1], $IsDirectory)
 EndIf
@@ -369,7 +373,16 @@ Global $tBootSectorSections = DllStructCreate("align 1;byte Jump[3];" & _
 
 Global $BytesPerSector = DllStructGetData($tBootSectorSections, "BytesPerSector")
 Global $SectorsPerCluster = DllStructGetData($tBootSectorSections, "SectorsPerCluster")
-ConsoleWrite("$SectorsPerCluster = " & $SectorsPerCluster & @CRLF)
+Global $TotalSectors = DllStructGetData($tBootSectorSections, "TotalSectors")
+Global $SectorsPerTrack = DllStructGetData($tBootSectorSections, "SectorsPerTrack")
+Global $NumberOfHeads = DllStructGetData($tBootSectorSections, "NumberOfHeads")
+Global $HiddenSectors = DllStructGetData($tBootSectorSections, "HiddenSectors")
+ConsoleWrite("BytesPerSector: " & $BytesPerSector & @CRLF)
+ConsoleWrite("SectorsPerCluster: " & $SectorsPerCluster & @CRLF)
+ConsoleWrite("TotalSectors: " & $TotalSectors & @CRLF)
+ConsoleWrite("HiddenSectors: " & $HiddenSectors & @CRLF)
+ConsoleWrite("SectorsPerTrack: " & $SectorsPerTrack & @CRLF)
+ConsoleWrite("NumberOfHeads: " & $NumberOfHeads & @CRLF)
 Global $ClustersPerFileRecordSegment = DllStructGetData($tBootSectorSections, "ClustersPerFileRecordSegment")
 Global $LogicalClusterNumberforthefileMFT = DllStructGetData($tBootSectorSections, "LogicalClusterNumberforthefileMFT")
 $MFT_Offset = $BytesPerSector * $SectorsPerCluster * $LogicalClusterNumberforthefileMFT
@@ -471,6 +484,7 @@ EndIf
 EndFunc
 
 Func _DecodeMFTRecord($MFTEntry,$MFTMode)
+;ConsoleWrite("$MFTMode = " & $MFTMode & @crlf)
 $RecordHdrArr[0][0] = "Field name"
 $RecordHdrArr[1][0] = "Offst to update sequence number"
 $RecordHdrArr[2][0] = "Update sequence array size (words)"
@@ -541,6 +555,15 @@ $DataArr[16][0] = "Non-Resident - Allocated size of the attribute"
 $DataArr[17][0] = "Non-Resident - Real size of the attribute"
 $DataArr[18][0] = "Non-Resident - Initialized data size of the stream"
 $DataArr[19][0] = "The Attribute's Name"
+$AttribListArr[0][0] = "Description:"
+$AttribListArr[1][0] = "Type"
+$AttribListArr[2][0] = "Record Lenght"
+$AttribListArr[3][0] = "Name Length"
+$AttribListArr[4][0] = "Offset to name"
+$AttribListArr[5][0] = "Starting VCN"
+$AttribListArr[6][0] = "Base file reference"
+$AttribListArr[7][0] = "Name"
+$AttribListArr[8][0] = "Attribute ID"
 $Fixup1Needed = 0
 $Fixup2Needed = 0
 $RecordActive = ""
@@ -695,6 +718,10 @@ While $AttributeKnown = 1
 			If $MFTMode = 1  Or $IsMFT Then
 				$AttributesArr[1][1] = $NextAttributeOffset
 				_Get_StandardInformation($MFTEntry,$NextAttributeOffset,$AttributeSize,$MFTMode)
+				If $cmdline[2] = "-a" Then
+					ConsoleWrite("Dump of $STANDARD_INFORMATION (" & $SI_Number & ")" & @crlf)
+					ConsoleWrite(_HexEncode("0x"&StringMid($MFTEntry,$NextAttributeOffset,$AttributeSize*2)) & @crlf)
+				EndIf
 			EndIf
 
 		Case $AttributeType = $ATTRIBUTE_LIST
@@ -703,8 +730,12 @@ While $AttributeKnown = 1
 			$ATTRIBLIST_Number += 1
 			If $MFTMode = 1  Or $IsMFT Then
 				$AttributesArr[2][1] = $NextAttributeOffset
+				If $cmdline[2] = "-a" Then
+					ConsoleWrite("Dump of $ATTRIBUTE_LIST (" & $ATTRIBLIST_Number & ")" & @crlf)
+					ConsoleWrite(_HexEncode("0x"&StringMid($MFTEntry,$NextAttributeOffset,$AttributeSize*2)) & @crlf)
+				EndIf
 			EndIf
-;			_Get_AttributeList()
+			_Get_AttributeList($MFTEntry,$NextAttributeOffset,$AttributeSize,$MFTMode)
 
 		Case $AttributeType = $FILE_NAME
 			$AttributeKnown = 1
@@ -716,6 +747,10 @@ While $AttributeKnown = 1
 			If $MFTMode = 1  Or $IsMFT Then
 				ReDim $FNArr[14][$FN_Number+3]
 ;				$FNArr[0][$FN_Number] = "FN Number " & $FN_Number
+				If $cmdline[2] = "-a" Then
+					ConsoleWrite("Dump of $FILE_NAME (" & $FN_Number & ")" & @crlf)
+					ConsoleWrite(_HexEncode("0x"&StringMid($MFTEntry,$NextAttributeOffset,$AttributeSize*2)) & @crlf)
+				EndIf
 			EndIf
 			_Get_FileName($MFTEntry,$NextAttributeOffset,$AttributeSize,$FN_Number,$MFTMode)
 ;			ConsoleWrite("Now processing: " & $FN_FileName & "..." & @crlf)
@@ -728,6 +763,10 @@ While $AttributeKnown = 1
 			If $MFTMode = 1  Or $IsMFT Then
 				$AttributesArr[4][1] = $NextAttributeOffset
 				_Get_ObjectID($MFTEntry,$NextAttributeOffset,$AttributeSize)
+				If $cmdline[2] = "-a" Then
+					ConsoleWrite("Dump of $OBJECT_ID (" & $OBJID_Number & ")" & @crlf)
+					ConsoleWrite(_HexEncode("0x"&StringMid($MFTEntry,$NextAttributeOffset,$AttributeSize*2)) & @crlf)
+				EndIf
 			EndIf
 
 		Case $AttributeType = $SECURITY_DESCRIPTOR
@@ -737,6 +776,10 @@ While $AttributeKnown = 1
 			If $MFTMode = 1  Or $IsMFT Then
 				$AttributesArr[5][1] = $NextAttributeOffset
 ;				_Get_SecurityDescriptor()
+				If $cmdline[2] = "-a" Then
+					ConsoleWrite("Dump of $SECURITY_DESCRIPTOR (" & $SECURITY_Number & ")" & @crlf)
+					ConsoleWrite(_HexEncode("0x"&StringMid($MFTEntry,$NextAttributeOffset,$AttributeSize*2)) & @crlf)
+				EndIf
 			EndIf
 
 		Case $AttributeType = $VOLUME_NAME
@@ -746,6 +789,10 @@ While $AttributeKnown = 1
 			If $MFTMode = 1  Or $IsMFT Then
 				$AttributesArr[6][1] = $NextAttributeOffset
 				_Get_VolumeName($MFTEntry,$NextAttributeOffset,$AttributeSize)
+				If $cmdline[2] = "-a" Then
+					ConsoleWrite("Dump of $VOLUME_NAME (" & $VOLNAME_Number & ")" & @crlf)
+					ConsoleWrite(_HexEncode("0x"&StringMid($MFTEntry,$NextAttributeOffset,$AttributeSize*2)) & @crlf)
+				EndIf
 			EndIf
 
 		Case $AttributeType = $VOLUME_INFORMATION
@@ -755,6 +802,10 @@ While $AttributeKnown = 1
 			If $MFTMode = 1  Or $IsMFT Then
 				$AttributesArr[7][1] = $NextAttributeOffset
 				_Get_VolumeInformation($MFTEntry,$NextAttributeOffset,$AttributeSize)
+				If $cmdline[2] = "-a" Then
+					ConsoleWrite("Dump of $VOLUME_INFORMATION (" & $VOLINFO_Number & ")" & @crlf)
+					ConsoleWrite(_HexEncode("0x"&StringMid($MFTEntry,$NextAttributeOffset,$AttributeSize*2)) & @crlf)
+				EndIf
 			EndIf
 
 		Case $AttributeType = $DATA
@@ -764,9 +815,12 @@ While $AttributeKnown = 1
 			If $MFTMode = 1 OR $IsMFT Then
 				ReDim $DataArr[20][$DATA_Number+1]
 				$AttributesArr[8][1] = $NextAttributeOffset
+				If $cmdline[2] = "-a" Then
+					ConsoleWrite("Dump of $DATA (" & $DATA_Number & ")" & @crlf)
+					ConsoleWrite(_HexEncode("0x"&StringMid($MFTEntry,$NextAttributeOffset,$AttributeSize*2)) & @crlf)
+				EndIf
 			EndIf
 			_Get_Data($MFTEntry,$NextAttributeOffset,$AttributeSize,$DATA_Number,$MFTMode)
-
 
 		Case $AttributeType = $INDEX_ROOT
 			$AttributeKnown = 1
@@ -775,6 +829,10 @@ While $AttributeKnown = 1
 			If $MFTMode = 1  Or $IsMFT Then
 				$AttributesArr[9][1] = $NextAttributeOffset
 ;				_Get_IndexRoot()
+				If $cmdline[2] = "-a" Then
+					ConsoleWrite("Dump of $INDEX_ROOT (" & $INDEXROOT_Number & ")" & @crlf)
+					ConsoleWrite(_HexEncode("0x"&StringMid($MFTEntry,$NextAttributeOffset,$AttributeSize*2)) & @crlf)
+				EndIf
 			EndIf
 
 		Case $AttributeType = $INDEX_ALLOCATION
@@ -784,6 +842,10 @@ While $AttributeKnown = 1
 			If $MFTMode = 1  Or $IsMFT Then
 				$AttributesArr[10][1] = $NextAttributeOffset
 ;				_Get_IndexAllocation()
+				If $cmdline[2] = "-a" Then
+					ConsoleWrite("Dump of $INDEX_ALLOCATION (" & $INDEXALLOC_Number & ")" & @crlf)
+					ConsoleWrite(_HexEncode("0x"&StringMid($MFTEntry,$NextAttributeOffset,$AttributeSize*2)) & @crlf)
+				EndIf
 			EndIf
 
 		Case $AttributeType = $BITMAP
@@ -792,8 +854,13 @@ While $AttributeKnown = 1
 			$BITMAP_Number += 1
 			If $MFTMode = 1  Or $IsMFT Then
 				$AttributesArr[11][1] = $NextAttributeOffset
-;				_Get_Bitmap()
+;				_Get_Bitmap($MFTEntry,$NextAttributeOffset,$AttributeSize,$MFTMode)
+				If $cmdline[2] = "-a" Then
+					ConsoleWrite("Dump of $BITMAP (" & $BITMAP_Number & ")" & @crlf)
+					ConsoleWrite(_HexEncode("0x"&StringMid($MFTEntry,$NextAttributeOffset,$AttributeSize*2)) & @crlf)
+				EndIf
 			EndIf
+;			_Get_Bitmap($MFTEntry,$NextAttributeOffset,$AttributeSize,$MFTMode)
 
 		Case $AttributeType = $REPARSE_POINT
 			$AttributeKnown = 1
@@ -802,6 +869,10 @@ While $AttributeKnown = 1
 			If $MFTMode = 1  Or $IsMFT Then
 				$AttributesArr[12][1] = $NextAttributeOffset
 ;				_Get_ReparsePoint()
+				If $cmdline[2] = "-a" Then
+					ConsoleWrite("Dump of $REPARSE_POINT (" & $REPARSEPOINT_Number & ")" & @crlf)
+					ConsoleWrite(_HexEncode("0x"&StringMid($MFTEntry,$NextAttributeOffset,$AttributeSize*2)) & @crlf)
+				EndIf
 			EndIf
 
 		Case $AttributeType = $EA_INFORMATION
@@ -811,6 +882,10 @@ While $AttributeKnown = 1
 			If $MFTMode = 1  Or $IsMFT Then
 				$AttributesArr[13][1] = $NextAttributeOffset
 ;				_Get_EaInformation()
+				If $cmdline[2] = "-a" Then
+					ConsoleWrite("Dump of $EA_INFORMATION (" & $EAINFO_Number & ")" & @crlf)
+					ConsoleWrite(_HexEncode("0x"&StringMid($MFTEntry,$NextAttributeOffset,$AttributeSize*2)) & @crlf)
+				EndIf
 			EndIf
 
 		Case $AttributeType = $EA
@@ -820,6 +895,10 @@ While $AttributeKnown = 1
 			If $MFTMode = 1  Or $IsMFT Then
 				$AttributesArr[14][1] = $NextAttributeOffset
 ;				_Get_Ea()
+				If $cmdline[2] = "-a" Then
+					ConsoleWrite("Dump of $EA (" & $EA_Number & ")" & @crlf)
+					ConsoleWrite(_HexEncode("0x"&StringMid($MFTEntry,$NextAttributeOffset,$AttributeSize*2)) & @crlf)
+				EndIf
 			EndIf
 
 		Case $AttributeType = $PROPERTY_SET
@@ -829,6 +908,10 @@ While $AttributeKnown = 1
 			If $MFTMode = 1  Or $IsMFT Then
 				$AttributesArr[15][1] = $NextAttributeOffset
 ;				_Get_PropertySet()
+				If $cmdline[2] = "-a" Then
+					ConsoleWrite("Dump of $PROPERTY_SET (" & $PROPERTYSET_Number & ")" & @crlf)
+					ConsoleWrite(_HexEncode("0x"&StringMid($MFTEntry,$NextAttributeOffset,$AttributeSize*2)) & @crlf)
+				EndIf
 			EndIf
 
 		Case $AttributeType = $LOGGED_UTILITY_STREAM
@@ -838,6 +921,10 @@ While $AttributeKnown = 1
 			If $MFTMode = 1  Or $IsMFT Then
 				$AttributesArr[16][1] = $NextAttributeOffset
 ;				_Get_LoggedUtilityStream()
+				If $cmdline[2] = "-a" Then
+					ConsoleWrite("Dump of $LOGGED_UTILITY_STREAM (" & $LOGGEDUTILSTREAM_Number & ")" & @crlf)
+					ConsoleWrite(_HexEncode("0x"&StringMid($MFTEntry,$NextAttributeOffset,$AttributeSize*2)) & @crlf)
+				EndIf
 			EndIf
 
 		Case $AttributeType = $ATTRIBUTE_END_MARKER
@@ -846,18 +933,7 @@ While $AttributeKnown = 1
 				$AttributesArr[17][1] = $NextAttributeOffset
 			EndIf
 
-;		Case $AttributeType <> $LOGGED_UTILITY_STREAM AND $AttributeType <> $EA AND $AttributeType <> $EA_INFORMATION AND $AttributeType <> $REPARSE_POINT AND $AttributeType <> $BITMAP AND $AttributeType <> $INDEX_ALLOCATION AND $AttributeType <> $INDEX_ROOT AND $AttributeType <> $DATA AND $AttributeType <> $VOLUME_INFORMATION AND $AttributeType <> $VOLUME_NAME AND $AttributeType <> $SECURITY_DESCRIPTOR AND $AttributeType <> $OBJECT_ID AND $AttributeType <> $FILE_NAME AND $AttributeType <> $ATTRIBUTE_LIST AND $AttributeType <> $STANDARD_INFORMATION AND $AttributeType <> $PROPERTY_SET
-;			$AttributeKnown = 0
-;			ConsoleWrite("All attributes processed in the record for: " & $FN_FileName & @CRLF)
-;			_DisplayInfo("All attributes processed in the record for: " & $FN_FileName & @crlf)
-
 	EndSelect
-;	If $AttributeKnown = 0 Then
-;		$RecordSlackSpace = StringMid($MFTEntry,$NextAttributeOffset,2048-$NextAttributeOffset)
-;		ConsoleWrite($RecordSlackSpace & @CRLF)
-;		MsgBox(0,"$RecordSlackSpace","$RecordSlackSpace")
-;		ExitLoop
-;	EndIf
 	If $AttributeKnown = 0 Then ExitLoop
 	$NextAttributeOffset = $NextAttributeOffset + ($AttributeSize*2)
 WEnd
@@ -970,8 +1046,8 @@ If $DATA_NameLength > 0 Then
 	$DATA_NameSpace = $DATA_NameLength-1
 	$DATA_Name = StringMid($MFTEntry,$DATA_Offset+($DATA_NameRelativeOffset*2),($DATA_NameLength+$DATA_NameSpace)*2)
 ;	$DATA_Name = StringMid($MFTEntry,$DATA_Offset+($DATA_NameRelativeOffset*2),($DATA_NameLength+1)*2)
-	ConsoleWrite("$DATA_Name = " & $DATA_Name & @crlf)
 	$DATA_Name = _UnicodeHexToStr($DATA_Name)
+;	ConsoleWrite("$DATA_Name = " & $DATA_Name & @crlf)
 EndIf
 ;ConsoleWrite("$DATA_Name = " & $DATA_Name & @crlf)
 $DATA_AttributeID = StringMid($MFTEntry,$DATA_Offset+28,4)
@@ -2357,6 +2433,7 @@ Func _ClearVar()
 	$DATA_AttributeID_2 = ""
 	$DATA_OffsetToDataRuns_2 = ""
 	$DATA_Padding_2 = ""
+	$ATTRIBLIST_Number = ""
 EndFunc
 
 Func _DecToLittleEndian($DecimalInput)
@@ -2444,7 +2521,7 @@ Return $ac
 EndFunc
 
 Func _DumpInfo()
-Local $NextSector
+Local $NextSector, $TotalSectors
 $p = 1
 ConsoleWrite(@CRLF)
 ConsoleWrite("Found attributes: " & @CRLF)
@@ -2543,17 +2620,12 @@ If $AttributesArr[8][2] = "TRUE" Then
 	If $DataArr[2][1] = "01" Then
 		ConsoleWrite(@CRLF)
 		ConsoleWrite("Interpretation of runs for $DATA 1:" & @CRLF)
-;		If $IsMFT Then
-;			For $p = 1 To UBound($RUN_Cluster)-1
-;				$NextSector += $RUN_Sectors[$p]
-;				ConsoleWrite("Run " & $p & ": " & $RUN_Complete[$p][0] & " sectors found at cluster number " & $RUN_Complete[$p][1] & " (sector number " & $RUN_Complete[$p][2] & ") sparse sectors: " & $RUN_Complete[$p][3] & @CRLF)
-;			Next
-;		Else
-			For $p = 1 To UBound($RUN_Cluster)-1
-				$NextSector += $RUN_Sectors[$p]
-				ConsoleWrite("Run " & $p & ": " & $RUN_Complete[$p][0] & " sectors found at cluster number " & $RUN_Complete[$p][1] & " (sector number " & $RUN_Complete[$p][2] & ") sparse sectors: " & $RUN_Complete[$p][3] & @CRLF)
-			Next
-;		EndIf
+		For $p = 1 To UBound($RUN_Cluster)-1
+			$NextSector += $RUN_Sectors[$p]
+			$TotalSectors += $RUN_Complete[$p][0]
+			ConsoleWrite("Run " & $p & ": " & $RUN_Complete[$p][0] & " sectors found at cluster number " & $RUN_Complete[$p][1] & " (sector number " & $RUN_Complete[$p][2] & ") sparse clusters: " & $RUN_Complete[$p][3] & @CRLF)
+		Next
+		ConsoleWrite("Total sectors: " & $TotalSectors & " = " & $TotalSectors*512 & " bytes" & @CRLF)
 	EndIf
 	$p = 1
 	If $DATA_NonResidentFlag_2 <> "" Then
@@ -2567,5 +2639,79 @@ If $AttributesArr[8][2] = "TRUE" Then
 	EndIf
 EndIf
 
+If $AttributesArr[2][2] = "TRUE"  Then
+	ConsoleWrite(@CRLF)
+	ConsoleWrite("$ATTRIBUTE_LIST:" & @CRLF)
+	If $ALInnerCouner > 0 Then
+		For $ALC = 1 To $ALInnerCouner
+			ConsoleWrite("Base record: " & $AttribListArr[6][$ALC] & ", Start VCN: " & $AttribListArr[5][$ALC] & ", Type: " & $AttribListArr[1][$ALC] & ", AL Record length: " & $AttribListArr[2][$ALC] & ", Name: " & $AttribListArr[7][$ALC] & ", Attrib ID: " & $AttribListArr[8][$ALC] & @CRLF)
+		Next
+		ConsoleWrite("" & @crlf)
+		ConsoleWrite("Isolated attribute list:" & @crlf)
+		ConsoleWrite(_HexEncode("0x"&$IsolatedAttributeList) & @crlf)
+	ElseIf $AttribListNonResident = 1 Then
+		ConsoleWrite("Sorry, non-resident $ATTRIBUTE_LIST not yet supported in this application" & @crlf)
+	Else
+		ConsoleWrite("No extra records to inspect.." & @crlf)
+	EndIf
+EndIf
+
 EndFunc
 
+Func _Get_AttributeList($MFTEntry,$AL_Offset,$AL_Size,$MFTMode)
+Local $LocalAttribID, $LocalName, $ALRecordLength, $ALNameLength, $ALNameOffset
+If StringMid($MFTEntry, $AL_Offset+17, 2) = "00" Then
+	$list = StringMid($MFTEntry,$AL_Offset+48,($AL_Size*2)-48)
+	$IsolatedAttributeList = $list
+Else
+	$AttribListNonResident = 1
+	Return
+EndIf
+$offset=0
+$str=""
+While StringLen($list) > $offset*2
+	$type=StringMid($List, ($offset*2)+1, 8)
+	$ALRecordLength = Dec(_SwapEndian(StringMid($List, $offset*2 + 9, 4)))
+	$ALNameLength = Dec(_SwapEndian(StringMid($List, $offset*2 + 13, 2)))
+	$ALNameOffset = Dec(_SwapEndian(StringMid($List, $offset*2 + 15, 2)))
+	$TestVCN = Dec(_SwapEndian(StringMid($List, $offset*2 + 17, 16)))
+	$ref = Dec(_SwapEndian(StringMid($List, $offset*2 + 33, 8)))
+	$LocalAttribID = "0x" & StringMid($List, $offset*2 + 49, 2) & StringMid($List, $offset*2 + 51, 2)
+	If $ALRecordLength > 0 Then
+		$LocalName = StringMid($List, $offset*2 + 53, $ALNameLength*2*2)
+		$LocalName = _UnicodeHexToStr($LocalName)
+	EndIf
+	If $ref <> $bIndexNumber Then
+		If Not StringInStr($str, $ref) Then $str &= $ref & "-"
+		$ALInnerCouner += 1
+		ReDim $AttribListArr[9][$ALInnerCouner+1]
+		$AttribListArr[0][$ALInnerCouner] = "Number " & $ALInnerCouner
+		$AttribListArr[1][$ALInnerCouner] = $type
+		$AttribListArr[2][$ALInnerCouner] = $ALRecordLength
+		$AttribListArr[3][$ALInnerCouner] = $ALNameLength
+		$AttribListArr[4][$ALInnerCouner] = $ALNameOffset
+		$AttribListArr[5][$ALInnerCouner] = $TestVCN
+		$AttribListArr[6][$ALInnerCouner] = $ref
+		$AttribListArr[7][$ALInnerCouner] = $LocalName
+		$AttribListArr[8][$ALInnerCouner] = $LocalAttribID
+	EndIf
+	If $type=$DATA Then
+		$DataInAttrlist=1
+		$IsolatedData=StringMid($List, ($offset*2)+1, $ALRecordLength*2)
+		If $TestVCN=0 Then $DataIsResident=1
+	EndIf
+	$offset += $ALRecordLength
+WEnd
+If $str = "" Then
+;	ConsoleWrite("No extra MFT records found" & @CRLF)
+Else
+	$AttrQ = StringSplit(StringTrimRight($str,1), "-")
+;	_ArrayDisplay($AttribListArr,"$AttribListArr")
+EndIf
+
+EndFunc
+
+Func _Get_Bitmap($MFTEntry,$BM_Offset,$BM_Size,$MFTMode)
+;$BitmapChunk = StringMid($MFTEntry,$BM_Offset,($BM_Size*2))
+;ConsoleWrite(_HexEncode("0x"&$BitmapChunk) & @crlf)
+EndFunc
