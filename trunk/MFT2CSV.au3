@@ -80,12 +80,10 @@ $csv = FileSaveDialog( "Choose a csv name.", @ScriptDir, "All (*.csv)", 2, "MFTd
 If @error Then Exit
 $csv = FileOpen($csv,1)
 If @error Then Exit
-$UTCBox = MsgBox(3,"Timestamp Configuration","Set timestamps in UTC 00:00?")
+$UTCBox = MsgBox(3,"Timestamp Configuration","Set timestamps in UTC 00:00? (recommended)")
 If @error Then Exit
 If $UTCBox = 6 Then	$UTCconfig = "UTC 00:00"
 If $UTCBox = 7 Then $UTCconfig = "Local time"
-$RecSlackBox = MsgBox(3,"Record Slack Configuration","Want to identify record slack data?")
-If @error Then Exit
 
 FileWriteLine($csv,"#	Timestamps presented in " & $UTCconfig & @CRLF)
 FileWriteLine($csv,"#	Current timezone configuration (bias) including adjustment for any laylight saving = " & $tDelta/36000000000 & " hours" & @CRLF)
@@ -360,13 +358,6 @@ While $AttributeKnown = 1
 			ConsoleWrite("Unknown attribute found in this record." & @CRLF)
 
 	EndSelect
-
-	If $AttributeKnown = 0 Then
-		If $RecSlackBox = 6 Then
-			_TestRecordSlack($MFTEntry,$NextAttributeOffset+($AttributeSize*2)+8)
-		EndIf
-		ExitLoop
-	EndIf
 
 	$NextAttributeOffset = $NextAttributeOffset + ($AttributeSize*2)
 WEnd
@@ -1519,27 +1510,6 @@ Func _WriteCSV()
 	$DATA_RealSize_3 & ',' & $DATA_InitializedStreamSize_3  & ',' & $STANDARD_INFORMATION_ON & ',' & $ATTRIBUTE_LIST_ON & ',' & $FILE_NAME_ON & ',' & $OBJECT_ID_ON & ',' & $SECURITY_DESCRIPTOR_ON & ',' & $VOLUME_NAME_ON & ',' & $VOLUME_INFORMATION_ON & ',' & $DATA_ON & ',' & $INDEX_ROOT_ON & ',' & $INDEX_ALLOCATION_ON & ',' & $BITMAP_ON & ',' & $REPARSE_POINT_ON & ',' & $EA_INFORMATION_ON & ',' & $EA_ON & ',' & $PROPERTY_SET_ON & ',' & $LOGGED_UTILITY_STREAM_ON & @CRLF)
 EndFunc
 
-Func _TestRecordSlack($MFTEntry,$NextAttributeOffset)
-Local $part1, $part2, $RecordSlack, $Test
-$Test = StringMid($MFTEntry,$NextAttributeOffset)
-MsgBox(0,"Offet: " & $NextAttributeOffset, $Test)
-;$MFTEntry = StringMid($MFTEntry,1,1022) & $UpdSeqArrPart2 & StringMid($MFTEntry,1027,1024) ; Stupid fix-patch to not corrupt decoding of attributes that are located past 0x1fd within record
 
-;	If $AttributeKnown = 0 Then
-;		$RecordSlackSpace = StringMid($MFTEntry,$NextAttributeOffset,2048-$NextAttributeOffset)
-;		ConsoleWrite($RecordSlackSpace & @CRLF)
-;		MsgBox(0,"$RecordSlackSpace","$RecordSlackSpace")
-;		ExitLoop
-;	EndIf
-If $NextAttributeOffset > 1022 Then
-	$part1 = ""
-	$part2 = StringMid($MFTEntry,$NextAttributeOffset,1020-($NextAttributeOffset-1027))
-Else
-	$part1 = StringMid($MFTEntry,$NextAttributeOffset,1020-$NextAttributeOffset)
-	$part2 = StringMid($MFTEntry,1027,1020)
-EndIf
-$RecordSlack = $part1 & $part2
-MsgBox(0,"$RecordSlack", $RecordSlack)
-EndFunc
 
 
