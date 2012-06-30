@@ -167,9 +167,11 @@ The timestamps are now at the precision of nanoseconds. Prior to processing, the
 
 = Latest Version =
 
-v1.7
+v1.8
 
 = Changelog =
+
+v1.8. Changed the progress updating to use AdlibRegister, which increase performance.
 
 v1.7. Removed the record slack option as it was not working. Fixed compilation issues on recent AutoIt version. Fixups was implemented in the previous version I believe.
 
@@ -210,3 +212,4 @@ v1.1. Fixed a mixup of ContinueLoop with ContinueCase in the main record process
   * David Kovar's nice analyzeMFT.py python script; http://www.integriography.com/
   * jennico's extended hex to dec conversion AutoIt udf
   * The "ntfs-cmd" project; http://code.google.com/p/ntfs-cmd/
+  * llewxam at the AutoIt forums
