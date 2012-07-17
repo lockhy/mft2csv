@@ -1,5 +1,6 @@
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
-#AutoIt3Wrapper_UseX64=y
+#AutoIt3Wrapper_Res_Description=Extract files from NTFS volumes
+#AutoIt3Wrapper_Res_Fileversion=3.0.0.1
 #AutoIt3Wrapper_Res_requestedExecutionLevel=asInvoker
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
 #include <GUIConstantsEx.au3>
@@ -25,7 +26,8 @@ Global $DATA_CompressionUnitSize,$DATA_ON,$DATA_CompressedSize,$DATA_LengthOfAtt
 Global $DATA_AllocatedSize,$DATA_RealSize,$DATA_InitializedStreamSize,$RunListOffset,$DataRun,$IsCompressed
 Global $RUN_VCN[1],$RUN_Clusters[1],$MFT_RUN_Clusters[1],$MFT_RUN_VCN[1],$NameQ[5],$DataQ[1],$sBuffer,$AttrQ[1]
 Global $SI_CTime,$SI_ATime,$SI_MTime,$SI_RTime,$SI_FilePermission,$SI_USN,$Errors,$RecordSlackSpace
-
+Global $MFTSize;, $MFTRecordsArr[1][1]
+Global $MFTRecordsArr1[65530][2],$MFTRecordsArr2[65530][2],$MFTRecordsArr3[65530][2],$MFTRecordsArr4[65530][2],$MFTRecordsArr5[65530][2],$MFTRecordsArr6[65530][2],$MFTRecordsArr7[65530][2],$MFTRecordsArr8[65530][2],$MFTRecordsArr9[65530][2],$MFTRecordsArr10[65530][2],$MFTRecordsArr11[65530][2],$MFTRecordsArr12[65530][2],$MFTRecordsArr13[65530][2],$MFTRecordsArr14[65530][2],$MFTRecordsArr15[65530][2],$MFTRecordsArr16[65530][2],$MFTRecordsArr17[65530][2],$MFTRecordsArr18[65530][2],$MFTRecordsArr19[65530][2],$MFTRecordsArr20[65530][2]
 Global Const $RecordSignature = '46494C45' ; FILE signature
 Global Const $RecordSignatureBad = '44414142' ; BAAD signature
 Global Const $STANDARD_INFORMATION = '10000000'; Standard Information
@@ -77,7 +79,7 @@ Global Const $tagUNICODESTRING = "ushort Length;ushort MaximumLength;ptr Buffer"
 Global Const $tagFILEINTERNALINFORMATION = "int IndexNumber;"
 Global $outputpath = FileSelectFolder("Select output folder.", "",7,@scriptdir)
 If @error Then Exit
-$Form = GUICreate("NTFS File Extractor 3.0 - http://code.google.com/p/mft2csv/", 520, 250, -1, -1)
+$Form = GUICreate("NTFS File Extracter 3.1 - http://code.google.com/p/mft2csv/", 520, 250, -1, -1)
 $Combo1 = GUICtrlCreateCombo("", 20, 20, 400, 25)
 $ButtonRefresh = GUICtrlCreateButton("Refresh", 440, 20, 60, 20)
 $ButtonGetMFT = GUICtrlCreateButton("Extract $MFT", 20, 50, 100, 20)
@@ -136,6 +138,7 @@ Func _ExtractSystemfile($TargetFile)
 		$MFTEntry = _FindMFT(0)
 		_DecodeMFTRecord($MFTEntry)
 		_DecodeDataQEntry($DataQ[1])
+		$MFTSize = $DATA_RealSize
 		_ExtractDataRuns()
 		$MFT_RUN_VCN = $RUN_VCN
 		$MFT_RUN_Clusters = $RUN_Clusters
@@ -150,6 +153,12 @@ Func _ExtractSystemfile($TargetFile)
 			_ExtractSingleFile($i)
 		Next
 	Else
+		If $TargetFile > 24 Then _InitiateMftArray()
+		If @error Then
+			ConsoleWrite("Error when creating the MFT arrays" & @crlf)
+			_DisplayInfo("Error when creating the MFT arrays" & @CRLF)
+			Exit
+		EndIf
 		_DisplayInfo("TargetFile is " & $TargetFile & @CRLF)
 		_ExtractSingleFile(Int($TargetFile,2))
 	EndIf
@@ -160,7 +169,11 @@ EndFunc
 Func _ExtractSingleFile($MFTReferenceNumber)
 	Global $DataQ[1]				;clear array
 	_ClearVar()
-	$MFTRecord = _FindFileMFTRecord($MFTReferenceNumber)
+	If $MFTReferenceNumber > 24 Then
+		$MFTRecord = _ProcessMftArray($MFTReferenceNumber)
+	Else
+		$MFTRecord = _FindFileMFTRecord($MFTReferenceNumber)
+	EndIf
 	If $MFTRecord = "" Then
 		ConsoleWrite("Target " & $MFTReferenceNumber & " not found" & @CRLF)
 		Return
@@ -655,7 +668,8 @@ While 1
 			_DecodeAttrList($HEADER_MFTRecordNumber, $AttrList)		;produces $AttrQ - extra record list
 			$str = ""
 			For $i = 1 To $AttrQ[0]
-			   $record = _FindFileMFTRecord($AttrQ[$i])
+;			   $record = _FindFileMFTRecord($AttrQ[$i])
+			   $record = _ProcessMftArray($AttrQ[$i])
 			   $str &= _StripMftRecord($record)		;no header or end marker
 			Next
 			$str &= "FFFFFFFF"		;add end marker
@@ -1179,4 +1193,296 @@ Func _ReadBootSector($TargetDrive)
 		$MFT_Record_Size = $BytesPerCluster * $ClustersPerFileRecordSegment
 	EndIf
 	ConsoleWrite("$MFT_Record_Size: " & $MFT_Record_Size & @crlf)
+EndFunc
+
+
+Func _GenMftArray($DiskHandle,$TheCounter,$RecNumber)
+If $TheCounter < 65530 Then
+	$TmpOffset = DllCall('kernel32.dll', 'int', 'SetFilePointerEx', 'ptr', $DiskHandle, 'int64', 0, 'int64*', 0, 'dword', 1)
+	$MFTRecordsArr1[$TheCounter][0] = $RecNumber
+	$MFTRecordsArr1[$TheCounter][1] = $TmpOffset[3]
+EndIf
+If $TheCounter > 65530 and $TheCounter < 131060 Then
+	$ArrOffset = $TheCounter-65530
+	$TmpOffset = DllCall('kernel32.dll', 'int', 'SetFilePointerEx', 'ptr', $DiskHandle, 'int64', 0, 'int64*', 0, 'dword', 1)
+	$MFTRecordsArr2[$ArrOffset][0] = $RecNumber;StringMid($record,91,8)
+	$MFTRecordsArr2[$ArrOffset][1] = $TmpOffset[3]
+EndIf
+If $TheCounter > 131060 and $TheCounter < 196590 Then
+	$ArrOffset = $TheCounter-131060
+	$TmpOffset = DllCall('kernel32.dll', 'int', 'SetFilePointerEx', 'ptr', $DiskHandle, 'int64', 0, 'int64*', 0, 'dword', 1)
+	$MFTRecordsArr3[$ArrOffset][0] = $RecNumber;StringMid($record,91,8)
+	$MFTRecordsArr3[$ArrOffset][1] = $TmpOffset[3]
+EndIf
+If $TheCounter > 196590 and $TheCounter < 262120 Then
+	$ArrOffset = $TheCounter-196590
+	$TmpOffset = DllCall('kernel32.dll', 'int', 'SetFilePointerEx', 'ptr', $DiskHandle, 'int64', 0, 'int64*', 0, 'dword', 1)
+	$MFTRecordsArr4[$ArrOffset][0] = $RecNumber;StringMid($record,91,8)
+	$MFTRecordsArr4[$ArrOffset][1] = $TmpOffset[3]
+EndIf
+If $TheCounter > 262120 and $TheCounter < 327650 Then
+	$ArrOffset = $TheCounter-262120
+	$TmpOffset = DllCall('kernel32.dll', 'int', 'SetFilePointerEx', 'ptr', $DiskHandle, 'int64', 0, 'int64*', 0, 'dword', 1)
+	$MFTRecordsArr5[$ArrOffset][0] = $RecNumber;StringMid($record,91,8)
+	$MFTRecordsArr5[$ArrOffset][1] = $TmpOffset[3]
+EndIf
+If $TheCounter > 327650 and $TheCounter < 393180 Then
+	$ArrOffset = $TheCounter-327650
+	$TmpOffset = DllCall('kernel32.dll', 'int', 'SetFilePointerEx', 'ptr', $DiskHandle, 'int64', 0, 'int64*', 0, 'dword', 1)
+	$MFTRecordsArr6[$ArrOffset][0] = $RecNumber;StringMid($record,91,8)
+	$MFTRecordsArr6[$ArrOffset][1] = $TmpOffset[3]
+EndIf
+If $TheCounter > 393180 and $TheCounter < 458710 Then
+	$ArrOffset = $TheCounter-393180
+	$TmpOffset = DllCall('kernel32.dll', 'int', 'SetFilePointerEx', 'ptr', $DiskHandle, 'int64', 0, 'int64*', 0, 'dword', 1)
+	$MFTRecordsArr7[$ArrOffset][0] = $RecNumber;StringMid($record,91,8)
+	$MFTRecordsArr7[$ArrOffset][1] = $TmpOffset[3]
+EndIf
+If $TheCounter > 458710 and $TheCounter < 524240 Then
+	$ArrOffset = $TheCounter-458710
+	$TmpOffset = DllCall('kernel32.dll', 'int', 'SetFilePointerEx', 'ptr', $DiskHandle, 'int64', 0, 'int64*', 0, 'dword', 1)
+	$MFTRecordsArr8[$ArrOffset][0] = $RecNumber;StringMid($record,91,8)
+	$MFTRecordsArr8[$ArrOffset][1] = $TmpOffset[3]
+EndIf
+If $TheCounter > 524240 and $TheCounter < 589770 Then
+	$ArrOffset = $TheCounter-524240
+	$TmpOffset = DllCall('kernel32.dll', 'int', 'SetFilePointerEx', 'ptr', $DiskHandle, 'int64', 0, 'int64*', 0, 'dword', 1)
+	$MFTRecordsArr9[$ArrOffset][0] = $RecNumber;StringMid($record,91,8)
+	$MFTRecordsArr9[$ArrOffset][1] = $TmpOffset[3]
+EndIf
+If $TheCounter > 589770 and $TheCounter < 655300 Then
+	$ArrOffset = $TheCounter-589770
+	$TmpOffset = DllCall('kernel32.dll', 'int', 'SetFilePointerEx', 'ptr', $DiskHandle, 'int64', 0, 'int64*', 0, 'dword', 1)
+	$MFTRecordsArr10[$ArrOffset][0] = $RecNumber;StringMid($record,91,8)
+	$MFTRecordsArr10[$ArrOffset][1] = $TmpOffset[3]
+EndIf
+If $TheCounter > 655300 and $TheCounter < 720830 Then
+	$ArrOffset = $TheCounter-655300
+	$TmpOffset = DllCall('kernel32.dll', 'int', 'SetFilePointerEx', 'ptr', $DiskHandle, 'int64', 0, 'int64*', 0, 'dword', 1)
+	$MFTRecordsArr11[$ArrOffset][0] = $RecNumber;StringMid($record,91,8)
+	$MFTRecordsArr11[$ArrOffset][1] = $TmpOffset[3]
+EndIf
+If $TheCounter > 720830 and $TheCounter < 786360 Then
+	$ArrOffset = $TheCounter-720830
+	$TmpOffset = DllCall('kernel32.dll', 'int', 'SetFilePointerEx', 'ptr', $DiskHandle, 'int64', 0, 'int64*', 0, 'dword', 1)
+	$MFTRecordsArr12[$ArrOffset][0] = $RecNumber;StringMid($record,91,8)
+	$MFTRecordsArr12[$ArrOffset][1] = $TmpOffset[3]
+EndIf
+If $TheCounter > 786360 and $TheCounter < 851890 Then
+	$ArrOffset = $TheCounter-786360
+	$TmpOffset = DllCall('kernel32.dll', 'int', 'SetFilePointerEx', 'ptr', $DiskHandle, 'int64', 0, 'int64*', 0, 'dword', 1)
+	$MFTRecordsArr13[$ArrOffset][0] = $RecNumber;StringMid($record,91,8)
+	$MFTRecordsArr13[$ArrOffset][1] = $TmpOffset[3]
+EndIf
+If $TheCounter > 851890 and $TheCounter < 917420 Then
+	$ArrOffset = $TheCounter-851890
+	$TmpOffset = DllCall('kernel32.dll', 'int', 'SetFilePointerEx', 'ptr', $DiskHandle, 'int64', 0, 'int64*', 0, 'dword', 1)
+	$MFTRecordsArr14[$ArrOffset][0] = $RecNumber;StringMid($record,91,8)
+	$MFTRecordsArr14[$ArrOffset][1] = $TmpOffset[3]
+EndIf
+If $TheCounter > 917420 and $TheCounter < 982950 Then
+	$ArrOffset = $TheCounter-917420
+	$TmpOffset = DllCall('kernel32.dll', 'int', 'SetFilePointerEx', 'ptr', $DiskHandle, 'int64', 0, 'int64*', 0, 'dword', 1)
+	$MFTRecordsArr15[$ArrOffset][0] = $RecNumber;StringMid($record,91,8)
+	$MFTRecordsArr15[$ArrOffset][1] = $TmpOffset[3]
+EndIf
+If $TheCounter > 982950 and $TheCounter < 1048480 Then
+	$ArrOffset = $TheCounter-982950
+	$TmpOffset = DllCall('kernel32.dll', 'int', 'SetFilePointerEx', 'ptr', $DiskHandle, 'int64', 0, 'int64*', 0, 'dword', 1)
+	$MFTRecordsArr16[$ArrOffset][0] = $RecNumber;StringMid($record,91,8)
+	$MFTRecordsArr16[$ArrOffset][1] = $TmpOffset[3]
+EndIf
+If $TheCounter > 1048480 and $TheCounter < 1114010 Then
+	$ArrOffset = $TheCounter-1048480
+	$TmpOffset = DllCall('kernel32.dll', 'int', 'SetFilePointerEx', 'ptr', $DiskHandle, 'int64', 0, 'int64*', 0, 'dword', 1)
+	$MFTRecordsArr17[$ArrOffset][0] = $RecNumber;StringMid($record,91,8)
+	$MFTRecordsArr17[$ArrOffset][1] = $TmpOffset[3]
+EndIf
+If $TheCounter > 1114010 and $TheCounter < 1179540 Then
+	$ArrOffset = $TheCounter-1114010
+	$TmpOffset = DllCall('kernel32.dll', 'int', 'SetFilePointerEx', 'ptr', $DiskHandle, 'int64', 0, 'int64*', 0, 'dword', 1)
+	$MFTRecordsArr18[$ArrOffset][0] = $RecNumber;StringMid($record,91,8)
+	$MFTRecordsArr18[$ArrOffset][1] = $TmpOffset[3]
+EndIf
+If $TheCounter > 1179540 and $TheCounter < 1245070 Then
+	$ArrOffset = $TheCounter-1179540
+	$TmpOffset = DllCall('kernel32.dll', 'int', 'SetFilePointerEx', 'ptr', $DiskHandle, 'int64', 0, 'int64*', 0, 'dword', 1)
+	$MFTRecordsArr19[$ArrOffset][0] = $RecNumber;StringMid($record,91,8)
+	$MFTRecordsArr19[$ArrOffset][1] = $TmpOffset[3]
+EndIf
+If $TheCounter > 1245070 and $TheCounter < 1310600 Then
+	$ArrOffset = $TheCounter-1245070
+	$TmpOffset = DllCall('kernel32.dll', 'int', 'SetFilePointerEx', 'ptr', $DiskHandle, 'int64', 0, 'int64*', 0, 'dword', 1)
+	$MFTRecordsArr20[$ArrOffset][0] = $RecNumber;StringMid($record,91,8)
+	$MFTRecordsArr20[$ArrOffset][1] = $TmpOffset[3]
+EndIf
+EndFunc
+
+Func _SearchMftArray($TargetMftRecord)
+	$SearchResult = _ArraySearch($MFTRecordsArr1, $TargetMftRecord)
+;	ConsoleWrite("Index: " & $SearchResult & @crlf)
+	If $SearchResult <> -1 Then
+		Return $MFTRecordsArr1[$SearchResult][1]
+	EndIf
+	$SearchResult = _ArraySearch($MFTRecordsArr2, $TargetMftRecord)
+;	ConsoleWrite("Index: " & $SearchResult & @crlf)
+	If $SearchResult <> -1 Then
+		Return $MFTRecordsArr2[$SearchResult][1]
+	EndIf
+	$SearchResult = _ArraySearch($MFTRecordsArr3, $TargetMftRecord)
+;	ConsoleWrite("Index: " & $SearchResult & @crlf)
+	If $SearchResult <> -1 Then
+		Return $MFTRecordsArr3[$SearchResult][1]
+	EndIf
+	$SearchResult = _ArraySearch($MFTRecordsArr4, $TargetMftRecord)
+;	ConsoleWrite("Index: " & $SearchResult & @crlf)
+	If $SearchResult <> -1 Then
+		Return $MFTRecordsArr4[$SearchResult][1]
+	EndIf
+	$SearchResult = _ArraySearch($MFTRecordsArr5, $TargetMftRecord)
+;	ConsoleWrite("Index: " & $SearchResult & @crlf)
+	If $SearchResult <> -1 Then
+		Return $MFTRecordsArr5[$SearchResult][1]
+	EndIf
+	$SearchResult = _ArraySearch($MFTRecordsArr6, $TargetMftRecord)
+;	ConsoleWrite("Index: " & $SearchResult & @crlf)
+	If $SearchResult <> -1 Then
+		Return $MFTRecordsArr6[$SearchResult][1]
+	EndIf
+	$SearchResult = _ArraySearch($MFTRecordsArr7, $TargetMftRecord)
+;	ConsoleWrite("Index: " & $SearchResult & @crlf)
+	If $SearchResult <> -1 Then
+		Return $MFTRecordsArr7[$SearchResult][1]
+	EndIf
+	$SearchResult = _ArraySearch($MFTRecordsArr8, $TargetMftRecord)
+;	ConsoleWrite("Index: " & $SearchResult & @crlf)
+	If $SearchResult <> -1 Then
+		Return $MFTRecordsArr8[$SearchResult][1]
+	EndIf
+	$SearchResult = _ArraySearch($MFTRecordsArr9, $TargetMftRecord)
+;	ConsoleWrite("Index: " & $SearchResult & @crlf)
+	If $SearchResult <> -1 Then
+		Return $MFTRecordsArr9[$SearchResult][1]
+	EndIf
+	$SearchResult = _ArraySearch($MFTRecordsArr10, $TargetMftRecord)
+;	ConsoleWrite("Index: " & $SearchResult & @crlf)
+	If $SearchResult <> -1 Then
+		Return $MFTRecordsArr10[$SearchResult][1]
+	EndIf
+	$SearchResult = _ArraySearch($MFTRecordsArr11, $TargetMftRecord)
+;	ConsoleWrite("Index: " & $SearchResult & @crlf)
+	If $SearchResult <> -1 Then
+		Return $MFTRecordsArr11[$SearchResult][1]
+	EndIf
+	$SearchResult = _ArraySearch($MFTRecordsArr12, $TargetMftRecord)
+;	ConsoleWrite("Index: " & $SearchResult & @crlf)
+	If $SearchResult <> -1 Then
+		Return $MFTRecordsArr12[$SearchResult][1]
+	EndIf
+	$SearchResult = _ArraySearch($MFTRecordsArr13, $TargetMftRecord)
+;	ConsoleWrite("Index: " & $SearchResult & @crlf)
+	If $SearchResult <> -1 Then
+		Return $MFTRecordsArr13[$SearchResult][1]
+	EndIf
+	$SearchResult = _ArraySearch($MFTRecordsArr14, $TargetMftRecord)
+;	ConsoleWrite("Index: " & $SearchResult & @crlf)
+	If $SearchResult <> -1 Then
+		Return $MFTRecordsArr14[$SearchResult][1]
+	EndIf
+	$SearchResult = _ArraySearch($MFTRecordsArr15, $TargetMftRecord)
+;	ConsoleWrite("Index: " & $SearchResult & @crlf)
+	If $SearchResult <> -1 Then
+		Return $MFTRecordsArr15[$SearchResult][1]
+	EndIf
+	$SearchResult = _ArraySearch($MFTRecordsArr16, $TargetMftRecord)
+;	ConsoleWrite("Index: " & $SearchResult & @crlf)
+	If $SearchResult <> -1 Then
+		Return $MFTRecordsArr16[$SearchResult][1]
+	EndIf
+	$SearchResult = _ArraySearch($MFTRecordsArr17, $TargetMftRecord)
+;	ConsoleWrite("Index: " & $SearchResult & @crlf)
+	If $SearchResult <> -1 Then
+		Return $MFTRecordsArr17[$SearchResult][1]
+	EndIf
+	$SearchResult = _ArraySearch($MFTRecordsArr18, $TargetMftRecord)
+;	ConsoleWrite("Index: " & $SearchResult & @crlf)
+	If $SearchResult <> -1 Then
+		Return $MFTRecordsArr18[$SearchResult][1]
+	EndIf
+	$SearchResult = _ArraySearch($MFTRecordsArr19, $TargetMftRecord)
+;	ConsoleWrite("Index: " & $SearchResult & @crlf)
+	If $SearchResult <> -1 Then
+		Return $MFTRecordsArr19[$SearchResult][1]
+	EndIf
+	$SearchResult = _ArraySearch($MFTRecordsArr20, $TargetMftRecord)
+;	ConsoleWrite("Index: " & $SearchResult & @crlf)
+	If $SearchResult <> -1 Then
+		Return $MFTRecordsArr20[$SearchResult][1]
+	EndIf
+	Return SetError(1, 0, 0)
+EndFunc
+
+Func _InitiateMftArray()
+	Local $nBytes, $LocalCounter
+	ConsoleWrite("Processing $MFT..." & @CRLF)
+	_DisplayInfo("Processing $MFT..." & @CRLF)
+	$tBuffer = DllStructCreate("byte[" & $MFT_Record_Size & "]")
+	$hFile = _WinAPI_CreateFile("\\.\" & $TargetDrive, 2, 6, 6)
+	If $hFile = 0 Then
+		ConsoleWrite("Error in function _WinAPI_CreateFile when building MFT array." & @CRLF)
+		_DisplayInfo("Error in function _WinAPI_CreateFile when building MFT array." & @CRLF)
+		_WinAPI_CloseHandle($hFile)
+		Return SetError(1, 0, 0)
+	EndIf
+	If $MFTSize > 1342054400 Then
+		ConsoleWrite("Warning: $MFT is too large to fit in the arrays" & @CRLF)
+		_DisplayInfo("Warning: $MFT is too large to fit in the arrays" & @CRLF)
+		Return SetError(1, 0, 0)
+	EndIf
+	$LocalCounter = 0
+	For $r = 1 To Ubound($MFT_RUN_VCN)-1
+		_WinAPI_SetFilePointerEx($hFile, $MFT_RUN_VCN[$r]*$BytesPerCluster, $FILE_BEGIN)
+		For $i = 0 To $MFT_RUN_Clusters[$r]*$BytesPerCluster Step $MFT_Record_Size
+			_WinAPI_ReadFile($hFile, DllStructGetPtr($tBuffer), $MFT_Record_Size, $nBytes)
+			$record = DllStructGetData($tBuffer, 1)
+			_GenMftArray($hFile,$LocalCounter,StringMid($record,91,8))
+			$LocalCounter += 1
+		Next
+	Next
+	_WinAPI_CloseHandle($hFile)
+EndFunc
+
+Func _ProcessMftArray($TargetFile)
+	Local $nBytes
+	$tBuffer = DllStructCreate("byte[" & $MFT_Record_Size & "]")
+	$hFile = _WinAPI_CreateFile("\\.\" & $TargetDrive, 2, 6, 6)
+	If $hFile = 0 Then
+		ConsoleWrite("Error in function _WinAPI_CreateFile when trying to locate target file." & @CRLF)
+		_DisplayInfo("Error in function _WinAPI_CreateFile when trying to locate target file." & @CRLF)
+		_WinAPI_CloseHandle($hFile)
+		Return ""
+	EndIf
+	ConsoleWrite("Searching through the $MFT arrays for the selected record number " & $TargetFile & " -> " & _DecToLittleEndian($TargetFile) & @CRLF)
+	_DisplayInfo("Searching through the $MFT arrays for the selected record number " & $TargetFile & " -> " & _DecToLittleEndian($TargetFile) & @CRLF)
+	$TargetFile = _DecToLittleEndian($TargetFile)
+	$LocalMftSearch = _SearchMftArray($TargetFile)
+	If @error Then
+		ConsoleWrite("Error: could not find target file in the MFT arrays" & @CRLF)
+		_DisplayInfo("Error: could not find target file in the MFT arrays" & @CRLF)
+		Return ""
+	EndIf
+	_WinAPI_SetFilePointerEx($hFile, $LocalMftSearch-1024, $FILE_BEGIN)
+	_WinAPI_ReadFile($hFile, DllStructGetPtr($tBuffer), $MFT_Record_Size, $nBytes)
+	$record = DllStructGetData($tBuffer, 1)
+;	ConsoleWrite(_HexEncode($record) & @crlf)
+;	$TmpOffset = DllCall('kernel32.dll', 'int', 'SetFilePointerEx', 'ptr', $hFile, 'int64', 0, 'int64*', 0, 'dword', 1)
+;	ConsoleWrite("$TmpOffset: " & $TmpOffset[3] & @CRLF)
+	If BitAND(Dec(StringMid($record,47,4)),Dec("0100")) AND StringMid($record,91,8) = $TargetFile Then
+		ConsoleWrite("Target " & $TargetFile & " found" & @CRLF)
+		_DisplayInfo("Target " & $TargetFile & " found" & @CRLF)
+		_WinAPI_CloseHandle($hFile)
+		Return $record		;returns MFT record for file
+	EndIf
+	_WinAPI_CloseHandle($hFile)
+	Return ""
 EndFunc
