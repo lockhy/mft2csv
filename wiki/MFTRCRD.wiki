@@ -35,7 +35,9 @@ MFTRCRD D:2 -d
 
 
 = Latest version =
-v1007
+v1008
 
 = Changelog =
+v1008: Now hexdumps of all attributes are displayed with the -a switch, and not just the ones that are decoded.
+
 v1007: Switched code base to the same as of NTFS File Extracter. Now full $ATTRIBUTE_LIST is decoded and resolved. A pregeneration of an internal $MFT array is added to substantially speed up decoding of files with attribute list. Added raw dump of record slack.
