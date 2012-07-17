@@ -35,9 +35,11 @@ Some limitations are present. Only $DATA attributes is currently supported, whic
 
 = Latest Version =
 
-v3.0
+v3.1
 
 = Changelog =
+
+v3.1 Added generation of some MFT arrays with indexnumber and disk offset, to speed up processing of files with attribute list (for instance fragmented and/or compressed files).
 
 v3.0 With quite substantial support from DDan, much of the code was reorganized and improved. Most importantly, compression and sparse files are now fully supported. Complete $ATTRIBUTE_LIST is also solved. Full support for ADS's are also added. Plus a lot more that makes the code easier to reuse.
 
