@@ -4,7 +4,7 @@
 #AutoIt3Wrapper_Change2CUI=y
 #AutoIt3Wrapper_Res_Comment=Quick $MFT record dump
 #AutoIt3Wrapper_Res_Description=Decode a file's attributes from $MFT
-#AutoIt3Wrapper_Res_Fileversion=1.0.0.7
+#AutoIt3Wrapper_Res_Fileversion=1.0.0.8
 #AutoIt3Wrapper_Res_LegalCopyright=Joakim Schicht
 #AutoIt3Wrapper_Res_requestedExecutionLevel=asInvoker
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
@@ -96,7 +96,7 @@ Dim $FormattedTimestamp
 
 ConsoleWrite("" & @CRLF)
 ConsoleWrite("Starting MFTRCRD by Joakim Schicht" & @CRLF)
-ConsoleWrite("Version 1.0.0.7" & @CRLF)
+ConsoleWrite("Version 1.0.0.8" & @CRLF)
 ConsoleWrite("" & @CRLF)
 _validate_parameters()
 If StringIsDigit(StringMid($cmdline[1],3)) Then
@@ -137,12 +137,12 @@ If $cmdline[0] <> 2 Then
 	ConsoleWrite("param1 can be a valid file path or an IndexNumber ($MFT record number)" & @CRLF)
 	ConsoleWrite("param2 can be -d or -a: " & @CRLF)
 	ConsoleWrite("	-d means decode $MFT entry " & @CRLF)
-	ConsoleWrite("	-a same as -d but also dumps the whole $MFT entry to console " & @CRLF)
+	ConsoleWrite("	-a same as -d but also display formatted hexdump of $MFT record and individual attributes " & @CRLF)
 	ConsoleWrite("" & @CRLF)
 	ConsoleWrite("Example for dumping an $MFT decode for boot.ini:" & @CRLF)
 	ConsoleWrite("MFTRCRD C:\boot.ini -d" & @CRLF)
 	ConsoleWrite("" & @CRLF)
-	ConsoleWrite("Example for dumping an $MFT decode + a 1024 byte $MFT record dump for $MFT itself from the C: drive:" & @CRLF)
+	ConsoleWrite("Example for dumping an $MFT decode + the $MFT record and individual attributes for $MFT itself from the C: drive:" & @CRLF)
 	ConsoleWrite("MFTRCRD C:0 -a" & @CRLF)
 	ConsoleWrite("" & @CRLF)
 	ConsoleWrite("Example for dumping an $MFT decode for $LogFile from the D: drive:" & @CRLF)
@@ -1920,6 +1920,24 @@ If $AttributesArr[1][2] = "TRUE" Then; $STANDARD_INFORMATION
 ;	_ArrayDisplay($HexDumpStandardInformation,"$HexDumpStandardInformation")
 EndIf
 
+If $AttributesArr[2][2] = "TRUE"  Then; $ATTRIBUTE_LIST
+	ConsoleWrite(@CRLF)
+	ConsoleWrite("$ATTRIBUTE_LIST:" & @CRLF)
+	If $ALInnerCouner > 0 Then
+		For $ALC = 1 To $ALInnerCouner
+			ConsoleWrite("Base record: " & $AttribListArr[6][$ALC] & ", Start VCN: " & $AttribListArr[5][$ALC] & ", Type: " & $AttribListArr[1][$ALC] & ", AL Record length: " & $AttribListArr[2][$ALC] & ", Name: " & $AttribListArr[7][$ALC] & ", Attrib ID: " & $AttribListArr[8][$ALC] & @CRLF)
+		Next
+		ConsoleWrite("" & @crlf)
+		ConsoleWrite("Isolated attribute list:" & @crlf)
+		ConsoleWrite(_HexEncode("0x"&$IsolatedAttributeList) & @crlf)
+	ElseIf $AttribListNonResident = 1 Then
+		ConsoleWrite("Sorry, non-resident $ATTRIBUTE_LIST not yet supported in this application" & @crlf)
+	Else
+		ConsoleWrite("No extra records to inspect.." & @crlf)
+	EndIf
+;	_ArrayDisplay($HexDumpAttributeList,"$HexDumpAttributeList")
+EndIf
+
 If $AttributesArr[3][2] = "TRUE" Then ;$FILE_NAME
 	$p = 1
 	For $p = 1 To $FN_Number
@@ -1949,6 +1967,17 @@ If $AttributesArr[4][2] = "TRUE" Then; $OBJECT_ID
 			ConsoleWrite(@CRLF)
 			ConsoleWrite("Dump of $OBJECT_ID (" & $p & ")" & @crlf)
 			ConsoleWrite(_HexEncode("0x"&$HexDumpObjectId[$p]) & @crlf)
+		EndIf
+	Next
+EndIf
+
+If $AttributesArr[5][2] = "TRUE" Then; $SECURITY_DESCRIPTOR
+	$p = 1
+	For $p = 1 To $SECURITY_Number
+		If $cmdline[2] = "-a" Then
+			ConsoleWrite(@CRLF)
+			ConsoleWrite("Dump of $SECURITY_DESCRIPTOR (" & $p & ")" & @crlf)
+			ConsoleWrite(_HexEncode("0x"&$HexDumpSecurityDescriptor[$p]) & @crlf)
 		EndIf
 	Next
 EndIf
@@ -2000,23 +2029,94 @@ If $AttributesArr[8][2] = "TRUE" Then; $DATA
 ;	_ArrayDisplay($HexDumpData,"$HexDumpData")
 EndIf
 
-If $AttributesArr[2][2] = "TRUE"  Then; $ATTRIBUTE_LIST
-	ConsoleWrite(@CRLF)
-	ConsoleWrite("$ATTRIBUTE_LIST:" & @CRLF)
-	If $ALInnerCouner > 0 Then
-		For $ALC = 1 To $ALInnerCouner
-			ConsoleWrite("Base record: " & $AttribListArr[6][$ALC] & ", Start VCN: " & $AttribListArr[5][$ALC] & ", Type: " & $AttribListArr[1][$ALC] & ", AL Record length: " & $AttribListArr[2][$ALC] & ", Name: " & $AttribListArr[7][$ALC] & ", Attrib ID: " & $AttribListArr[8][$ALC] & @CRLF)
-		Next
-		ConsoleWrite("" & @crlf)
-		ConsoleWrite("Isolated attribute list:" & @crlf)
-		ConsoleWrite(_HexEncode("0x"&$IsolatedAttributeList) & @crlf)
-	ElseIf $AttribListNonResident = 1 Then
-		ConsoleWrite("Sorry, non-resident $ATTRIBUTE_LIST not yet supported in this application" & @crlf)
-	Else
-		ConsoleWrite("No extra records to inspect.." & @crlf)
-	EndIf
-;	_ArrayDisplay($HexDumpAttributeList,"$HexDumpAttributeList")
+If $AttributesArr[9][2] = "TRUE" Then; $INDEX_ROOT
+	$p = 1
+	For $p = 1 To $INDEXROOT_Number
+		If $cmdline[2] = "-a" Then
+			ConsoleWrite(@CRLF)
+			ConsoleWrite("Dump of $INDEX_ROOT (" & $p & ")" & @crlf)
+			ConsoleWrite(_HexEncode("0x"&$HexDumpIndexRoot[$p]) & @crlf)
+		EndIf
+	Next
 EndIf
+
+If $AttributesArr[10][2] = "TRUE" Then; $INDEX_ALLOCATION
+	$p = 1
+	For $p = 1 To $INDEXALLOC_Number
+		If $cmdline[2] = "-a" Then
+			ConsoleWrite(@CRLF)
+			ConsoleWrite("Dump of $INDEX_ALLOCATION (" & $p & ")" & @crlf)
+			ConsoleWrite(_HexEncode("0x"&$HexDumpIndexAllocation[$p]) & @crlf)
+		EndIf
+	Next
+EndIf
+
+If $AttributesArr[11][2] = "TRUE" Then; $BITMAP
+	$p = 1
+	For $p = 1 To $BITMAP_Number
+		If $cmdline[2] = "-a" Then
+			ConsoleWrite(@CRLF)
+			ConsoleWrite("Dump of $BITMAP (" & $p & ")" & @crlf)
+			ConsoleWrite(_HexEncode("0x"&$HexDumpBitmap[$p]) & @crlf)
+		EndIf
+	Next
+EndIf
+
+If $AttributesArr[12][2] = "TRUE" Then; $REPARSE_POINT
+	$p = 1
+	For $p = 1 To $REPARSEPOINT_Number
+		If $cmdline[2] = "-a" Then
+			ConsoleWrite(@CRLF)
+			ConsoleWrite("Dump of $REPARSE_POINT (" & $p & ")" & @crlf)
+			ConsoleWrite(_HexEncode("0x"&$HexDumpReparsePoint[$p]) & @crlf)
+		EndIf
+	Next
+EndIf
+
+If $AttributesArr[13][2] = "TRUE" Then; $EA_INFORMATION
+	$p = 1
+	For $p = 1 To $EAINFO_Number
+		If $cmdline[2] = "-a" Then
+			ConsoleWrite(@CRLF)
+			ConsoleWrite("Dump of $EA_INFORMATION (" & $p & ")" & @crlf)
+			ConsoleWrite(_HexEncode("0x"&$HexDumpEaInformation[$p]) & @crlf)
+		EndIf
+	Next
+EndIf
+
+If $AttributesArr[14][2] = "TRUE" Then; $EA
+	$p = 1
+	For $p = 1 To $EA_Number
+		If $cmdline[2] = "-a" Then
+			ConsoleWrite(@CRLF)
+			ConsoleWrite("Dump of $EA (" & $p & ")" & @crlf)
+			ConsoleWrite(_HexEncode("0x"&$HexDumpEaInformation[$p]) & @crlf)
+		EndIf
+	Next
+EndIf
+
+If $AttributesArr[15][2] = "TRUE" Then; $PROPERTY_SET
+	$p = 1
+	For $p = 1 To $PROPERTYSET_Number
+		If $cmdline[2] = "-a" Then
+			ConsoleWrite(@CRLF)
+			ConsoleWrite("Dump of $PROPERTY_SET (" & $p & ")" & @crlf)
+			ConsoleWrite(_HexEncode("0x"&$HexDumpPropertySet[$p]) & @crlf)
+		EndIf
+	Next
+EndIf
+
+If $AttributesArr[16][2] = "TRUE" Then; $LOGGED_UTILITY_STREAM
+	$p = 1
+	For $p = 1 To $LOGGEDUTILSTREAM_Number
+		If $cmdline[2] = "-a" Then
+			ConsoleWrite(@CRLF)
+			ConsoleWrite("Dump of $LOGGED_UTILITY_STREAM (" & $p & ")" & @crlf)
+			ConsoleWrite(_HexEncode("0x"&$HexDumpLoggedUtilityStream[$p]) & @crlf)
+		EndIf
+	Next
+EndIf
+
 ; Record slack data
 ;_ArrayDisplay($HexDumpRecordSlack,"$HexDumpRecordSlack")
 If $cmdline[2] = "-a" Then
