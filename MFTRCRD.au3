@@ -4,7 +4,7 @@
 #AutoIt3Wrapper_Change2CUI=y
 #AutoIt3Wrapper_Res_Comment=Quick $MFT record dump
 #AutoIt3Wrapper_Res_Description=Decode a file's attributes from $MFT
-#AutoIt3Wrapper_Res_Fileversion=1.0.0.8
+#AutoIt3Wrapper_Res_Fileversion=1.0.0.9
 #AutoIt3Wrapper_Res_LegalCopyright=Joakim Schicht
 #AutoIt3Wrapper_Res_requestedExecutionLevel=asInvoker
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
@@ -22,6 +22,7 @@
 ;
 ; http://code.google.com/p/mft2csv/
 ;
+Global $ReparseType,$ReparseDataLength,$ReparsePadding,$ReparseSubstititeNameOffset,$ReparseSubstituteNameLength,$ReparsePrintNameOffset,$ReparsePrintNameLength
 Global $BrowsedFile,$TargetDrive = "", $ALInnerCouner, $MFTSize, $MFTRecordsArr[1][1]
 Global $SectorsPerCluster,$MFT_Record_Size,$BytesPerCluster,$BytesPerSector,$MFT_Offset
 Global $HEADER_LSN,$HEADER_SequenceNo,$HEADER_Flags,$HEADER_RecordRealSize,$HEADER_RecordAllocSize,$HEADER_FileRef
@@ -34,7 +35,7 @@ Global $DATA_CompressionUnitSize,$DATA_ON,$DATA_CompressedSize,$DATA_LengthOfAtt
 Global $DATA_AllocatedSize,$DATA_RealSize,$DATA_InitializedStreamSize,$RunListOffset,$DataRun,$IsCompressed
 Global $RUN_VCN[1],$RUN_Clusters[1],$MFT_RUN_Clusters[1],$MFT_RUN_VCN[1],$NameQ[5],$DataQ[1],$sBuffer,$AttrQ[1], $RUN_Sparse[1], $MFT_RUN_Sparse[1], $RUN_Complete[1][4], $MFT_RUN_Complete[1][4], $RUN_Sectors, $MFT_RUN_Sectors
 Global $SI_CTime,$SI_ATime,$SI_MTime,$SI_RTime,$SI_FilePermission,$SI_USN,$Errors,$RecordSlackSpace
-Global $IsDirectory = 0, $AttributesArr[18][4], $SIArr[13][2], $FNArr[14][1], $RecordHdrArr[15][2], $ObjectIDArr[5][2], $DataArr[20][2], $AttribListArr[9][2],$VolumeNameArr[2][2],$VolumeInformationArr[3][2]
+Global $IsDirectory = 0, $AttributesArr[18][4], $SIArr[13][2], $FNArr[14][1], $RecordHdrArr[15][2], $ObjectIDArr[5][2], $DataArr[20][2], $AttribListArr[9][2],$VolumeNameArr[2][2],$VolumeInformationArr[3][2],$RPArr[11][2],$LUSArr[3][2],$EAInfoArr[5][2],$EAArr[8][2]
 Global $HexDumpRecordSlack[1],$HexDumpRecord[1],$HexDumpHeader[1],$HexDumpStandardInformation[1],$HexDumpAttributeList[1],$HexDumpFileName[1],$HexDumpObjectId[1],$HexDumpSecurityDescriptor[1],$HexDumpVolumeName[1],$HexDumpVolumeInformation[1],$HexDumpData[1],$HexDumpIndexRoot[1],$HexDumpIndexAllocation[1],$HexDumpBitmap[1],$HexDumpReparsePoint[1],$HexDumpEaInformation[1],$HexDumpEa[1],$HexDumpPropertySet[1],$HexDumpLoggedUtilityStream[1]
 Global $FN_Number,$DATA_Number,$SI_Number,$ATTRIBLIST_Number,$OBJID_Number,$SECURITY_Number,$VOLNAME_Number,$VOLINFO_Number,$INDEXROOT_Number,$INDEXALLOC_Number,$BITMAP_Number,$REPARSEPOINT_Number,$EAINFO_Number,$EA_Number,$PROPERTYSET_Number,$LOGGEDUTILSTREAM_Number
 Global $STANDARD_INFORMATION_ON,$ATTRIBUTE_LIST_ON,$FILE_NAME_ON,$OBJECT_ID_ON,$SECURITY_DESCRIPTOR_ON,$VOLUME_NAME_ON,$VOLUME_INFORMATION_ON,$DATA_ON,$INDEX_ROOT_ON,$INDEX_ALLOCATION_ON,$BITMAP_ON,$REPARSE_POINT_ON,$EA_INFORMATION_ON,$EA_ON,$PROPERTY_SET_ON,$LOGGED_UTILITY_STREAM_ON,$ATTRIBUTE_END_MARKER_ON
@@ -96,7 +97,7 @@ Dim $FormattedTimestamp
 
 ConsoleWrite("" & @CRLF)
 ConsoleWrite("Starting MFTRCRD by Joakim Schicht" & @CRLF)
-ConsoleWrite("Version 1.0.0.8" & @CRLF)
+ConsoleWrite("Version 1.0.0.9" & @CRLF)
 ConsoleWrite("" & @CRLF)
 _validate_parameters()
 If StringIsDigit(StringMid($cmdline[1],3)) Then
@@ -129,7 +130,7 @@ Exit
 
 Func _validate_parameters()
 Local $FileAttrib
-If $cmdline[0] <> 2 Then
+If $cmdline[0] <> 3 Then
 	ConsoleWrite("Error: Wrong number of parameters supplied: " & $cmdline[0] & @CRLF)
 	ConsoleWrite("" & @CRLF)
 	ConsoleWrite('Usage: "MFTRCRD param1 param2"' & @CRLF)
@@ -139,14 +140,19 @@ If $cmdline[0] <> 2 Then
 	ConsoleWrite("	-d means decode $MFT entry " & @CRLF)
 	ConsoleWrite("	-a same as -d but also display formatted hexdump of $MFT record and individual attributes " & @CRLF)
 	ConsoleWrite("" & @CRLF)
+	ConsoleWrite("param3 is for optimizing speed of processing and can be either attriblist_on or attriblist_off. attriblist_on is for faster processing when $ATTRIBUTE_LIST is present." & @CRLF)
+	ConsoleWrite("" & @CRLF)
 	ConsoleWrite("Example for dumping an $MFT decode for boot.ini:" & @CRLF)
-	ConsoleWrite("MFTRCRD C:\boot.ini -d" & @CRLF)
+	ConsoleWrite("MFTRCRD C:\boot.ini -d attriblist_off" & @CRLF)
 	ConsoleWrite("" & @CRLF)
 	ConsoleWrite("Example for dumping an $MFT decode + the $MFT record and individual attributes for $MFT itself from the C: drive:" & @CRLF)
-	ConsoleWrite("MFTRCRD C:0 -a" & @CRLF)
+	ConsoleWrite("MFTRCRD C:0 -a attriblist_off" & @CRLF)
 	ConsoleWrite("" & @CRLF)
 	ConsoleWrite("Example for dumping an $MFT decode for $LogFile from the D: drive:" & @CRLF)
-	ConsoleWrite("MFTRCRD D:2 -d" & @CRLF)
+	ConsoleWrite("MFTRCRD D:2 -d attriblist_off" & @CRLF)
+	ConsoleWrite("" & @CRLF)
+	ConsoleWrite("Example for dumping a speed optimized $MFT decode for an extremely fragmented file with $ATTRIBUTE_LIST present" & @CRLF)
+	ConsoleWrite("MFTRCRD C:\ExtremelyFragmented.bin -d attriblist_on" & @CRLF)
 	Exit
 EndIf
 If $cmdline[2] <> "-d" AND $cmdline[2] <> "-a" Then
@@ -169,6 +175,10 @@ Else
 	EndIf
 EndIf
 $file = $cmdline[1]
+If $cmdline[3] <> "attriblist_on" AND $cmdline[3] <> "attriblist_off" Then
+	ConsoleWrite("Param 3 must be either attriblist_on or attriblist_off" & @CRLF)
+	Exit
+EndIf
 EndFunc
 
 Func NT_SUCCESS($status)
@@ -278,7 +288,7 @@ Func _ExtractSystemfile($TargetFile)
 		Next
 	Else
 ;		ConsoleWrite("TargetFile is " & $TargetFile & @CRLF)
-		If $TargetFile > 24 Then _InitiateMftArray()
+		If $TargetFile > 24 AND $cmdline[3] = "attriblist_on" Then _InitiateMftArray()
 		If @error Then
 			ConsoleWrite("Error when creating the MFT arrays" & @crlf)
 			Exit
@@ -291,7 +301,7 @@ EndFunc
 Func _ExtractSingleFile($MFTReferenceNumber)
 	Global $DataQ[1]				;clear array
 	_ClearVar()
-	If $MFTReferenceNumber > 24 Then
+	If $MFTReferenceNumber > 24 AND $cmdline[3] = "attriblist_on" Then
 		$MFTRecord = _ProcessMftArray($MFTReferenceNumber)
 	Else
 		$MFTRecord = _FindFileMFTRecord($MFTReferenceNumber)
@@ -441,6 +451,13 @@ Func _ClearVar()
 	$EA_Number=""
 	$PROPERTYSET_Number=""
 	$LOGGEDUTILSTREAM_Number=""
+	$ReparseType=""
+	$ReparseDataLength=""
+	$ReparsePadding=""
+	$ReparseSubstititeNameOffset=""
+	$ReparseSubstituteNameLength=""
+	$ReparsePrintNameOffset=""
+	$ReparsePrintNameLength=""
 EndFunc
 
 Func _AttribHeaderFlags($AHinput)
@@ -834,25 +851,40 @@ While 1
 		Case $AttributeType = $BITMAP
 			$BITMAP_ON = "TRUE"
 			$BITMAP_Number += 1
-;			_Get_Bitmap()
+			$CoreBitmap = _GetAttributeEntry(StringMid($MFTEntry,$AttributeOffset,$AttributeSize*2))
+			$CoreBitmapChunk = $CoreBitmap[0]
+			$CoreBitmapName = $CoreBitmap[1]
+			_Get_Bitmap($CoreBitmapChunk,$REPARSEPOINT_Number,$CoreBitmapName)
 			ReDim $HexDumpBitmap[$BITMAP_Number]
 			_Arrayadd($HexDumpBitmap,StringMid($MFTEntry,$AttributeOffset,$AttributeSize*2))
 		Case $AttributeType = $REPARSE_POINT
 			$REPARSE_POINT_ON = "TRUE"
 			$REPARSEPOINT_Number += 1
-;			_Get_ReparsePoint()
+			ReDim $RPArr[11][$REPARSEPOINT_Number+1]
+			$CoreReparsePoint = _GetAttributeEntry(StringMid($MFTEntry,$AttributeOffset,$AttributeSize*2))
+			$CoreReparsePointChunk = $CoreReparsePoint[0]
+			$CoreReparsePointName = $CoreReparsePoint[1]
+			_Get_ReparsePoint($CoreReparsePointChunk,$REPARSEPOINT_Number,$CoreReparsePointName)
 			ReDim $HexDumpReparsePoint[$REPARSEPOINT_Number]
 			_Arrayadd($HexDumpReparsePoint,StringMid($MFTEntry,$AttributeOffset,$AttributeSize*2))
 		Case $AttributeType = $EA_INFORMATION
 			$EA_INFORMATION_ON = "TRUE"
 			$EAINFO_Number += 1
-;			_Get_EaInformation()
+			ReDim $EAInfoArr[5][$EAINFO_Number+1]
+			$CoreEaInformation = _GetAttributeEntry(StringMid($MFTEntry,$AttributeOffset,$AttributeSize*2))
+			$CoreEaInformationChunk = $CoreEaInformation[0]
+			$CoreEaInformationName = $CoreEaInformation[1]
+			_Get_EaInformation($CoreEaInformationChunk,$EAINFO_Number,$CoreEaInformationName)
 			ReDim $HexDumpEaInformation[$EAINFO_Number]
 			_Arrayadd($HexDumpEaInformation,StringMid($MFTEntry,$AttributeOffset,$AttributeSize*2))
 		Case $AttributeType = $EA
 			$EA_ON = "TRUE"
 			$EA_Number += 1
-;			_Get_Ea()
+			ReDim $EAArr[8][$EA_Number+1]
+			$CoreEa = _GetAttributeEntry(StringMid($MFTEntry,$AttributeOffset,$AttributeSize*2))
+			$CoreEaChunk = $CoreEa[0]
+			$CoreEaName = $CoreEa[1]
+			_Get_Ea($CoreEaChunk,$EA_Number,$CoreEaName)
 			ReDim $HexDumpEa[$EA_Number]
 			_Arrayadd($HexDumpEa,StringMid($MFTEntry,$AttributeOffset,$AttributeSize*2))
 		Case $AttributeType = $PROPERTY_SET
@@ -864,7 +896,11 @@ While 1
 		Case $AttributeType = $LOGGED_UTILITY_STREAM
 			$LOGGED_UTILITY_STREAM_ON = "TRUE"
 			$LOGGEDUTILSTREAM_Number += 1
-;			_Get_LoggedUtilityStream()
+			ReDim $LUSArr[3][$LOGGEDUTILSTREAM_Number+1]
+			$CoreLoggedUtilityStream = _GetAttributeEntry(StringMid($MFTEntry,$AttributeOffset,$AttributeSize*2))
+			$CoreLoggedUtilityStreamChunk = $CoreLoggedUtilityStream[0]
+			$CoreLoggedUtilityStreamName = $CoreLoggedUtilityStream[1]
+			_Get_LoggedUtilityStream($CoreLoggedUtilityStreamChunk,$LOGGEDUTILSTREAM_Number,$CoreLoggedUtilityStreamName)
 			ReDim $HexDumpLoggedUtilityStream[$LOGGEDUTILSTREAM_Number]
 			_Arrayadd($HexDumpLoggedUtilityStream,StringMid($MFTEntry,$AttributeOffset,$AttributeSize*2))
 		Case $AttributeType = $ATTRIBUTE_END_MARKER
@@ -1478,6 +1514,33 @@ $VolumeNameArr[1][0] = "Volume Name"
 $VolumeInformationArr[0][0] = "Description:"
 $VolumeInformationArr[1][0] = "NTFS Version"
 $VolumeInformationArr[2][0] = "Flags"
+$RPArr[0][0] = "Description:"
+$RPArr[1][0] = "Name of Attribute"
+$RPArr[2][0] = "ReparseType"
+$RPArr[3][0] = "ReparseDataLength"
+$RPArr[4][0] = "ReparsePadding"
+$RPArr[5][0] = "ReparseSubstituteNameOffset"
+$RPArr[6][0] = "ReparseSubstituteNameLength"
+$RPArr[7][0] = "ReparsePrintNameOffset"
+$RPArr[8][0] = "ReparsePrintNameLength"
+$RPArr[9][0] = "ReparseSubstituteName"
+$RPArr[10][0] = "ReparsePrintName"
+$LUSArr[0][0] = "Field name"
+$LUSArr[1][0] = "Name of Attribute"
+$LUSArr[2][0] = "The raw Logged Utility Stream"
+$EAInfoArr[0][0] = "Description:"
+$EAInfoArr[1][0] = "Name of Attribute"
+$EAInfoArr[2][0] = "SizeOfPackedEas"
+$EAInfoArr[3][0] = "NumberOfEaWithFlagSet"
+$EAInfoArr[4][0] = "SizeOfUnpackedEas"
+$EAArr[0][0] = "Description:"
+$EAArr[1][0] = "Name of Attribute"
+$EAArr[2][0] = "OffsetToNextEa"
+$EAArr[3][0] = "EaFlags"
+$EAArr[4][0] = "EaNameLength"
+$EAArr[5][0] = "EaValueLength"
+$EAArr[6][0] = "EaName"
+$EAArr[7][0] = "EaValue"
 EndFunc
 
 Func _HexEncode($bInput)
@@ -2065,6 +2128,11 @@ EndIf
 If $AttributesArr[12][2] = "TRUE" Then; $REPARSE_POINT
 	$p = 1
 	For $p = 1 To $REPARSEPOINT_Number
+		ConsoleWrite(@CRLF)
+		ConsoleWrite("$REPARSE_POINT " & $p & ":" & @CRLF)
+		For $j = 1 To Ubound($RPArr)-1
+			ConsoleWrite($RPArr[$j][0] & ": " & $RPArr[$j][$p] & @CRLF)
+		Next
 		If $cmdline[2] = "-a" Then
 			ConsoleWrite(@CRLF)
 			ConsoleWrite("Dump of $REPARSE_POINT (" & $p & ")" & @crlf)
@@ -2076,6 +2144,11 @@ EndIf
 If $AttributesArr[13][2] = "TRUE" Then; $EA_INFORMATION
 	$p = 1
 	For $p = 1 To $EAINFO_Number
+		ConsoleWrite(@CRLF)
+		ConsoleWrite("$EA_INFORMATION " & $p & ":" & @CRLF)
+		For $j = 1 To 4
+			ConsoleWrite($EAInfoArr[$j][0] & ": " & $EAInfoArr[$j][$p] & @CRLF)
+		Next
 		If $cmdline[2] = "-a" Then
 			ConsoleWrite(@CRLF)
 			ConsoleWrite("Dump of $EA_INFORMATION (" & $p & ")" & @crlf)
@@ -2087,10 +2160,16 @@ EndIf
 If $AttributesArr[14][2] = "TRUE" Then; $EA
 	$p = 1
 	For $p = 1 To $EA_Number
+		ConsoleWrite(@CRLF)
+		ConsoleWrite("$EA " & $p & ":" & @CRLF)
+;		For $j = 1 To 5
+		For $j = 1 To Ubound($EAArr)-1
+			ConsoleWrite($EAArr[$j][0] & ": " & $EAArr[$j][$p] & @CRLF)
+		Next
 		If $cmdline[2] = "-a" Then
 			ConsoleWrite(@CRLF)
 			ConsoleWrite("Dump of $EA (" & $p & ")" & @crlf)
-			ConsoleWrite(_HexEncode("0x"&$HexDumpEaInformation[$p]) & @crlf)
+			ConsoleWrite(_HexEncode("0x"&$HexDumpEa[$p]) & @crlf)
 		EndIf
 	Next
 EndIf
@@ -2109,6 +2188,11 @@ EndIf
 If $AttributesArr[16][2] = "TRUE" Then; $LOGGED_UTILITY_STREAM
 	$p = 1
 	For $p = 1 To $LOGGEDUTILSTREAM_Number
+		ConsoleWrite(@CRLF)
+		ConsoleWrite("$LOGGED_UTILITY_STREAM " & $p & ":" & @CRLF)
+		For $j = 1 To 2
+			ConsoleWrite($LUSArr[$j][0] & ": " & $LUSArr[$j][$p] & @CRLF)
+		Next
 		If $cmdline[2] = "-a" Then
 			ConsoleWrite(@CRLF)
 			ConsoleWrite("Dump of $LOGGED_UTILITY_STREAM (" & $p & ")" & @crlf)
@@ -2408,4 +2492,420 @@ Func _ProcessMftArray($TargetFile)
 	EndIf
 	_WinAPI_CloseHandle($hFile)
 	Return ""
+EndFunc
+
+Func _GetAttributeEntry($Entry)
+	Local $CoreAttribute,$CoreAttributeTmp,$CoreAttributeArr[2]
+	Local $ATTRIBUTE_HEADER_Length,$ATTRIBUTE_HEADER_NonResidentFlag,$ATTRIBUTE_HEADER_NameLength,$ATTRIBUTE_HEADER_NameRelativeOffset,$ATTRIBUTE_HEADER_Name,$ATTRIBUTE_HEADER_Flags,$ATTRIBUTE_HEADER_AttributeID,$ATTRIBUTE_HEADER_StartVCN,$ATTRIBUTE_HEADER_LastVCN
+	Local $ATTRIBUTE_HEADER_VCNs,$ATTRIBUTE_HEADER_OffsetToDataRuns,$ATTRIBUTE_HEADER_CompressionUnitSize,$ATTRIBUTE_HEADER_Padding,$ATTRIBUTE_HEADER_AllocatedSize,$ATTRIBUTE_HEADER_RealSize,$ATTRIBUTE_HEADER_InitializedStreamSize,$RunListOffset
+	Local $ATTRIBUTE_HEADER_LengthOfAttribute,$ATTRIBUTE_HEADER_OffsetToAttribute,$ATTRIBUTE_HEADER_IndexedFlag
+	$ATTRIBUTE_HEADER_Length = StringMid($Entry,9,8)
+	$ATTRIBUTE_HEADER_Length = Dec(StringMid($ATTRIBUTE_HEADER_Length,7,2) & StringMid($ATTRIBUTE_HEADER_Length,5,2) & StringMid($ATTRIBUTE_HEADER_Length,3,2) & StringMid($ATTRIBUTE_HEADER_Length,1,2))
+	$ATTRIBUTE_HEADER_NonResidentFlag = StringMid($Entry,17,2)
+;	ConsoleWrite("$ATTRIBUTE_HEADER_NonResidentFlag = " & $ATTRIBUTE_HEADER_NonResidentFlag & @crlf)
+	$ATTRIBUTE_HEADER_NameLength = Dec(StringMid($Entry,19,2))
+;	ConsoleWrite("$ATTRIBUTE_HEADER_NameLength = " & $ATTRIBUTE_HEADER_NameLength & @crlf)
+	$ATTRIBUTE_HEADER_NameRelativeOffset = StringMid($Entry,21,4)
+;	ConsoleWrite("$ATTRIBUTE_HEADER_NameRelativeOffset = " & $ATTRIBUTE_HEADER_NameRelativeOffset & @crlf)
+	$ATTRIBUTE_HEADER_NameRelativeOffset = Dec(_SwapEndian($ATTRIBUTE_HEADER_NameRelativeOffset))
+;	ConsoleWrite("$ATTRIBUTE_HEADER_NameRelativeOffset = " & $ATTRIBUTE_HEADER_NameRelativeOffset & @crlf)
+	If $ATTRIBUTE_HEADER_NameLength > 0 Then
+		$ATTRIBUTE_HEADER_Name = _UnicodeHexToStr(StringMid($Entry,$ATTRIBUTE_HEADER_NameRelativeOffset*2 + 1,$ATTRIBUTE_HEADER_NameLength*4))
+	Else
+		$ATTRIBUTE_HEADER_Name = ""
+	EndIf
+	$ATTRIBUTE_HEADER_Flags = _SwapEndian(StringMid($Entry,25,4))
+;	ConsoleWrite("$ATTRIBUTE_HEADER_Flags = " & $ATTRIBUTE_HEADER_Flags & @crlf)
+	$Flags = ""
+	If $ATTRIBUTE_HEADER_Flags = "0000" Then
+		$Flags = "NORMAL"
+	Else
+		If BitAND($ATTRIBUTE_HEADER_Flags,"0001") Then
+			$IsCompressed = 1
+			$Flags &= "COMPRESSED+"
+		EndIf
+		If BitAND($ATTRIBUTE_HEADER_Flags,"4000") Then
+			$IsEncrypted = 1
+			$Flags &= "ENCRYPTED+"
+		EndIf
+		If BitAND($ATTRIBUTE_HEADER_Flags,"8000") Then
+			$IsSparse = 1
+			$Flags &= "SPARSE+"
+		EndIf
+		$Flags = StringTrimRight($Flags,1)
+	EndIf
+;	ConsoleWrite("File is " & $Flags & @CRLF)
+	$ATTRIBUTE_HEADER_AttributeID = StringMid($Entry,29,4)
+	$ATTRIBUTE_HEADER_AttributeID = StringMid($ATTRIBUTE_HEADER_AttributeID,3,2) & StringMid($ATTRIBUTE_HEADER_AttributeID,1,2)
+	If $ATTRIBUTE_HEADER_NonResidentFlag = '01' Then
+		$ATTRIBUTE_HEADER_StartVCN = StringMid($Entry,33,16)
+;		ConsoleWrite("$ATTRIBUTE_HEADER_StartVCN = " & $ATTRIBUTE_HEADER_StartVCN & @crlf)
+		$ATTRIBUTE_HEADER_StartVCN = Dec(_SwapEndian($ATTRIBUTE_HEADER_StartVCN),2)
+;		ConsoleWrite("$ATTRIBUTE_HEADER_StartVCN = " & $ATTRIBUTE_HEADER_StartVCN & @crlf)
+		$ATTRIBUTE_HEADER_LastVCN = StringMid($Entry,49,16)
+;		ConsoleWrite("$ATTRIBUTE_HEADER_LastVCN = " & $ATTRIBUTE_HEADER_LastVCN & @crlf)
+		$ATTRIBUTE_HEADER_LastVCN = Dec(_SwapEndian($ATTRIBUTE_HEADER_LastVCN),2)
+;		ConsoleWrite("$ATTRIBUTE_HEADER_LastVCN = " & $ATTRIBUTE_HEADER_LastVCN & @crlf)
+		$ATTRIBUTE_HEADER_VCNs = $ATTRIBUTE_HEADER_LastVCN - $ATTRIBUTE_HEADER_StartVCN
+;		ConsoleWrite("$ATTRIBUTE_HEADER_VCNs = " & $ATTRIBUTE_HEADER_VCNs & @crlf)
+		$ATTRIBUTE_HEADER_OffsetToDataRuns = StringMid($Entry,65,4)
+		$ATTRIBUTE_HEADER_OffsetToDataRuns = Dec(StringMid($ATTRIBUTE_HEADER_OffsetToDataRuns,3,1) & StringMid($ATTRIBUTE_HEADER_OffsetToDataRuns,3,1))
+		$ATTRIBUTE_HEADER_CompressionUnitSize = Dec(_SwapEndian(StringMid($Entry,69,4)))
+;		ConsoleWrite("$ATTRIBUTE_HEADER_CompressionUnitSize = " & $ATTRIBUTE_HEADER_CompressionUnitSize & @crlf)
+		$IsCompressed = 0
+		If $ATTRIBUTE_HEADER_CompressionUnitSize = 4 Then $IsCompressed = 1
+		$ATTRIBUTE_HEADER_Padding = StringMid($Entry,73,8)
+		$ATTRIBUTE_HEADER_Padding = StringMid($ATTRIBUTE_HEADER_Padding,7,2) & StringMid($ATTRIBUTE_HEADER_Padding,5,2) & StringMid($ATTRIBUTE_HEADER_Padding,3,2) & StringMid($ATTRIBUTE_HEADER_Padding,1,2)
+		$ATTRIBUTE_HEADER_AllocatedSize = StringMid($Entry,81,16)
+;		ConsoleWrite("$ATTRIBUTE_HEADER_AllocatedSize = " & $ATTRIBUTE_HEADER_AllocatedSize & @crlf)
+		$ATTRIBUTE_HEADER_AllocatedSize = Dec(_SwapEndian($ATTRIBUTE_HEADER_AllocatedSize),2)
+;		ConsoleWrite("$ATTRIBUTE_HEADER_AllocatedSize = " & $ATTRIBUTE_HEADER_AllocatedSize & @crlf)
+		$ATTRIBUTE_HEADER_RealSize = StringMid($Entry,97,16)
+;		ConsoleWrite("$ATTRIBUTE_HEADER_RealSize = " & $ATTRIBUTE_HEADER_RealSize & @crlf)
+		$ATTRIBUTE_HEADER_RealSize = Dec(_SwapEndian($ATTRIBUTE_HEADER_RealSize),2)
+;		ConsoleWrite("$ATTRIBUTE_HEADER_RealSize = " & $ATTRIBUTE_HEADER_RealSize & @crlf)
+		$ATTRIBUTE_HEADER_InitializedStreamSize = StringMid($Entry,113,16)
+;		ConsoleWrite("$ATTRIBUTE_HEADER_InitializedStreamSize = " & $ATTRIBUTE_HEADER_InitializedStreamSize & @crlf)
+		$ATTRIBUTE_HEADER_InitializedStreamSize = Dec(_SwapEndian($ATTRIBUTE_HEADER_InitializedStreamSize),2)
+;		ConsoleWrite("$ATTRIBUTE_HEADER_InitializedStreamSize = " & $ATTRIBUTE_HEADER_InitializedStreamSize & @crlf)
+		$RunListOffset = StringMid($Entry,65,4)
+;		ConsoleWrite("$RunListOffset = " & $RunListOffset & @crlf)
+		$RunListOffset = Dec(_SwapEndian($RunListOffset))
+;		ConsoleWrite("$RunListOffset = " & $RunListOffset & @crlf)
+		If $IsCompressed AND $RunListOffset = 72 Then
+			$ATTRIBUTE_HEADER_CompressedSize = StringMid($Entry,129,16)
+			$ATTRIBUTE_HEADER_CompressedSize = Dec(_SwapEndian($ATTRIBUTE_HEADER_CompressedSize),2)
+		EndIf
+		$DataRun = StringMid($Entry,$RunListOffset*2+1,(StringLen($Entry)-$RunListOffset)*2)
+;		ConsoleWrite("$DataRun = " & $DataRun & @crlf)
+	ElseIf $ATTRIBUTE_HEADER_NonResidentFlag = '00' Then
+		$ATTRIBUTE_HEADER_LengthOfAttribute = StringMid($Entry,33,8)
+;		ConsoleWrite("$ATTRIBUTE_HEADER_LengthOfAttribute = " & $ATTRIBUTE_HEADER_LengthOfAttribute & @crlf)
+		$ATTRIBUTE_HEADER_LengthOfAttribute = Dec(_SwapEndian($ATTRIBUTE_HEADER_LengthOfAttribute),2)
+;		ConsoleWrite("$ATTRIBUTE_HEADER_LengthOfAttribute = " & $ATTRIBUTE_HEADER_LengthOfAttribute & @crlf)
+;		$ATTRIBUTE_HEADER_OffsetToAttribute = StringMid($Entry,41,4)
+;		$ATTRIBUTE_HEADER_OffsetToAttribute = Dec(StringMid($ATTRIBUTE_HEADER_OffsetToAttribute,3,2) & StringMid($ATTRIBUTE_HEADER_OffsetToAttribute,1,2))
+		$ATTRIBUTE_HEADER_OffsetToAttribute = Dec(_SwapEndian(StringMid($Entry,41,4)))
+;		ConsoleWrite("$ATTRIBUTE_HEADER_OffsetToAttribute = " & $ATTRIBUTE_HEADER_OffsetToAttribute & @crlf)
+		$ATTRIBUTE_HEADER_IndexedFlag = Dec(StringMid($Entry,45,2))
+		$ATTRIBUTE_HEADER_Padding = StringMid($Entry,47,2)
+		$DataRun = StringMid($Entry,$ATTRIBUTE_HEADER_OffsetToAttribute*2+1,$ATTRIBUTE_HEADER_LengthOfAttribute*2)
+;		ConsoleWrite("$DataRun = " & $DataRun & @crlf)
+	EndIf
+; Possible continuation
+;	For $i = 1 To UBound($DataQ) - 1
+	For $i = 1 To 1
+;		_DecodeDataQEntry($DataQ[$i])
+		If $ATTRIBUTE_HEADER_NonResidentFlag = '00' Then
+;_ExtractResidentFile($DATA_Name, $DATA_LengthOfAttribute)
+			$CoreAttribute = $DataRun
+		Else
+			Global $RUN_VCN[1], $RUN_Clusters[1]
+
+			$TotalClusters = $ATTRIBUTE_HEADER_LastVCN - $ATTRIBUTE_HEADER_StartVCN + 1
+			$Size = $ATTRIBUTE_HEADER_RealSize
+;_ExtractDataRuns()
+			$r=UBound($RUN_Clusters)
+			$i=1
+			$RUN_VCN[0] = 0
+			$BaseVCN = $RUN_VCN[0]
+			If $DataRun = "" Then $DataRun = "00"
+			Do
+				$RunListID = StringMid($DataRun,$i,2)
+				If $RunListID = "00" Then ExitLoop
+;				ConsoleWrite("$RunListID = " & $RunListID & @crlf)
+				$i += 2
+				$RunListClustersLength = Dec(StringMid($RunListID,2,1))
+;				ConsoleWrite("$RunListClustersLength = " & $RunListClustersLength & @crlf)
+				$RunListVCNLength = Dec(StringMid($RunListID,1,1))
+;				ConsoleWrite("$RunListVCNLength = " & $RunListVCNLength & @crlf)
+				$RunListClusters = Dec(_SwapEndian(StringMid($DataRun,$i,$RunListClustersLength*2)),2)
+;				ConsoleWrite("$RunListClusters = " & $RunListClusters & @crlf)
+				$i += $RunListClustersLength*2
+				$RunListVCN = _SwapEndian(StringMid($DataRun, $i, $RunListVCNLength*2))
+				;next line handles positive or negative move
+				$BaseVCN += Dec($RunListVCN,2)-(($r>1) And (Dec(StringMid($RunListVCN,1,1))>7))*Dec(StringMid("10000000000000000",1,$RunListVCNLength*2+1),2)
+				If $RunListVCN <> "" Then
+					$RunListVCN = $BaseVCN
+				Else
+					$RunListVCN = 0			;$RUN_VCN[$r-1]		;0
+				EndIf
+;				ConsoleWrite("$RunListVCN = " & $RunListVCN & @crlf)
+				If (($RunListVCN=0) And ($RunListClusters>16) And (Mod($RunListClusters,16)>0)) Then
+				;If (($RunListVCN=$RUN_VCN[$r-1]) And ($RunListClusters>16) And (Mod($RunListClusters,16)>0)) Then
+				;may be sparse section at end of Compression Signature
+					_ArrayAdd($RUN_Clusters,Mod($RunListClusters,16))
+					_ArrayAdd($RUN_VCN,$RunListVCN)
+					$RunListClusters -= Mod($RunListClusters,16)
+					$r += 1
+				ElseIf (($RunListClusters>16) And (Mod($RunListClusters,16)>0)) Then
+				;may be compressed data section at start of Compression Signature
+					_ArrayAdd($RUN_Clusters,$RunListClusters-Mod($RunListClusters,16))
+					_ArrayAdd($RUN_VCN,$RunListVCN)
+					$RunListVCN += $RUN_Clusters[$r]
+					$RunListClusters = Mod($RunListClusters,16)
+					$r += 1
+				EndIf
+			;just normal or sparse data
+				_ArrayAdd($RUN_Clusters,$RunListClusters)
+				_ArrayAdd($RUN_VCN,$RunListVCN)
+				$r += 1
+				$i += $RunListVCNLength*2
+			Until $i > StringLen($DataRun)
+;--------------------------------_ExtractDataRuns()
+			If $TotalClusters * $BytesPerCluster >= $Size Then
+;				ConsoleWrite(_ArrayToString($RUN_VCN) & @CRLF)
+;				ConsoleWrite(_ArrayToString($RUN_Clusters) & @CRLF)
+;ExtractFile
+				Local $nBytes
+				$hFile = _WinAPI_CreateFile("\\.\" & $TargetDrive, 2, 6, 6)
+				If $hFile = 0 Then
+					ConsoleWrite("Error in function _WinAPI_CreateFile when trying to open target drive." & @CRLF)
+					_WinAPI_CloseHandle($hFile)
+					Return
+				EndIf
+				$tBuffer = DllStructCreate("byte[" & $BytesPerCluster * 16 & "]")
+				Select
+					Case UBound($RUN_VCN) = 1		;no data, do nothing
+					Case (UBound($RUN_VCN) = 2) Or (Not $IsCompressed)	;may be normal or sparse
+						If $RUN_VCN[1] = $RUN_VCN[0] And $DATA_Name <> "$Boot" Then		;sparse, unless $Boot
+;							_DoSparse($htest)
+							MsgBox(0,"Warning","Sparse attributes not supported")
+						Else								;normal
+;							_DoNormalAttribute($hFile, $tBuffer)
+;							Local $nBytes
+							$FileSize = $ATTRIBUTE_HEADER_RealSize
+							For $s = 1 To UBound($RUN_VCN)-1
+								_WinAPI_SetFilePointerEx($hFile, $RUN_VCN[$s]*$BytesPerCluster, $FILE_BEGIN)
+								$g = $RUN_Clusters[$s]
+								While $g > 16 And $FileSize > $BytesPerCluster * 16
+									_WinAPI_ReadFile($hFile, DllStructGetPtr($tBuffer), $BytesPerCluster * 16, $nBytes)
+;									_WinAPI_WriteFile($htest, DllStructGetPtr($tBuffer), $BytesPerCluster * 16, $nBytes)
+									$g -= 16
+									$FileSize -= $BytesPerCluster * 16
+									$CoreAttributeTmp = StringMid(DllStructGetData($tBuffer,1),3)
+									$CoreAttribute &= $CoreAttributeTmp
+								WEnd
+								If $g <> 0 Then
+									_WinAPI_ReadFile($hFile, DllStructGetPtr($tBuffer), $BytesPerCluster * $g, $nBytes)
+									$CoreAttributeTmp = StringMid(DllStructGetData($tBuffer,1),3)
+									$CoreAttribute &= $CoreAttributeTmp
+									If $FileSize > $BytesPerCluster * $g Then
+;										_WinAPI_WriteFile($htest, DllStructGetPtr($tBuffer), $BytesPerCluster * $g, $nBytes)
+										$FileSize -= $BytesPerCluster * $g
+									Else
+;										_WinAPI_WriteFile($htest, DllStructGetPtr($tBuffer), $FileSize, $nBytes)
+;										Return
+									EndIf
+								EndIf
+							Next
+;------------------_DoNormalAttribute()
+						EndIf
+					Case Else					;may be compressed
+;						_DoCompressed($hFile, $htest, $tBuffer)
+						MsgBox(0,"Warning","Compressed attributes not supported")
+				EndSelect
+;------------------------ExtractFile
+			EndIf
+;-------------------------
+		EndIf
+	Next
+	$CoreAttributeArr[0] = $CoreAttribute
+	$CoreAttributeArr[1] = $ATTRIBUTE_HEADER_Name
+;	Return $CoreAttribute
+	Return $CoreAttributeArr
+; Alternatively just return the core attribute and call the respective _Get_ function from within the main record decoder
+;	Select
+;		Case $AttribType = $REPARSE_POINT
+;			_Get_ReparsePoint($Entry,$RP_Offset,$RP_Size,$Current_RP_Number)
+;	EndSelect
+EndFunc
+
+Func _Get_Bitmap($Entry,$Current_Attrib_Number,$CurrentAttributeName)
+	ConsoleWrite("-------------------------" & @crlf)
+	Local $LocalAttributeOffset,$TheBitmap
+	$LocalAttributeOffset = 1
+	$TheBitmap = StringMid($Entry,$LocalAttributeOffset)
+EndFunc
+
+Func _Get_ReparsePoint($Entry,$Current_Attrib_Number,$CurrentAttributeName)
+	ConsoleWrite("-------------------------" & @crlf)
+	Local $LocalAttributeOffset,$ReparseType,$ReparseDataLength,$ReparsePadding,$ReparseSubstititeNameOffset,$ReparseSubstituteNameLength,$ReparsePrintNameOffset,$ReparsePrintNameLength,$ReparseSubstititeName,$ReparsePrintName
+	$LocalAttributeOffset = 1
+;	$ReparseTypeTest = StringMid($Entry,1,8)
+;	ConsoleWrite("$ReparseTypeTest = " & $ReparseTypeTest & @crlf)
+	$ReparseType = StringMid($Entry,$LocalAttributeOffset,8)
+;	ConsoleWrite("$ReparseType = " & $ReparseType & @crlf)
+	$ReparseType = "0x"& StringMid($ReparseType,7,2) & StringMid($ReparseType,5,2) & StringMid($ReparseType,3,2) & StringMid($ReparseType,1,2)
+;	ConsoleWrite("$ReparseType = " & $ReparseType & @crlf)
+;http://msdn.microsoft.com/en-us/library/dd541667(v=prot.10).aspx
+	Select
+		Case $ReparseType = '0xA000000C'
+			$ReparseType = 'SYMLINK'
+		Case $ReparseType = '0x8000000B'
+			$ReparseType = 'FILTER_MANAGER'
+		Case $ReparseType = '0x80000012'
+			$ReparseType = 'DFSR'
+		Case $ReparseType = '0x8000000A'
+			$ReparseType = 'DFS'
+		Case $ReparseType = '0x80000007'
+			$ReparseType = 'SIS'
+		Case $ReparseType = '0x80000005'
+			$ReparseType = 'DRIVER_EXTENDER'
+		Case $ReparseType = '0x80000006'
+			$ReparseType = 'HSM2'
+		Case $ReparseType = '0xC0000004'
+			$ReparseType = 'HSM'
+		Case $ReparseType = '0xA0000003'
+			$ReparseType = 'MOUNT_POINT'
+		Case Else
+			$ReparseType = 'UNKNOWN'
+	EndSelect
+;	ConsoleWrite("$ReparseType = " & $ReparseType & @crlf)
+	$ReparseDataLength = StringMid($Entry,$LocalAttributeOffset+8,4)
+;	ConsoleWrite("$ReparseDataLength = " & $ReparseDataLength & @crlf)
+	$ReparseDataLength = Dec(StringMid($ReparseDataLength,3,2) & StringMid($ReparseDataLength,1,2))
+;	ConsoleWrite("$ReparseDataLength = " & $ReparseDataLength & @crlf)
+	$ReparsePadding = StringMid($Entry,$LocalAttributeOffset+12,4)
+;	ConsoleWrite("$ReparsePadding = " & $ReparsePadding & @crlf)
+; Third party implemetation
+;$ReparseGUID =
+	$ReparseData = StringMid($Entry,$LocalAttributeOffset+16,$ReparseDataLength*2)
+	$ReparseSubstititeNameOffset = StringMid($ReparseData,1,4)
+;	ConsoleWrite("$ReparseSubstititeNameOffset = " & $ReparseSubstititeNameOffset & @crlf)
+	$ReparseSubstititeNameOffset = Dec(StringMid($ReparseSubstititeNameOffset,3,2) & StringMid($ReparseSubstititeNameOffset,1,2))
+;	ConsoleWrite("$ReparseSubstititeNameOffset = " & $ReparseSubstititeNameOffset & @crlf)
+	$ReparseSubstituteNameLength = StringMid($ReparseData,5,4)
+;	ConsoleWrite("$ReparseSubstituteNameLength = " & $ReparseSubstituteNameLength & @crlf)
+	$ReparseSubstituteNameLength = Dec(StringMid($ReparseSubstituteNameLength,3,2) & StringMid($ReparseSubstituteNameLength,1,2))
+;	ConsoleWrite("$ReparseSubstituteNameLength = " & $ReparseSubstituteNameLength & @crlf)
+	$ReparsePrintNameOffset = StringMid($ReparseData,9,4)
+;	ConsoleWrite("$ReparsePrintNameOffset = " & $ReparsePrintNameOffset & @crlf)
+	$ReparsePrintNameOffset = Dec(StringMid($ReparsePrintNameOffset,3,2) & StringMid($ReparsePrintNameOffset,1,2))
+;	ConsoleWrite("$ReparsePrintNameOffset = " & $ReparsePrintNameOffset & @crlf)
+	$ReparsePrintNameLength = StringMid($ReparseData,13,4)
+;	ConsoleWrite("$ReparsePrintNameLength = " & $ReparsePrintNameLength & @crlf)
+	$ReparsePrintNameLength = Dec(StringMid($ReparsePrintNameLength,3,2) & StringMid($ReparsePrintNameLength,1,2))
+;	ConsoleWrite("$ReparsePrintNameLength = " & $ReparsePrintNameLength & @crlf)
+	$ReparseSubstititeName = StringMid($Entry,$LocalAttributeOffset+16+16,$ReparseSubstituteNameLength*2)
+;	ConsoleWrite("$ReparseSubstititeName = " & $ReparseSubstititeName & @crlf)
+	$ReparseSubstititeName = _UnicodeHexToStr($ReparseSubstititeName)
+;	ConsoleWrite("$ReparseSubstititeName = " & $ReparseSubstititeName & @crlf)
+	$ReparsePrintName = StringMid($Entry,($LocalAttributeOffset+32)+($ReparsePrintNameOffset*2),$ReparsePrintNameLength*2)
+;	ConsoleWrite("$ReparsePrintName = " & $ReparsePrintName & @crlf)
+	$ReparsePrintName = _UnicodeHexToStr($ReparsePrintName)
+;	ConsoleWrite("$ReparsePrintName = " & $ReparsePrintName & @crlf)
+	$RPArr[0][$Current_Attrib_Number] = "RP Number " & $Current_Attrib_Number
+	$RPArr[1][$Current_Attrib_Number] = $CurrentAttributeName
+	$RPArr[2][$Current_Attrib_Number] = $ReparseType
+	$RPArr[3][$Current_Attrib_Number] = $ReparseDataLength
+	$RPArr[4][$Current_Attrib_Number] = $ReparsePadding
+	$RPArr[5][$Current_Attrib_Number] = $ReparseSubstititeNameOffset
+	$RPArr[6][$Current_Attrib_Number] = $ReparseSubstituteNameLength
+	$RPArr[7][$Current_Attrib_Number] = $ReparsePrintNameOffset
+	$RPArr[8][$Current_Attrib_Number] = $ReparsePrintNameLength
+	$RPArr[9][$Current_Attrib_Number] = $ReparseSubstititeName
+	$RPArr[10][$Current_Attrib_Number] = $ReparsePrintName
+EndFunc
+
+Func _Get_EaInformation($Entry,$Current_Attrib_Number,$CurrentAttributeName)
+	ConsoleWrite("-------------------------" & @crlf)
+	Local $LocalAttributeOffset,$TheEaInformation,$SizeOfPackedEas,$NumberOfEaWithFlagSet,$SizeOfUnpackedEas
+	$LocalAttributeOffset = 1
+	$TheEaInformation = StringMid($Entry,$LocalAttributeOffset)
+;	ConsoleWrite("$TheEaInformation = " & $TheEaInformation & @crlf)
+	$SizeOfPackedEas = StringMid($Entry,$LocalAttributeOffset,4)
+	$SizeOfPackedEas = Dec(StringMid($SizeOfPackedEas,3,2) & StringMid($SizeOfPackedEas,1,2))
+;	ConsoleWrite("$SizeOfPackedEas = " & $SizeOfPackedEas & @crlf)
+	$NumberOfEaWithFlagSet = StringMid($Entry,$LocalAttributeOffset+4,4)
+	$NumberOfEaWithFlagSet = Dec(StringMid($NumberOfEaWithFlagSet,3,2) & StringMid($NumberOfEaWithFlagSet,1,2))
+;	ConsoleWrite("$NumberOfEaWithFlagSet = " & $NumberOfEaWithFlagSet & @crlf)
+	$SizeOfUnpackedEas = StringMid($Entry,$LocalAttributeOffset+8,8)
+	Global $SizeOfUnpackedEas = Dec(StringMid($SizeOfUnpackedEas,7,2) & StringMid($SizeOfUnpackedEas,5,2) & StringMid($SizeOfUnpackedEas,3,2) & StringMid($SizeOfUnpackedEas,1,2))
+;	ConsoleWrite("$SizeOfUnpackedEas = " & $SizeOfUnpackedEas & @crlf)
+	$EAInfoArr[0][$Current_Attrib_Number] = "EA Info Number " & $Current_Attrib_Number
+	$EAInfoArr[1][$Current_Attrib_Number] = $CurrentAttributeName
+	$EAInfoArr[2][$Current_Attrib_Number] = $SizeOfPackedEas
+	$EAInfoArr[3][$Current_Attrib_Number] = $NumberOfEaWithFlagSet
+	$EAInfoArr[4][$Current_Attrib_Number] = $SizeOfUnpackedEas
+EndFunc
+
+Func _Get_Ea($Entry,$Current_Attrib_Number,$CurrentAttributeName)
+	ConsoleWrite("-------------------------" & @crlf)
+	Local $LocalAttributeOffset,$TheEa,$OffsetToNextEa,$EaFlags,$EaNameLength,$EaValueLength,$EaCounter=0
+	$LocalAttributeOffset = 1
+	$TheEa = StringMid($Entry,$LocalAttributeOffset,$SizeOfUnpackedEas*2)
+	ConsoleWrite("$TheEa = " & $TheEa & @crlf)
+	ConsoleWrite(_HexEncode("0x"&$TheEa) & @crlf)
+	$OffsetToNextEa = StringMid($Entry,$LocalAttributeOffset,8)
+	ConsoleWrite("$OffsetToNextEa = " & $OffsetToNextEa & @crlf)
+	$OffsetToNextEa = Dec(StringMid($OffsetToNextEa,7,2) & StringMid($OffsetToNextEa,5,2) & StringMid($OffsetToNextEa,3,2) & StringMid($OffsetToNextEa,1,2))
+	ConsoleWrite("$OffsetToNextEa = " & $OffsetToNextEa & @crlf)
+	$EaFlags = StringMid($Entry,$LocalAttributeOffset+8,2)
+	ConsoleWrite("$EaFlags = " & $EaFlags & @crlf)
+	$EaNameLength = Dec(StringMid($Entry,$LocalAttributeOffset+10,2))
+	ConsoleWrite("$EaNameLength = " & $EaNameLength & @crlf)
+	$EaValueLength = StringMid($Entry,$LocalAttributeOffset+12,4)
+	$EaValueLength = Dec(StringMid($EaValueLength,3,2) & StringMid($EaValueLength,1,2))
+	ConsoleWrite("$EaValueLength = " & $EaValueLength & @crlf)
+	$EaName = StringMid($Entry,$LocalAttributeOffset+16,$EaNameLength*2)
+	ConsoleWrite("$EaName = " & $EaName & @crlf)
+	$EaName = _HexToString($EaName)
+	ConsoleWrite("$EaName = " & $EaName & @crlf)
+	$EaValue = StringMid($Entry,$LocalAttributeOffset+16+($EaNameLength*2),$EaValueLength*2)
+	ConsoleWrite("$EaValue = " & $EaValue & @crlf)
+	$EAArr[0][$Current_Attrib_Number] = "EA Number " & $Current_Attrib_Number
+	$EAArr[1][$Current_Attrib_Number] = $CurrentAttributeName
+	$EAArr[2][$Current_Attrib_Number] = $OffsetToNextEa
+	$EAArr[3][$Current_Attrib_Number] = $EaFlags
+	$EAArr[4][$Current_Attrib_Number] = $EaNameLength
+	$EAArr[5][$Current_Attrib_Number] = $EaValueLength
+	$EAArr[6][$Current_Attrib_Number] = $EaName
+	$EAArr[7][$Current_Attrib_Number] = $EaValue
+	$NextEaOffset = $LocalAttributeOffset+22+($EaNameLength*2)+($EaValueLength*2)
+	Do
+		$EaCounter += 5
+		$NextEaFlag = StringMid($Entry,$NextEaOffset+8,2)
+		ConsoleWrite("$NextEaFlag = " & $NextEaFlag & @crlf)
+		$NextEaNameLength = Dec(StringMid($Entry,$NextEaOffset+10,2))
+		ConsoleWrite("$NextEaNameLength = " & $NextEaNameLength & @crlf)
+		$NextEaValueLength = StringMid($Entry,$NextEaOffset+12,4)
+		$NextEaValueLength = Dec(StringMid($NextEaValueLength,3,2) & StringMid($NextEaValueLength,1,2))
+		ConsoleWrite("$NextEaValueLength = " & $NextEaValueLength & @crlf)
+		$NextEaName = StringMid($Entry,$NextEaOffset+16,$NextEaNameLength*2)
+		ConsoleWrite("$NextEaName = " & $NextEaName & @crlf)
+		$NextEaName = _HexToString($NextEaName)
+		$NextEaValue = StringMid($Entry,$NextEaOffset+16+($NextEaNameLength*2),$NextEaValueLength*2)
+		ConsoleWrite("$NextEaName = " & $NextEaName & @crlf)
+		ConsoleWrite("$NextEaValue = " & $NextEaValue & @crlf)
+		$NextEaOffset = $NextEaOffset+22+2+($NextEaNameLength*2)+($NextEaValueLength*2)
+		ReDim $EAArr[8+$EaCounter][$Current_Attrib_Number+1]
+		Local $Counter1 = 7+($EaCounter-4)
+		Local $Counter2 = 7+($EaCounter-3)
+		Local $Counter3 = 7+($EaCounter-2)
+		Local $Counter4 = 7+($EaCounter-1)
+		Local $Counter5 = 7+($EaCounter-0)
+		$EAArr[$Counter1][0] = "NextEaFlag"
+		$EAArr[$Counter2][0] = "NextEaNameLength"
+		$EAArr[$Counter3][0] = "NextEaValueLength"
+		$EAArr[$Counter4][0] = "NextEaName"
+		$EAArr[$Counter5][0] = "NextEaValue"
+		$EAArr[$Counter1][$Current_Attrib_Number] = $NextEaFlag
+		$EAArr[$Counter2][$Current_Attrib_Number] = $NextEaNameLength
+		$EAArr[$Counter3][$Current_Attrib_Number] = $NextEaValueLength
+		$EAArr[$Counter4][$Current_Attrib_Number] = $NextEaName
+		$EAArr[$Counter5][$Current_Attrib_Number] = $NextEaValue
+	Until $NextEaOffset >= $SizeOfUnpackedEas*2
+	_ArrayDisplay($EAArr,"$EAArr")
+EndFunc
+
+Func _Get_LoggedUtilityStream($Entry,$Current_Attrib_Number,$CurrentAttributeName)
+	ConsoleWrite("-------------------------" & @crlf)
+	Local $LocalAttributeOffset
+	$LocalAttributeOffset = 1
+	$TheLoggedUtilityStream = StringMid($Entry,$LocalAttributeOffset)
+	ConsoleWrite("$TheLoggedUtilityStream = " & $TheLoggedUtilityStream & @crlf)
+	$LUSArr[0][$Current_Attrib_Number] = "LoggedUtilityStream Number " & $Current_Attrib_Number
+	$LUSArr[1][$Current_Attrib_Number] = $CurrentAttributeName
+	$LUSArr[2][$Current_Attrib_Number] = $TheLoggedUtilityStream
 EndFunc
