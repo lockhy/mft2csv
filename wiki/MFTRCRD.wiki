@@ -13,7 +13,7 @@ Here is a sample console dump: http://mft2csv.googlecode.com/files/dump_MTFRCRD.
 
 It is command line and the syntax is:
 
-=== Usage: "MFTRCRD param1 param2" ===
+=== Usage: "MFTRCRD param1 param2 param3" ===
 
 param1 can be a valid file path or an IndexNumber ($MFT record number)
 
@@ -21,23 +21,32 @@ param2 can be -d or -a:
 -d means just decode $MFT entry
 -a same as -d but also dumps the whole $MFT entry to console
 
+param3 is for optimizing speed of processing and can be either attriblist_on or attriblist_off. attriblist_on is for faster processing when $ATTRIBUTE_LIST is present.
+
 === Example for dumping an $MFT decode for boot.ini: ===
 
-MFTRCRD C:\boot.ini -d
+MFTRCRD C:\boot.ini -d attriblist_off
 
 === Example for dumping an $MFT decode + a 1024 byte $MFT record dump for $MFT itself from the C: drive: ===
 
-MFTRCRD C:0 -a
+MFTRCRD C:0 -a attriblist_off
 
 === Example for dumping an $MFT decode for $LogFile from the D: drive: ===
 
-MFTRCRD D:2 -d
+MFTRCRD D:2 -d attriblist_off
+
+=== Example for dumping a speed optimized $MFT decode for an extremely fragmented file with $ATTRIBUTE_LIST present: ===
+
+MFTRCRD C:\ExtremelyFragmented.bin -d attriblist_on
 
 
 = Latest version =
-v1008
+v1009
 
 = Changelog =
+
+v1009: Added decoding of resident and nonresident $REPARSE_POINT, $EA_INFORMATION, $EA and $LOGGED_UTILITY_STREAM. Added an extra switch to speed up $MFT processing when $ATTRIBUTE_LIST is present/not present. Fixed an extra error in the raw hex dump of $EA.
+
 v1008: Now hexdumps of all attributes are displayed with the -a switch, and not just the ones that are decoded.
 
 v1007: Switched code base to the same as of NTFS File Extracter. Now full $ATTRIBUTE_LIST is decoded and resolved. A pregeneration of an internal $MFT array is added to substantially speed up decoding of files with attribute list. Added raw dump of record slack.
