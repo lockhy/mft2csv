@@ -133,7 +133,7 @@ Local $FileAttrib
 If $cmdline[0] <> 3 Then
 	ConsoleWrite("Error: Wrong number of parameters supplied: " & $cmdline[0] & @CRLF)
 	ConsoleWrite("" & @CRLF)
-	ConsoleWrite('Usage: "MFTRCRD param1 param2"' & @CRLF)
+	ConsoleWrite('Usage: "MFTRCRD param1 param2 param3"' & @CRLF)
 	ConsoleWrite("" & @CRLF)
 	ConsoleWrite("param1 can be a valid file path or an IndexNumber ($MFT record number)" & @CRLF)
 	ConsoleWrite("param2 can be -d or -a: " & @CRLF)
