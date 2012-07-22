@@ -1,4 +1,4 @@
-#summary A command line $MFT record dumper.
+#summary A command line $MFT record dumper and decoder.
 
 = Introduction =
 
@@ -7,6 +7,21 @@ This tool will decode the $MFT record for a given file. It is a combination of m
 It supports both file name+path and IndexNumber (MFT record) as input. Also choose between 2 switches. One to dump the core decode, and one to also dump a formatted hex dump of the record, the present attributes, record slack and core attribute list. Also it will display detailed runs information (removed in v1007), so you can easily trace the various file fragments on the disk. 
 
 For most usage, set param3 as attriblist_off. That will produce faster output. Only set param3 as attriblist_on when there is an $ATTRIBUTE_LIST attribute present.
+
+Attributes currently handled:
+$STANDARD_INFORMATION
+$ATTRIBUTE_LIST
+$FILE_NAME
+$OBJECT_ID
+$VOLUME_NAME
+$VOLUME_INFORMATION
+$DATA
+$INDEX_ROOT
+$INDEX_ALLOCATION
+$REPARSE_POINT
+$EA_INFORMATION
+$EA
+$LOGGED_UTILITY_STREAM
 
 Here is a sample console dump: http://mft2csv.googlecode.com/files/dump_MTFRCRD.zip 
 
