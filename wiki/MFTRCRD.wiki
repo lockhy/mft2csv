@@ -13,11 +13,13 @@ Attributes currently handled:
   * $ATTRIBUTE_LIST
   * $FILE_NAME
   * $OBJECT_ID
+  * $SECURITY_DESCRIPTOR (just raw hex dump)
   * $VOLUME_NAME
   * $VOLUME_INFORMATION
   * $DATA
   * $INDEX_ROOT
   * $INDEX_ALLOCATION
+  * $BITMAP (just raw hex dump)
   * $REPARSE_POINT
   * $EA_INFORMATION
   * $EA
