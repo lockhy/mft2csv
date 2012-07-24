@@ -4,9 +4,7 @@
 
 This tool will decode the $MFT record for a given file. It is a combination of mft2csv and NtfsFileExtracter. That means it is a tool for quick decode and dumping of file records. It does not write any csv, but dumps the information to the console. It is very handy when testing stuff and learning NTFS, as you can do stuff to a file and get it decoded right away, without first having to extract the whole $MFT and then decode it to a csv, before importing it into Excel or something and get the actual result. MFTRCRD is therefore for quick dumping of record information for individual files, whereas mft2csv is for decoding the complete $MFT with all its records, which may be a substantial amount and timeconsuming task.
 
-It supports both file name+path and IndexNumber (MFT record) as input. Also choose between 2 switches. One to dump the core decode, and one to also dump a formatted hex dump of the record, the present attributes, record slack and core attribute list. Also it will display detailed runs information (removed in v1007), so you can easily trace the various file fragments on the disk. 
-
-For most usage, set param3 as attriblist_off. That will produce faster output. Only set param3 as attriblist_on when there is an $ATTRIBUTE_LIST attribute present.
+It supports both file name+path and IndexNumber (MFT record) as input (param1). One switch (param3) is for optimizing decode speed when $ATTRIBUTE_LIST is present for a given file. For most usage, set param3 as attriblist=off. That will produce faster output. Only set param3 as attriblist=on when there is an $ATTRIBUTE_LIST attribute present. Another switch (param4) is for choosing wether to hexdump resolved INDX records from the $INDEX_ALLOCATION attribute.
 
 Attributes currently handled:
   * $STANDARD_INFORMATION
