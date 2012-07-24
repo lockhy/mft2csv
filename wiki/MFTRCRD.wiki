@@ -25,14 +25,16 @@ Attributes currently handled:
   * $EA
   * $LOGGED_UTILITY_STREAM
 
-Here is a sample console dump: http://mft2csv.googlecode.com/files/dump_MTFRCRD.zip 
+Detailed runs information for $DATA can be retrived with version v1006.
+
+Here is a sample console dump (older version): http://mft2csv.googlecode.com/files/dump_MTFRCRD.zip 
 
 
 = How to run MFTRCRD =
 
 It is command line and the syntax is:
 
-=== Usage: "MFTRCRD param1 param2 param3" ===
+=== Usage: "MFTRCRD param1 param2 param3 param4" ===
 
 param1 can be a valid file path or an IndexNumber ($MFT record number)
 
@@ -42,27 +44,38 @@ param2 can be -d or -a:
 
 param3 is for optimizing speed of processing and can be either attriblist_on or attriblist_off. attriblist_on is for faster processing when $ATTRIBUTE_LIST is present.
 
+param4 for specifying wether to hexdump complete INDX records and can be either indxdump=on or indxdump=off. Beware that indxdump=on may generate a significant amount of dump to console for certain directories.
+
 === Example for dumping an $MFT decode for boot.ini: ===
 
-MFTRCRD C:\boot.ini -d attriblist_off
+MFTRCRD C:\boot.ini -d attriblist=off indxdump=off
 
 === Example for dumping an $MFT decode + a 1024 byte $MFT record dump for $MFT itself from the C: drive: ===
 
-MFTRCRD C:0 -a attriblist_off
+MFTRCRD C:0 -a attriblist=off indxdump=off
 
 === Example for dumping an $MFT decode for $LogFile from the D: drive: ===
 
-MFTRCRD D:2 -d attriblist_off
+MFTRCRD D:2 -d attriblist=off indxdump=off
 
 === Example for dumping a speed optimized $MFT decode for an extremely fragmented file with $ATTRIBUTE_LIST present: ===
 
-MFTRCRD C:\ExtremelyFragmented.bin -d attriblist_on
+MFTRCRD C:\ExtremelyFragmented.bin -d attriblist=on indxdump=off
+
+=== Example for dumping an $MFT record decode + hexdump of its resolved INDX records for the root directory on C:, equivalent to the 'folder' named C:\ ===
+
+MFTRCRD C:5 -d attriblist=off indxdump=on
+
+
+Running the tool without any parameter will display help information.
 
 
 = Latest version =
-v1.0.0.10
+v1.0.0.11
 
 = Changelog =
+
+v1.0.0.11: Changed syntax slightly, and introduced a new parameter called indxdump. Fixed lots of stuff for INDX records decoding. Still unknown why some duplicate entries appear though.
 
 v1.0.0.10: Added test decode of $INDEX_ROOT and $INDEX_ALLOCATION. Added INDX record decoding and raw hex dump.
 
