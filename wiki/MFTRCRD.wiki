@@ -69,9 +69,11 @@ Running the tool without any parameter will display help information.
 
 
 = Latest version =
-v1.0.0.11
+v1.0.0.12
 
 = Changelog =
+
+v1.0.0.12: Fixed the bug in extraction of non-resident INDX records that caused some duplication of entries to occur. The INDX entry arrays logic have been turned aroung into a much easier and better way.
 
 v1.0.0.11: Changed syntax slightly, and introduced a new parameter called indxdump. Fixed lots of stuff for INDX records decoding. Still unknown why some duplicate entries appear though.
 
