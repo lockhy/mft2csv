@@ -35,9 +35,11 @@ Some limitations are present. Only $DATA attributes is currently supported, whic
 
 = Latest Version =
 
-v3.1
+v3.2
 
 = Changelog =
+
+v3.2 Changes by DDan implmented that fixed slightly wrong data extracted when initialized file size differed from logical filesize. Some other minor things too.
 
 v3.1 Added generation of some MFT arrays with indexnumber and disk offset, to speed up processing of files with attribute list (for instance fragmented and/or compressed files).
 
