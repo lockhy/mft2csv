@@ -22,7 +22,7 @@
 ;
 ; http://code.google.com/p/mft2csv/
 ;
-Global $ReparseType,$ReparseDataLength,$ReparsePadding,$ReparseSubstititeNameOffset,$ReparseSubstituteNameLength,$ReparsePrintNameOffset,$ReparsePrintNameLength
+Global $ReparseType,$ReparseDataLength,$ReparsePadding,$ReparseSubstititeNameOffset,$ReparseSubstituteNameLength,$ReparsePrintNameOffset,$ReparsePrintNameLength,$ResidentIndx
 Global $BrowsedFile,$TargetDrive = "", $ALInnerCouner, $MFTSize, $MFTRecordsArr[1][1]
 Global $SectorsPerCluster,$MFT_Record_Size,$BytesPerCluster,$BytesPerSector,$MFT_Offset
 Global $HEADER_LSN,$HEADER_SequenceNo,$HEADER_Flags,$HEADER_RecordRealSize,$HEADER_RecordAllocSize,$HEADER_FileRef
@@ -36,7 +36,7 @@ Global $DATA_AllocatedSize,$DATA_RealSize,$DATA_InitializedStreamSize,$RunListOf
 Global $RUN_VCN[1],$RUN_Clusters[1],$MFT_RUN_Clusters[1],$MFT_RUN_VCN[1],$NameQ[5],$DataQ[1],$sBuffer,$AttrQ[1], $RUN_Sparse[1], $MFT_RUN_Sparse[1], $RUN_Complete[1][4], $MFT_RUN_Complete[1][4], $RUN_Sectors, $MFT_RUN_Sectors
 Global $SI_CTime,$SI_ATime,$SI_MTime,$SI_RTime,$SI_FilePermission,$SI_USN,$Errors,$RecordSlackSpace
 Global $IndxEntryNumberArr[1],$IndxMFTReferenceArr[1],$IndxIndexFlagsArr[1],$IndxMFTReferenceOfParentArr[1],$IndxCTimeArr[1],$IndxATimeArr[1],$IndxMTimeArr[1],$IndxRTimeArr[1],$IndxAllocSizeArr[1],$IndxRealSizeArr[1],$IndxFileFlagsArr[1],$IndxFileNameArr[1],$IndxSubNodeVCNArr[1],$IndxNameSpaceArr[1]
-Global $IsDirectory = 0, $AttributesArr[18][4], $SIArr[13][2], $FNArr[14][1], $RecordHdrArr[15][2], $ObjectIDArr[5][2], $DataArr[20][2], $AttribListArr[9][2],$VolumeNameArr[2][2],$VolumeInformationArr[3][2],$RPArr[11][2],$LUSArr[3][2],$EAInfoArr[5][2],$EAArr[8][2],$IRArr[7][2],$IndxArr[20][2]
+Global $IsDirectory = 0, $AttributesArr[18][4], $SIArr[13][2], $FNArr[14][1], $RecordHdrArr[15][2], $ObjectIDArr[5][2], $DataArr[20][2], $AttribListArr[9][2],$VolumeNameArr[2][2],$VolumeInformationArr[3][2],$RPArr[11][2],$LUSArr[3][2],$EAInfoArr[5][2],$EAArr[8][2],$IRArr[12][2],$IndxArr[20][2]
 Global $HexDumpRecordSlack[1],$HexDumpRecord[1],$HexDumpHeader[1],$HexDumpStandardInformation[1],$HexDumpAttributeList[1],$HexDumpFileName[1],$HexDumpObjectId[1],$HexDumpSecurityDescriptor[1],$HexDumpVolumeName[1],$HexDumpVolumeInformation[1],$HexDumpData[1],$HexDumpIndexRoot[1],$HexDumpIndexAllocation[1],$HexDumpBitmap[1],$HexDumpReparsePoint[1],$HexDumpEaInformation[1],$HexDumpEa[1],$HexDumpPropertySet[1],$HexDumpLoggedUtilityStream[1],$HexDumpIndxRecord[1]
 Global $FN_Number,$DATA_Number,$SI_Number,$ATTRIBLIST_Number,$OBJID_Number,$SECURITY_Number,$VOLNAME_Number,$VOLINFO_Number,$INDEXROOT_Number,$INDEXALLOC_Number,$BITMAP_Number,$REPARSEPOINT_Number,$EAINFO_Number,$EA_Number,$PROPERTYSET_Number,$LOGGEDUTILSTREAM_Number
 Global $STANDARD_INFORMATION_ON,$ATTRIBUTE_LIST_ON,$FILE_NAME_ON,$OBJECT_ID_ON,$SECURITY_DESCRIPTOR_ON,$VOLUME_NAME_ON,$VOLUME_INFORMATION_ON,$DATA_ON,$INDEX_ROOT_ON,$INDEX_ALLOCATION_ON,$BITMAP_ON,$REPARSE_POINT_ON,$EA_INFORMATION_ON,$EA_ON,$PROPERTY_SET_ON,$LOGGED_UTILITY_STREAM_ON,$ATTRIBUTE_END_MARKER_ON
@@ -850,7 +850,7 @@ While 1
 		Case $AttributeType = $INDEX_ROOT
 			$INDEX_ROOT_ON = "TRUE"
 			$INDEXROOT_Number += 1
-			ReDim $IRArr[7][$INDEXROOT_Number+1]
+			ReDim $IRArr[12][$INDEXROOT_Number+1]
 			$CoreIndexRoot = _GetAttributeEntry(StringMid($MFTEntry,$AttributeOffset,$AttributeSize*2))
 			$CoreIndexRootChunk = $CoreIndexRoot[0]
 			$CoreIndexRootName = $CoreIndexRoot[1]
@@ -1569,29 +1569,11 @@ $IRArr[3][0] = "CollationRule"
 $IRArr[4][0] = "SizeOfIndexAllocationEntry"
 $IRArr[5][0] = "ClustersPerIndexRoot"
 $IRArr[6][0] = "IRPadding"
-#cs
-$IndxArr[0][0] = "Description:"
-$IndxArr[1][0] = "Name of Attribute"
-$IndxArr[2][0] = "Entry number"
-$IndxArr[3][0] = "MFTReference"
-$IndxArr[4][0] = "IndexEntryLength"
-$IndxArr[5][0] = "OffsetToFileName"
-$IndxArr[6][0] = "IndexFlags"
-$IndxArr[7][0] = "Padding"
-$IndxArr[8][0] = "MFTReferenceOfParent"
-$IndxArr[9][0] = "Indx_CTime"
-$IndxArr[10][0] = "Indx_ATime"
-$IndxArr[11][0] = "Indx_MTime"
-$IndxArr[12][0] = "Indx_RTime"
-$IndxArr[13][0] = "Indx_AllocSize"
-$IndxArr[14][0] = "Indx_RealSize"
-$IndxArr[15][0] = "Indx_File_Flags"
-$IndxArr[16][0] = "Indx_NameLength"
-$IndxArr[17][0] = "Indx_NameSpace"
-$IndxArr[18][0] = "Indx_FileName"
-$IndxArr[19][0] = "Padding2"
-;$IndxArr[20][0] = "SubNodeVCN"
-#ce
+$IRArr[7][0] = "OffsetToFirstEntry"
+$IRArr[8][0] = "TotalSizeOfEntries"
+$IRArr[9][0] = "AllocatedSizeOfEntries"
+$IRArr[10][0] = "Flags"
+$IRArr[11][0] = "IRPadding2"
 $IndxEntryNumberArr[0] = "Entry number"
 $IndxMFTReferenceArr[0] = "MFTReference"
 $IndxIndexFlagsArr[0] = "IndexFlags"
@@ -2163,9 +2145,31 @@ If $AttributesArr[9][2] = "TRUE" Then; $INDEX_ROOT
 	For $p = 1 To $INDEXROOT_Number
 		ConsoleWrite(@CRLF)
 		ConsoleWrite("$INDEX_ROOT " & $p & ":" & @CRLF)
-		For $j = 1 To 6
+		For $j = 1 To 11
 			ConsoleWrite($IRArr[$j][0] & ": " & $IRArr[$j][$p] & @CRLF)
 		Next
+		If $ResidentIndx Then
+			ConsoleWrite(@CRLF)
+			ConsoleWrite("Decode of resident index entries:" & @CRLF)
+			For $k = 1 To Ubound($IndxEntryNumberArr)-1
+				ConsoleWrite(@CRLF)
+				ConsoleWrite($IndxEntryNumberArr[0] & ": " & $IndxEntryNumberArr[$k] & @CRLF)
+				ConsoleWrite($IndxFileNameArr[0] & ": " & $IndxFileNameArr[$k] & @CRLF)
+				ConsoleWrite($IndxMFTReferenceArr[0] & ": " & $IndxMFTReferenceArr[$k] & @CRLF)
+				ConsoleWrite($IndxIndexFlagsArr[0] & ": " & $IndxIndexFlagsArr[$k] & @CRLF)
+;				If $IndxIndexFlagsArr[$j] <> "0000" Then MsgBox(0,"Hey", "Something interesting to investigate") ; yeah don't know what to with it at the moment -> look SubNodeVCN
+				ConsoleWrite($IndxMFTReferenceOfParentArr[0] & ": " & $IndxMFTReferenceOfParentArr[$k] & @CRLF)
+				ConsoleWrite($IndxCTimeArr[0] & ": " & $IndxCTimeArr[$k] & @CRLF)
+				ConsoleWrite($IndxATimeArr[0] & ": " & $IndxATimeArr[$k] & @CRLF)
+				ConsoleWrite($IndxMTimeArr[0] & ": " & $IndxMTimeArr[$k] & @CRLF)
+				ConsoleWrite($IndxRTimeArr[0] & ": " & $IndxRTimeArr[$k] & @CRLF)
+				ConsoleWrite($IndxAllocSizeArr[0] & ": " & $IndxAllocSizeArr[$k] & @CRLF)
+				ConsoleWrite($IndxRealSizeArr[0] & ": " & $IndxRealSizeArr[$k] & @CRLF)
+				ConsoleWrite($IndxFileFlagsArr[0] & ": " & $IndxFileFlagsArr[$k] & @CRLF)
+				ConsoleWrite($IndxNameSpaceArr[0] & ": " & $IndxNameSpaceArr[$k] & @CRLF)
+				ConsoleWrite($IndxSubNodeVCNArr[0] & ": " & $IndxSubNodeVCNArr[$k] & @CRLF)
+			Next
+		EndIf
 		If $cmdline[2] = "-a" Then
 			ConsoleWrite(@CRLF)
 			ConsoleWrite("Dump of $INDEX_ROOT (" & $p & ")" & @crlf)
@@ -3006,7 +3010,6 @@ EndFunc
 Func _Get_IndexRoot($Entry,$Current_Attrib_Number,$CurrentAttributeName)
 	Local $LocalAttributeOffset = 1,$AttributeType,$CollationRule,$SizeOfIndexAllocationEntry,$ClustersPerIndexRoot,$IRPadding
 ;	ConsoleWrite(_HexEncode("0x"&$Entry) & @crlf)
-; Test 1
 	$AttributeType = StringMid($Entry,$LocalAttributeOffset,8)
 ;	ConsoleWrite("$AttributeType = " & $AttributeType & @crlf)
 	$AttributeType = StringMid($AttributeType,7,2) & StringMid($AttributeType,5,2) & StringMid($AttributeType,3,2) & StringMid($AttributeType,1,2)
@@ -3023,6 +3026,32 @@ Func _Get_IndexRoot($Entry,$Current_Attrib_Number,$CurrentAttributeName)
 ;	ConsoleWrite("$ClustersPerIndexRoot = " & $ClustersPerIndexRoot & @crlf)
 	$IRPadding = StringMid($Entry,$LocalAttributeOffset+26,6)
 ;	ConsoleWrite("$IRPadding = " & $IRPadding & @crlf)
+	$OffsetToFirstEntry = StringMid($Entry,$LocalAttributeOffset+32,8)
+;	ConsoleWrite("$OffsetToFirstEntry = " & $OffsetToFirstEntry & @crlf)
+	$OffsetToFirstEntry = StringMid($OffsetToFirstEntry,7,2) & StringMid($OffsetToFirstEntry,5,2) & StringMid($OffsetToFirstEntry,3,2) & StringMid($OffsetToFirstEntry,1,2)
+;	ConsoleWrite("$OffsetToFirstEntry = " & $OffsetToFirstEntry & @crlf)
+	$OffsetToFirstEntry = Dec($OffsetToFirstEntry)
+	$TotalSizeOfEntries = StringMid($Entry,$LocalAttributeOffset+40,8)
+;	ConsoleWrite("$TotalSizeOfEntries = " & $TotalSizeOfEntries & @crlf)
+	$TotalSizeOfEntries = Dec(StringMid($TotalSizeOfEntries,7,2) & StringMid($TotalSizeOfEntries,5,2) & StringMid($TotalSizeOfEntries,3,2) & StringMid($TotalSizeOfEntries,1,2))
+;	ConsoleWrite("$TotalSizeOfEntries = " & $TotalSizeOfEntries & @crlf)
+	$TotalSizeOfEntries = Dec($TotalSizeOfEntries)
+	$AllocatedSizeOfEntries = StringMid($Entry,$LocalAttributeOffset+48,8)
+;	ConsoleWrite("$AllocatedSizeOfEntries = " & $AllocatedSizeOfEntries & @crlf)
+	$AllocatedSizeOfEntries = Dec(StringMid($AllocatedSizeOfEntries,7,2) & StringMid($AllocatedSizeOfEntries,5,2) & StringMid($AllocatedSizeOfEntries,3,2) & StringMid($AllocatedSizeOfEntries,1,2))
+;	ConsoleWrite("$AllocatedSizeOfEntries = " & $AllocatedSizeOfEntries & @crlf)
+	$AllocatedSizeOfEntries = Dec($AllocatedSizeOfEntries)
+	$Flags = StringMid($Entry,$LocalAttributeOffset+56,2)
+	If $Flags = "01" Then
+		$Flags = "01 (Index Allocation needed)"
+		$ResidentIndx = 0
+	Else
+		$Flags = "00 (Fits in Index Root)"
+		$ResidentIndx = 1
+	EndIf
+;	ConsoleWrite("$Flags = " & $Flags & @crlf)
+	$IRPadding2 = StringMid($Entry,$LocalAttributeOffset+58,6)
+;	ConsoleWrite("$IRPadding2 = " & $IRPadding2 & @crlf)
 	$IRArr[0][$Current_Attrib_Number] = "IndexRoot Number " & $Current_Attrib_Number
 	$IRArr[1][$Current_Attrib_Number] = $CurrentAttributeName
 	$IRArr[2][$Current_Attrib_Number] = $AttributeType
@@ -3030,40 +3059,15 @@ Func _Get_IndexRoot($Entry,$Current_Attrib_Number,$CurrentAttributeName)
 	$IRArr[4][$Current_Attrib_Number] = $SizeOfIndexAllocationEntry
 	$IRArr[5][$Current_Attrib_Number] = $ClustersPerIndexRoot
 	$IRArr[6][$Current_Attrib_Number] = $IRPadding
-	$IRRestChunk = StringMid($Entry,$LocalAttributeOffset+32)
-;	ConsoleWrite(_HexEncode("0x"&$IRRestChunk) & @crlf)
-	$NewOffset = $LocalAttributeOffset+112
-;	ConsoleWrite("$NewOffset = " & $NewOffset & @crlf)
-;	ConsoleWrite("StringLen($Entry) = " & StringLen($Entry) & @crlf)
-	If $NewOffset < StringLen($Entry) Then
-;		MsgBox(0,"Info","More to decode")
+	$IRArr[7][$Current_Attrib_Number] = $OffsetToFirstEntry
+	$IRArr[8][$Current_Attrib_Number] = $TotalSizeOfEntries
+	$IRArr[9][$Current_Attrib_Number] = $AllocatedSizeOfEntries
+	$IRArr[10][$Current_Attrib_Number] = $Flags
+	$IRArr[11][$Current_Attrib_Number] = $IRPadding2
+	If $ResidentIndx Then
+		$TheResidentIndexEntry = StringMid($Entry,$LocalAttributeOffset+64)
+		_DecodeIndxEntries($TheResidentIndexEntry,$Current_Attrib_Number,$CurrentAttributeName)
 	EndIf
-;	ConsoleWrite("IRRestChunk: " & @crlf)
-;	ConsoleWrite(_HexEncode("0x"&$IRRestChunk) & @crlf)
-#cs
-; Test 2
-	$OffsetToFirstEntry = StringMid($Entry,$LocalAttributeOffset,8)
-	ConsoleWrite("$OffsetToFirstEntry = " & $OffsetToFirstEntry & @crlf)
-	$OffsetToFirstEntry = StringMid($OffsetToFirstEntry,7,2) & StringMid($OffsetToFirstEntry,5,2) & StringMid($OffsetToFirstEntry,3,2) & StringMid($OffsetToFirstEntry,1,2)
-	ConsoleWrite("$OffsetToFirstEntry = " & $OffsetToFirstEntry & @crlf)
-	$TotalSizeOfEntries = StringMid($Entry,$LocalAttributeOffset+8,8)
-	ConsoleWrite("$TotalSizeOfEntries = " & $TotalSizeOfEntries & @crlf)
-	$TotalSizeOfEntries = Dec(StringMid($TotalSizeOfEntries,7,2) & StringMid($TotalSizeOfEntries,5,2) & StringMid($TotalSizeOfEntries,3,2) & StringMid($TotalSizeOfEntries,1,2))
-	ConsoleWrite("$TotalSizeOfEntries = " & $TotalSizeOfEntries & @crlf)
-	$AllocatedSizeOfEntries = StringMid($Entry,$LocalAttributeOffset+16,8)
-	ConsoleWrite("$AllocatedSizeOfEntries = " & $AllocatedSizeOfEntries & @crlf)
-	$AllocatedSizeOfEntries = Dec(StringMid($AllocatedSizeOfEntries,7,2) & StringMid($AllocatedSizeOfEntries,5,2) & StringMid($AllocatedSizeOfEntries,3,2) & StringMid($AllocatedSizeOfEntries,1,2))
-	ConsoleWrite("$AllocatedSizeOfEntries = " & $AllocatedSizeOfEntries & @crlf)
-	$Flags = StringMid($Entry,$LocalAttributeOffset+24,2)
-; Flag=01 -> Index Allocation needed
-; Flag=00 -> fits in Index Root
-	ConsoleWrite("$Flags = " & $Flags & @crlf)
-	$IRPadding = StringMid($Entry,$LocalAttributeOffset+26,6)
-	ConsoleWrite("$IRPadding = " & $IRPadding & @crlf)
-	$IRRestChunk = StringMid($Entry,$LocalAttributeOffset+32)
-;	ConsoleWrite(_HexEncode("0x"&$IRRestChunk) & @crlf)
-#ce
-
 EndFunc
 
 Func _StripIndxRecord($Entry)
@@ -3105,9 +3109,11 @@ Func _StripIndxRecord($Entry)
 ;	ConsoleWrite("$IndxRecordSize = " & $IndxRecordSize & @crlf)
 	$IndxHeaderSize = Dec(_SwapEndian(StringMid($Entry,$LocalAttributeOffset+48,8)),2)
 ;	ConsoleWrite("$IndxHeaderSize = " & $IndxHeaderSize & @crlf)
-	$IsNotLeafNode = StringMid($Entry,$LocalAttributeOffset+64,2) ;1 if not leaf node
-;	if $IsNotLeafNode = "01" Then MsgBox(0,"Info","Entry has children")
+	$IsNotLeafNode = StringMid($Entry,$LocalAttributeOffset+72,2) ;1 if not leaf node
 	$Entry = StringMid($Entry,$LocalAttributeOffset+48+($IndxHeaderSize*2),($IndxRecordSize-$IndxHeaderSize-16)*2)
+	If $IsNotLeafNode = "01" Then  ; This flag leads to the entry being 8 bytes of 00's longer than the others. Can be stripped I think.
+		$Entry = StringTrimRight($Entry,16)
+	EndIf
 	Return $Entry
 EndFunc
 
@@ -3280,6 +3286,7 @@ Func _DecodeIndxEntries($Entry,$Current_Attrib_Number,$CurrentAttributeName)
 	$IndxSubNodeVCNArr[$EntryCounter] = $SubNodeVCN
 ; Work through the rest of the index entries
 	$NextEntryOffset = $NewLocalAttributeOffset+164+($Indx_NameLength*2*2)+$PaddingLength+$SubNodeVCNLength
+	If $NextEntryOffset+64 >= StringLen($Entry) Then Return
 	Do
 		$EntryCounter += 1
 		$MFTReference = StringMid($Entry,$NextEntryOffset,16)
