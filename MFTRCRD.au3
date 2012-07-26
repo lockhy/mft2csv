@@ -4,7 +4,7 @@
 #AutoIt3Wrapper_Change2CUI=y
 #AutoIt3Wrapper_Res_Comment=Quick $MFT record dump
 #AutoIt3Wrapper_Res_Description=Decode a file's attributes from $MFT
-#AutoIt3Wrapper_Res_Fileversion=1.0.0.11
+#AutoIt3Wrapper_Res_Fileversion=1.0.0.12
 #AutoIt3Wrapper_Res_LegalCopyright=Joakim Schicht
 #AutoIt3Wrapper_Res_requestedExecutionLevel=asInvoker
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
@@ -35,6 +35,7 @@ Global $DATA_CompressionUnitSize,$DATA_ON,$DATA_CompressedSize,$DATA_LengthOfAtt
 Global $DATA_AllocatedSize,$DATA_RealSize,$DATA_InitializedStreamSize,$RunListOffset,$DataRun,$IsCompressed
 Global $RUN_VCN[1],$RUN_Clusters[1],$MFT_RUN_Clusters[1],$MFT_RUN_VCN[1],$NameQ[5],$DataQ[1],$sBuffer,$AttrQ[1], $RUN_Sparse[1], $MFT_RUN_Sparse[1], $RUN_Complete[1][4], $MFT_RUN_Complete[1][4], $RUN_Sectors, $MFT_RUN_Sectors
 Global $SI_CTime,$SI_ATime,$SI_MTime,$SI_RTime,$SI_FilePermission,$SI_USN,$Errors,$RecordSlackSpace
+Global $IndxEntryNumberArr[1],$IndxMFTReferenceArr[1],$IndxIndexFlagsArr[1],$IndxMFTReferenceOfParentArr[1],$IndxCTimeArr[1],$IndxATimeArr[1],$IndxMTimeArr[1],$IndxRTimeArr[1],$IndxAllocSizeArr[1],$IndxRealSizeArr[1],$IndxFileFlagsArr[1],$IndxFileNameArr[1],$IndxSubNodeVCNArr[1],$IndxNameSpaceArr[1]
 Global $IsDirectory = 0, $AttributesArr[18][4], $SIArr[13][2], $FNArr[14][1], $RecordHdrArr[15][2], $ObjectIDArr[5][2], $DataArr[20][2], $AttribListArr[9][2],$VolumeNameArr[2][2],$VolumeInformationArr[3][2],$RPArr[11][2],$LUSArr[3][2],$EAInfoArr[5][2],$EAArr[8][2],$IRArr[7][2],$IndxArr[20][2]
 Global $HexDumpRecordSlack[1],$HexDumpRecord[1],$HexDumpHeader[1],$HexDumpStandardInformation[1],$HexDumpAttributeList[1],$HexDumpFileName[1],$HexDumpObjectId[1],$HexDumpSecurityDescriptor[1],$HexDumpVolumeName[1],$HexDumpVolumeInformation[1],$HexDumpData[1],$HexDumpIndexRoot[1],$HexDumpIndexAllocation[1],$HexDumpBitmap[1],$HexDumpReparsePoint[1],$HexDumpEaInformation[1],$HexDumpEa[1],$HexDumpPropertySet[1],$HexDumpLoggedUtilityStream[1],$HexDumpIndxRecord[1]
 Global $FN_Number,$DATA_Number,$SI_Number,$ATTRIBLIST_Number,$OBJID_Number,$SECURITY_Number,$VOLNAME_Number,$VOLINFO_Number,$INDEXROOT_Number,$INDEXALLOC_Number,$BITMAP_Number,$REPARSEPOINT_Number,$EAINFO_Number,$EA_Number,$PROPERTYSET_Number,$LOGGEDUTILSTREAM_Number
@@ -97,7 +98,7 @@ Dim $FormattedTimestamp
 
 ConsoleWrite("" & @CRLF)
 ConsoleWrite("Starting MFTRCRD by Joakim Schicht" & @CRLF)
-ConsoleWrite("Version 1.0.0.11" & @CRLF)
+ConsoleWrite("Version 1.0.0.12" & @CRLF)
 ConsoleWrite("" & @CRLF)
 _validate_parameters()
 If StringIsDigit(StringMid($cmdline[1],3)) Then
@@ -677,6 +678,7 @@ EndFunc
 
 Func _DecodeMFTRecord($MFTEntry)
 Local $MFTEntryOrig
+Global $IndxEntryNumberArr[1],$IndxMFTReferenceArr[1],$IndxIndexFlagsArr[1],$IndxMFTReferenceOfParentArr[1],$IndxCTimeArr[1],$IndxATimeArr[1],$IndxMTimeArr[1],$IndxRTimeArr[1],$IndxAllocSizeArr[1],$IndxRealSizeArr[1],$IndxFileFlagsArr[1],$IndxFileNameArr[1],$IndxSubNodeVCNArr[1],$IndxNameSpaceArr[1]
 Global $HexDumpRecordSlack[1],$HexDumpRecord[1],$HexDumpHeader[1],$HexDumpStandardInformation[1],$HexDumpAttributeList[1],$HexDumpFileName[1],$HexDumpObjectId[1],$HexDumpSecurityDescriptor[1],$HexDumpVolumeName[1],$HexDumpVolumeInformation[1],$HexDumpData[1],$HexDumpIndexRoot[1],$HexDumpIndexAllocation[1],$HexDumpBitmap[1],$HexDumpReparsePoint[1],$HexDumpEaInformation[1],$HexDumpEa[1],$HexDumpPropertySet[1],$HexDumpLoggedUtilityStream[1],$HexDumpIndxRecord[1]
 Global $NameQ[5]		;clear name array
 _Arrayadd($HexDumpRecord,StringMid($MFTEntry,3))
@@ -798,11 +800,11 @@ While 1
 			$NameSpace = StringMid($attr,179,2)
 			Select
 				Case $NameSpace = "00"	;POSIX
-					$NameQ[1] = $attr
+					$NameQ[2] = $attr
 				Case $NameSpace = "01"	;WIN32
 					$NameQ[4] = $attr
 				Case $NameSpace = "02"	;DOS
-					$NameQ[2] = $attr
+					$NameQ[1] = $attr
 				Case $NameSpace = "03"	;DOS+WIN32
 					$NameQ[3] = $attr
 			EndSelect
@@ -858,7 +860,7 @@ While 1
 		Case $AttributeType = $INDEX_ALLOCATION
 			$INDEX_ALLOCATION_ON = "TRUE"
 			$INDEXALLOC_Number += 1
-			ReDim $IndxArr[20][$INDEXALLOC_Number+1]
+;			ReDim $IndxArr[20][$INDEXALLOC_Number+1]
 			ReDim $HexDumpIndxRecord[$INDEXALLOC_Number]
 			$CoreIndexAllocation = _GetAttributeEntry(StringMid($MFTEntry,$AttributeOffset,$AttributeSize*2))
 			$CoreIndexAllocationChunk = $CoreIndexAllocation[0]
@@ -1567,6 +1569,7 @@ $IRArr[3][0] = "CollationRule"
 $IRArr[4][0] = "SizeOfIndexAllocationEntry"
 $IRArr[5][0] = "ClustersPerIndexRoot"
 $IRArr[6][0] = "IRPadding"
+#cs
 $IndxArr[0][0] = "Description:"
 $IndxArr[1][0] = "Name of Attribute"
 $IndxArr[2][0] = "Entry number"
@@ -1588,6 +1591,21 @@ $IndxArr[17][0] = "Indx_NameSpace"
 $IndxArr[18][0] = "Indx_FileName"
 $IndxArr[19][0] = "Padding2"
 ;$IndxArr[20][0] = "SubNodeVCN"
+#ce
+$IndxEntryNumberArr[0] = "Entry number"
+$IndxMFTReferenceArr[0] = "MFTReference"
+$IndxIndexFlagsArr[0] = "IndexFlags"
+$IndxMFTReferenceOfParentArr[0] = "MFTReferenceOfParent"
+$IndxCTimeArr[0] = "CTime"
+$IndxATimeArr[0] = "ATime"
+$IndxMTimeArr[0] = "MTime"
+$IndxRTimeArr[0] = "RTime"
+$IndxAllocSizeArr[0] = "AllocSize"
+$IndxRealSizeArr[0] = "RealSize"
+$IndxFileFlagsArr[0] = "File flags"
+$IndxFileNameArr[0] = "FileName"
+$IndxNameSpaceArr[0] = "NameSpace"
+$IndxSubNodeVCNArr[0] = "SubNodeVCN"
 EndFunc
 
 Func _HexEncode($bInput)
@@ -2161,8 +2179,24 @@ If $AttributesArr[10][2] = "TRUE" Then; $INDEX_ALLOCATION
 	For $p = 1 To $INDEXALLOC_Number
 		ConsoleWrite(@CRLF)
 		ConsoleWrite("$INDEX_ALLOCATION " & $p & ":" & @CRLF)
-		For $j = 1 To Ubound($IndxArr)-1
-			ConsoleWrite($IndxArr[$j][0] & ": " & $IndxArr[$j][$p] & @CRLF)
+		ConsoleWrite("Resolved and decoded INDX records:" & @CRLF)
+		For $j = 1 To Ubound($IndxEntryNumberArr)-1
+			ConsoleWrite(@CRLF)
+			ConsoleWrite($IndxEntryNumberArr[0] & ": " & $IndxEntryNumberArr[$j] & @CRLF)
+			ConsoleWrite($IndxFileNameArr[0] & ": " & $IndxFileNameArr[$j] & @CRLF)
+			ConsoleWrite($IndxMFTReferenceArr[0] & ": " & $IndxMFTReferenceArr[$j] & @CRLF)
+			ConsoleWrite($IndxIndexFlagsArr[0] & ": " & $IndxIndexFlagsArr[$j] & @CRLF)
+;			If $IndxIndexFlagsArr[$j] <> "0000" Then MsgBox(0,"Hey", "Something interesting to investigate") ; yeah don't know what to with it at the moment -> look SubNodeVCN
+			ConsoleWrite($IndxMFTReferenceOfParentArr[0] & ": " & $IndxMFTReferenceOfParentArr[$j] & @CRLF)
+			ConsoleWrite($IndxCTimeArr[0] & ": " & $IndxCTimeArr[$j] & @CRLF)
+			ConsoleWrite($IndxATimeArr[0] & ": " & $IndxATimeArr[$j] & @CRLF)
+			ConsoleWrite($IndxMTimeArr[0] & ": " & $IndxMTimeArr[$j] & @CRLF)
+			ConsoleWrite($IndxRTimeArr[0] & ": " & $IndxRTimeArr[$j] & @CRLF)
+			ConsoleWrite($IndxAllocSizeArr[0] & ": " & $IndxAllocSizeArr[$j] & @CRLF)
+			ConsoleWrite($IndxRealSizeArr[0] & ": " & $IndxRealSizeArr[$j] & @CRLF)
+			ConsoleWrite($IndxFileFlagsArr[0] & ": " & $IndxFileFlagsArr[$j] & @CRLF)
+			ConsoleWrite($IndxNameSpaceArr[0] & ": " & $IndxNameSpaceArr[$j] & @CRLF)
+			ConsoleWrite($IndxSubNodeVCNArr[0] & ": " & $IndxSubNodeVCNArr[$j] & @CRLF)
 		Next
 		If $cmdline[2] = "-a" Then
 			ConsoleWrite(@CRLF)
@@ -2171,7 +2205,7 @@ If $AttributesArr[10][2] = "TRUE" Then; $INDEX_ALLOCATION
 		EndIf
 		If $cmdline[4] = "indxdump=on" Then
 			ConsoleWrite(@CRLF)
-			ConsoleWrite("Dump of resolved INDX record for $INDEX_ALLOCATION (" & $p & ")" & @crlf)
+			ConsoleWrite("Dump of resolved and extracted INDX records for $INDEX_ALLOCATION (" & $p & ")" & @crlf)
 			ConsoleWrite(_HexEncode("0x"&$HexDumpIndxRecord[$p]) & @crlf)
 		EndIf
 	Next
@@ -2716,6 +2750,8 @@ Func _GetAttributeEntry($Entry)
 				$i += $RunListVCNLength*2
 			Until $i > StringLen($DataRun)
 ;--------------------------------_ExtractDataRuns()
+;			_ArrayDisplay($RUN_Clusters,"$RUN_Clusters")
+;			_ArrayDisplay($RUN_VCN,"$RUN_VCN")
 			If $TotalClusters * $BytesPerCluster >= $Size Then
 ;				ConsoleWrite(_ArrayToString($RUN_VCN) & @CRLF)
 ;				ConsoleWrite(_ArrayToString($RUN_Clusters) & @CRLF)
@@ -2746,19 +2782,23 @@ Func _GetAttributeEntry($Entry)
 ;									_WinAPI_WriteFile($htest, DllStructGetPtr($tBuffer), $BytesPerCluster * 16, $nBytes)
 									$g -= 16
 									$FileSize -= $BytesPerCluster * 16
-									$CoreAttributeTmp = StringMid(DllStructGetData($tBuffer,1),3)
+									$CoreAttributeTmp = StringMid(DllStructGetData($tBuffer,1),3,$BytesPerCluster*16*2)
 									$CoreAttribute &= $CoreAttributeTmp
 								WEnd
 								If $g <> 0 Then
 									_WinAPI_ReadFile($hFile, DllStructGetPtr($tBuffer), $BytesPerCluster * $g, $nBytes)
-									$CoreAttributeTmp = StringMid(DllStructGetData($tBuffer,1),3)
-									$CoreAttribute &= $CoreAttributeTmp
+;									$CoreAttributeTmp = StringMid(DllStructGetData($tBuffer,1),3)
+;									$CoreAttribute &= $CoreAttributeTmp
 									If $FileSize > $BytesPerCluster * $g Then
 ;										_WinAPI_WriteFile($htest, DllStructGetPtr($tBuffer), $BytesPerCluster * $g, $nBytes)
 										$FileSize -= $BytesPerCluster * $g
+										$CoreAttributeTmp = StringMid(DllStructGetData($tBuffer,1),3,$BytesPerCluster*$g*2)
+										$CoreAttribute &= $CoreAttributeTmp
 									Else
 ;										_WinAPI_WriteFile($htest, DllStructGetPtr($tBuffer), $FileSize, $nBytes)
 ;										Return
+										$CoreAttributeTmp = StringMid(DllStructGetData($tBuffer,1),3,$FileSize*2)
+										$CoreAttribute &= $CoreAttributeTmp
 									EndIf
 								EndIf
 							Next
@@ -3028,7 +3068,7 @@ EndFunc
 
 Func _StripIndxRecord($Entry)
 	Local $LocalAttributeOffset = 1,$IndxHdrUpdateSeqArrOffset,$IndxHdrUpdateSeqArrSize,$IndxHdrUpdSeqArr,$IndxHdrUpdSeqArrPart0,$IndxHdrUpdSeqArrPart1,$IndxHdrUpdSeqArrPart2,$IndxHdrUpdSeqArrPart3,$IndxHdrUpdSeqArrPart4,$IndxHdrUpdSeqArrPart5,$IndxHdrUpdSeqArrPart6,$IndxHdrUpdSeqArrPart7,$IndxHdrUpdSeqArrPart8
-	Local $IndxRecordEnd1,$IndxRecordEnd2,$IndxRecordEnd3,$IndxRecordEnd4,$IndxRecordEnd5,$IndxRecordEnd6,$IndxRecordEnd7,$IndxRecordEnd8,$IndxRecordSize,$IndxHeaderSize
+	Local $IndxRecordEnd1,$IndxRecordEnd2,$IndxRecordEnd3,$IndxRecordEnd4,$IndxRecordEnd5,$IndxRecordEnd6,$IndxRecordEnd7,$IndxRecordEnd8,$IndxRecordSize,$IndxHeaderSize,$IsNotLeafNode
 ;	ConsoleWrite("Unfixed INDX record:" & @crlf)
 ;	ConsoleWrite(_HexEncode("0x"&$Entry) & @crlf)
 ;	ConsoleWrite(_HexEncode("0x" & StringMid($Entry,1,4096)) & @crlf)
@@ -3057,7 +3097,7 @@ Func _StripIndxRecord($Entry)
 	$IndxRecordEnd8 = StringMid($Entry,8189,4)
 	If $IndxHdrUpdSeqArrPart0 <> $IndxRecordEnd1 OR $IndxHdrUpdSeqArrPart0 <> $IndxRecordEnd2 OR $IndxHdrUpdSeqArrPart0 <> $IndxRecordEnd3 OR $IndxHdrUpdSeqArrPart0 <> $IndxRecordEnd4 OR $IndxHdrUpdSeqArrPart0 <> $IndxRecordEnd5 OR $IndxHdrUpdSeqArrPart0 <> $IndxRecordEnd6 OR $IndxHdrUpdSeqArrPart0 <> $IndxRecordEnd7 OR $IndxHdrUpdSeqArrPart0 <> $IndxRecordEnd8 Then
 		ConsoleWrite("Error the INDX record is corrupt" & @CRLF)
-		Return
+		Return ; Not really correct because I think in theory chunks of 1024 bytes can be invalid and not just everything or nothing for the given INDX record.
 	Else
 		$Entry = StringMid($Entry,1,1020) & $IndxHdrUpdSeqArrPart1 & StringMid($Entry,1025,1020) & $IndxHdrUpdSeqArrPart2 & StringMid($Entry,2049,1020) & $IndxHdrUpdSeqArrPart3 & StringMid($Entry,3073,1020) & $IndxHdrUpdSeqArrPart4 & StringMid($Entry,4097,1020) & $IndxHdrUpdSeqArrPart5 & StringMid($Entry,5121,1020) & $IndxHdrUpdSeqArrPart6 & StringMid($Entry,6145,1020) & $IndxHdrUpdSeqArrPart7 & StringMid($Entry,7169,1020)
 	EndIf
@@ -3065,8 +3105,9 @@ Func _StripIndxRecord($Entry)
 ;	ConsoleWrite("$IndxRecordSize = " & $IndxRecordSize & @crlf)
 	$IndxHeaderSize = Dec(_SwapEndian(StringMid($Entry,$LocalAttributeOffset+48,8)),2)
 ;	ConsoleWrite("$IndxHeaderSize = " & $IndxHeaderSize & @crlf)
+	$IsNotLeafNode = StringMid($Entry,$LocalAttributeOffset+64,2) ;1 if not leaf node
+;	if $IsNotLeafNode = "01" Then MsgBox(0,"Info","Entry has children")
 	$Entry = StringMid($Entry,$LocalAttributeOffset+48+($IndxHeaderSize*2),($IndxRecordSize-$IndxHeaderSize-16)*2)
-;	_DebugOut("Stripped Record", $MFTEntry)
 	Return $Entry
 EndFunc
 
@@ -3100,7 +3141,7 @@ EndFunc
 Func _DecodeIndxEntries($Entry,$Current_Attrib_Number,$CurrentAttributeName)
 	Local $LocalAttributeOffset = 1,$NewLocalAttributeOffset,$IndxHdrMagic,$IndxHdrUpdateSeqArrOffset,$IndxHdrUpdateSeqArrSize,$IndxHdrLogFileSequenceNo,$IndxHdrVCNOfIndx,$IndxHdrOffsetToIndexEntries,$IndxHdrSizeOfIndexEntries,$IndxHdrAllocatedSizeOfIndexEntries
 	Local $IndxHdrFlag,$IndxHdrPadding,$IndxHdrUpdateSequence,$IndxHdrUpdSeqArr,$IndxHdrUpdSeqArrPart0,$IndxHdrUpdSeqArrPart1,$IndxHdrUpdSeqArrPart2,$IndxHdrUpdSeqArrPart3,$IndxRecordEnd4,$IndxRecordEnd1,$IndxRecordEnd2,$IndxRecordEnd3,$IndxRecordEnd4
-	Local $FileReference,$IndexEntryLength,$StreamLength,$Flags,$Stream,$SubNodeVCN,$tmp0=0,$tmp1=0,$tmp2=0,$tmp3=0,$EntryCounter=1,$Padding2,$IndxCounter,$EntryCounter=1
+	Local $FileReference,$IndexEntryLength,$StreamLength,$Flags,$Stream,$SubNodeVCN,$tmp0=0,$tmp1=0,$tmp2=0,$tmp3=0,$EntryCounter=1,$Padding2,$EntryCounter=1
 	$NewLocalAttributeOffset = 1
 ;	ConsoleWrite("$NewLocalAttributeOffset = " & $NewLocalAttributeOffset & @crlf)
 	$MFTReference = StringMid($Entry,$NewLocalAttributeOffset,16)
@@ -3108,6 +3149,7 @@ Func _DecodeIndxEntries($Entry,$Current_Attrib_Number,$CurrentAttributeName)
 	$MFTReference = StringMid($MFTReference,7,2)&StringMid($MFTReference,5,2)&StringMid($MFTReference,3,2)&StringMid($MFTReference,1,2)
 ;	$MFTReference = StringMid($MFTReference,15,2)&StringMid($MFTReference,13,2)&StringMid($MFTReference,11,2)&StringMid($MFTReference,9,2)&StringMid($MFTReference,7,2)&StringMid($MFTReference,5,2)&StringMid($MFTReference,3,2)&StringMid($MFTReference,1,2)
 ;	ConsoleWrite("$MFTReference = " & $MFTReference & @crlf)
+	$MFTReference = Dec($MFTReference)
 	$IndexEntryLength = StringMid($Entry,$NewLocalAttributeOffset+16,4)
 ;	ConsoleWrite("$IndexEntryLength = " & $IndexEntryLength & @crlf)
 	$IndexEntryLength = Dec(StringMid($IndexEntryLength,3,2)&StringMid($IndexEntryLength,3,2))
@@ -3124,6 +3166,7 @@ Func _DecodeIndxEntries($Entry,$Current_Attrib_Number,$CurrentAttributeName)
 ;	ConsoleWrite("$MFTReferenceOfParent = " & $MFTReferenceOfParent & @crlf)
 	$MFTReferenceOfParent = StringMid($MFTReferenceOfParent,7,2)&StringMid($MFTReferenceOfParent,5,2)&StringMid($MFTReferenceOfParent,3,2)&StringMid($MFTReferenceOfParent,1,2)
 ;	$MFTReferenceOfParent = StringMid($MFTReferenceOfParent,15,2)&StringMid($MFTReferenceOfParent,13,2)&StringMid($MFTReferenceOfParent,11,2)&StringMid($MFTReferenceOfParent,9,2)&StringMid($MFTReferenceOfParent,7,2)&StringMid($MFTReferenceOfParent,5,2)&StringMid($MFTReferenceOfParent,3,2)&StringMid($MFTReferenceOfParent,1,2)
+	$MFTReferenceOfParent = Dec($MFTReferenceOfParent)
 ;	ConsoleWrite("$MFTReferenceOfParent = " & $MFTReferenceOfParent & @crlf)
 
 	$Indx_CTime = StringMid($Entry,$NewLocalAttributeOffset+48,16)
@@ -3172,13 +3215,22 @@ Func _DecodeIndxEntries($Entry,$Current_Attrib_Number,$CurrentAttributeName)
 ;	ConsoleWrite("$Indx_NameLength = " & $Indx_NameLength & @crlf)
 	$Indx_NameSpace = StringMid($Entry,$NewLocalAttributeOffset+162,2)
 ;	ConsoleWrite("$Indx_NameSpace = " & $Indx_NameSpace & @crlf)
+	Select
+		Case $Indx_NameSpace = "00"	;POSIX
+			$Indx_NameSpace = "POSIX"
+		Case $Indx_NameSpace = "01"	;WIN32
+			$Indx_NameSpace = "WIN32"
+		Case $Indx_NameSpace = "02"	;DOS
+			$Indx_NameSpace = "DOS"
+		Case $Indx_NameSpace = "03"	;DOS+WIN32
+			$Indx_NameSpace = "DOS+WIN32"
+	EndSelect
 	$Indx_FileName = StringMid($Entry,$NewLocalAttributeOffset+164,$Indx_NameLength*2*2)
 ;	ConsoleWrite("$Indx_FileName = " & $Indx_FileName & @crlf)
 	$Indx_FileName = _UnicodeHexToStr($Indx_FileName)
 ;	ConsoleWrite("$Indx_FileName = " & $Indx_FileName & @crlf)
 	$tmp1 = 164+($Indx_NameLength*2*2)
-;	ConsoleWrite("$tmp1: " & $tmp1 & @CRLF)
-	Do
+	Do ; Calculate the length of the padding - 8 byte aligned
 		$tmp2 = $tmp1/16
 		If Not IsInt($tmp2) Then
 			$tmp0 = 2
@@ -3186,10 +3238,6 @@ Func _DecodeIndxEntries($Entry,$Current_Attrib_Number,$CurrentAttributeName)
 			$tmp3 += $tmp0
 		EndIf
 	Until IsInt($tmp2)
-;	ConsoleWrite("$tmp3: " & $tmp3 & @CRLF)
-;	ConsoleWrite("$tmp2: " & $tmp2 & @CRLF)
-;	ConsoleWrite("$tmp1: " & $tmp1 & @CRLF)
-;	ConsoleWrite("$tmp0: " & $tmp0 & @CRLF)
 	$PaddingLength = $tmp3
 ;	ConsoleWrite("$PaddingLength = " & $PaddingLength & @crlf)
 	$Padding2 = StringMid($Entry,$NewLocalAttributeOffset+164+($Indx_NameLength*2*2),$PaddingLength)
@@ -3202,38 +3250,44 @@ Func _DecodeIndxEntries($Entry,$Current_Attrib_Number,$CurrentAttributeName)
 		$SubNodeVCNLength = 0
 	EndIf
 ;	ConsoleWrite("$SubNodeVCN = " & $SubNodeVCN & @crlf)
-	$IndxArr[0][$Current_Attrib_Number] = "IndexRoot Number " & $Current_Attrib_Number
-	$IndxArr[1][$Current_Attrib_Number] = $CurrentAttributeName
-	$IndxArr[2][$Current_Attrib_Number] = $EntryCounter
-	$IndxArr[3][$Current_Attrib_Number] = $MFTReference
-	$IndxArr[4][$Current_Attrib_Number] = $IndexEntryLength
-	$IndxArr[5][$Current_Attrib_Number] = $OffsetToFileName
-	$IndxArr[6][$Current_Attrib_Number] = $IndexFlags
-	$IndxArr[7][$Current_Attrib_Number] = $Padding
-	$IndxArr[8][$Current_Attrib_Number] = $MFTReferenceOfParent
-	$IndxArr[9][$Current_Attrib_Number] = $Indx_CTime
-	$IndxArr[10][$Current_Attrib_Number] = $Indx_ATime
-	$IndxArr[11][$Current_Attrib_Number] = $Indx_MTime
-	$IndxArr[12][$Current_Attrib_Number] = $Indx_RTime
-	$IndxArr[13][$Current_Attrib_Number] = $Indx_AllocSize
-	$IndxArr[14][$Current_Attrib_Number] = $Indx_RealSize
-	$IndxArr[15][$Current_Attrib_Number] = $Indx_File_Flags
-	$IndxArr[16][$Current_Attrib_Number] = $Indx_NameLength
-	$IndxArr[17][$Current_Attrib_Number] = $Indx_NameSpace
-	$IndxArr[18][$Current_Attrib_Number] = $Indx_FileName
-	$IndxArr[19][$Current_Attrib_Number] = $Padding2
-;	$IndxArr[20][$Current_Attrib_Number] = $SubNodeVCN
-;	_ArrayDisplay($IndxArr,"$IndxArr")
+	ReDim $IndxEntryNumberArr[1+$EntryCounter]
+	ReDim $IndxMFTReferenceArr[1+$EntryCounter]
+	ReDim $IndxIndexFlagsArr[1+$EntryCounter]
+	ReDim $IndxMFTReferenceOfParentArr[1+$EntryCounter]
+	ReDim $IndxCTimeArr[1+$EntryCounter]
+	ReDim $IndxATimeArr[1+$EntryCounter]
+	ReDim $IndxMTimeArr[1+$EntryCounter]
+	ReDim $IndxRTimeArr[1+$EntryCounter]
+	ReDim $IndxAllocSizeArr[1+$EntryCounter]
+	ReDim $IndxRealSizeArr[1+$EntryCounter]
+	ReDim $IndxFileFlagsArr[1+$EntryCounter]
+	ReDim $IndxFileNameArr[1+$EntryCounter]
+	ReDim $IndxNameSpaceArr[1+$EntryCounter]
+	ReDim $IndxSubNodeVCNArr[1+$EntryCounter]
+	$IndxEntryNumberArr[$EntryCounter] = $EntryCounter
+	$IndxMFTReferenceArr[$EntryCounter] = $MFTReference
+	$IndxIndexFlagsArr[$EntryCounter] = $IndexFlags
+	$IndxMFTReferenceOfParentArr[$EntryCounter] = $MFTReferenceOfParent
+	$IndxCTimeArr[$EntryCounter] = $Indx_CTime
+	$IndxATimeArr[$EntryCounter] = $Indx_ATime
+	$IndxMTimeArr[$EntryCounter] = $Indx_MTime
+	$IndxRTimeArr[$EntryCounter] = $Indx_RTime
+	$IndxAllocSizeArr[$EntryCounter] = $Indx_AllocSize
+	$IndxRealSizeArr[$EntryCounter] = $Indx_RealSize
+	$IndxFileFlagsArr[$EntryCounter] = $Indx_File_Flags
+	$IndxFileNameArr[$EntryCounter] = $Indx_FileName
+	$IndxNameSpaceArr[$EntryCounter] = $Indx_NameSpace
+	$IndxSubNodeVCNArr[$EntryCounter] = $SubNodeVCN
 ; Work through the rest of the index entries
 	$NextEntryOffset = $NewLocalAttributeOffset+164+($Indx_NameLength*2*2)+$PaddingLength+$SubNodeVCNLength
 	Do
-		$IndxCounter += 18
 		$EntryCounter += 1
 		$MFTReference = StringMid($Entry,$NextEntryOffset,16)
 ;		ConsoleWrite("$MFTReference = " & $MFTReference & @crlf)
 		$MFTReference = StringMid($MFTReference,7,2)&StringMid($MFTReference,5,2)&StringMid($MFTReference,3,2)&StringMid($MFTReference,1,2)
 ;		$MFTReference = StringMid($MFTReference,15,2)&StringMid($MFTReference,13,2)&StringMid($MFTReference,11,2)&StringMid($MFTReference,9,2)&StringMid($MFTReference,7,2)&StringMid($MFTReference,5,2)&StringMid($MFTReference,3,2)&StringMid($MFTReference,1,2)
 ;		ConsoleWrite("$MFTReference = " & $MFTReference & @crlf)
+		$MFTReference = Dec($MFTReference)
 		$IndexEntryLength = StringMid($Entry,$NextEntryOffset+16,4)
 ;		ConsoleWrite("$IndexEntryLength = " & $IndexEntryLength & @crlf)
 		$IndexEntryLength = Dec(StringMid($IndexEntryLength,3,2)&StringMid($IndexEntryLength,3,2))
@@ -3251,6 +3305,7 @@ Func _DecodeIndxEntries($Entry,$Current_Attrib_Number,$CurrentAttributeName)
 		$MFTReferenceOfParent = StringMid($MFTReferenceOfParent,7,2)&StringMid($MFTReferenceOfParent,5,2)&StringMid($MFTReferenceOfParent,3,2)&StringMid($MFTReferenceOfParent,1,2)
 ;		$MFTReferenceOfParent = StringMid($MFTReferenceOfParent,15,2)&StringMid($MFTReferenceOfParent,13,2)&StringMid($MFTReferenceOfParent,11,2)&StringMid($MFTReferenceOfParent,9,2)&StringMid($MFTReferenceOfParent,7,2)&StringMid($MFTReferenceOfParent,5,2)&StringMid($MFTReferenceOfParent,3,2)&StringMid($MFTReferenceOfParent,1,2)
 ;		ConsoleWrite("$MFTReferenceOfParent = " & $MFTReferenceOfParent & @crlf)
+		$MFTReferenceOfParent = Dec($MFTReferenceOfParent)
 
 		$Indx_CTime = StringMid($Entry,$NextEntryOffset+48,16)
 		$Indx_CTime = StringMid($Indx_CTime,15,2) & StringMid($Indx_CTime,13,2) & StringMid($Indx_CTime,11,2) & StringMid($Indx_CTime,9,2) & StringMid($Indx_CTime,7,2) & StringMid($Indx_CTime,5,2) & StringMid($Indx_CTime,3,2) & StringMid($Indx_CTime,1,2)
@@ -3298,6 +3353,16 @@ Func _DecodeIndxEntries($Entry,$Current_Attrib_Number,$CurrentAttributeName)
 ;		ConsoleWrite("$Indx_NameLength = " & $Indx_NameLength & @crlf)
 		$Indx_NameSpace = StringMid($Entry,$NextEntryOffset+162,2)
 ;		ConsoleWrite("$Indx_NameSpace = " & $Indx_NameSpace & @crlf)
+		Select
+			Case $Indx_NameSpace = "00"	;POSIX
+				$Indx_NameSpace = "POSIX"
+			Case $Indx_NameSpace = "01"	;WIN32
+				$Indx_NameSpace = "WIN32"
+			Case $Indx_NameSpace = "02"	;DOS
+				$Indx_NameSpace = "DOS"
+			Case $Indx_NameSpace = "03"	;DOS+WIN32
+				$Indx_NameSpace = "DOS+WIN32"
+		EndSelect
 		$Indx_FileName = StringMid($Entry,$NextEntryOffset+164,$Indx_NameLength*2*2)
 ;		ConsoleWrite("$Indx_FileName = " & $Indx_FileName & @crlf)
 		$Indx_FileName = _UnicodeHexToStr($Indx_FileName)
@@ -3306,8 +3371,7 @@ Func _DecodeIndxEntries($Entry,$Current_Attrib_Number,$CurrentAttributeName)
 		$tmp2 = 0
 		$tmp3 = 0
 		$tmp1 = 164+($Indx_NameLength*2*2)
-;		ConsoleWrite("$tmp1: " & $tmp1 & @CRLF)
-		Do
+		Do ; Calculate the length of the padding - 8 byte aligned
 			$tmp2 = $tmp1/16
 			If Not IsInt($tmp2) Then
 				$tmp0 = 2
@@ -3315,10 +3379,6 @@ Func _DecodeIndxEntries($Entry,$Current_Attrib_Number,$CurrentAttributeName)
 				$tmp3 += $tmp0
 			EndIf
 		Until IsInt($tmp2)
-;		ConsoleWrite("$tmp3: " & $tmp3 & @CRLF)
-;		ConsoleWrite("$tmp2: " & $tmp2 & @CRLF)
-;		ConsoleWrite("$tmp1: " & $tmp1 & @CRLF)
-;		ConsoleWrite("$tmp0: " & $tmp0 & @CRLF)
 		$PaddingLength = $tmp3
 ;		ConsoleWrite("$PaddingLength = " & $PaddingLength & @crlf)
 		$Padding = StringMid($Entry,$NextEntryOffset+164+($Indx_NameLength*2*2),$PaddingLength)
@@ -3332,67 +3392,33 @@ Func _DecodeIndxEntries($Entry,$Current_Attrib_Number,$CurrentAttributeName)
 		EndIf
 ;		ConsoleWrite("$SubNodeVCN = " & $SubNodeVCN & @crlf)
 		$NextEntryOffset = $NextEntryOffset+164+($Indx_NameLength*2*2)+$PaddingLength+$SubNodeVCNLength
-		ReDim $IndxArr[21+$IndxCounter][$Current_Attrib_Number+1]
-		Local $Counter1 = 20+($IndxCounter)
-		Local $Counter2 = 20+($IndxCounter-1)
-		Local $Counter3 = 20+($IndxCounter-2)
-		Local $Counter4 = 20+($IndxCounter-3)
-		Local $Counter5 = 20+($IndxCounter-4)
-		Local $Counter6 = 20+($IndxCounter-5)
-		Local $Counter7 = 20+($IndxCounter-6)
-		Local $Counter8 = 20+($IndxCounter-7)
-		Local $Counter9 = 20+($IndxCounter-8)
-		Local $Counter10 = 20+($IndxCounter-9)
-		Local $Counter11 = 20+($IndxCounter-10)
-		Local $Counter12 = 20+($IndxCounter-11)
-		Local $Counter13 = 20+($IndxCounter-12)
-		Local $Counter14 = 20+($IndxCounter-13)
-		Local $Counter15 = 20+($IndxCounter-14)
-		Local $Counter16 = 20+($IndxCounter-15)
-		Local $Counter17 = 20+($IndxCounter-16)
-		Local $Counter18 = 20+($IndxCounter-17)
-;		Local $Counter19 = 21+($IndxCounter-18)
-		$IndxArr[$Counter18][0] = "Entry number"
-		$IndxArr[$Counter17][0] = "MFTReference"
-		$IndxArr[$Counter16][0] = "IndexEntryLength"
-		$IndxArr[$Counter15][0] = "OffsetToFileName"
-		$IndxArr[$Counter14][0] = "IndexFlags"
-		$IndxArr[$Counter13][0] = "Padding"
-		$IndxArr[$Counter12][0] = "MFTReferenceOfParent"
-		$IndxArr[$Counter11][0] = "Indx_CTime"
-		$IndxArr[$Counter10][0] = "Indx_ATime"
-		$IndxArr[$Counter9][0] = "Indx_MTime"
-		$IndxArr[$Counter8][0] = "Indx_RTime"
-		$IndxArr[$Counter7][0] = "Indx_AllocSize"
-		$IndxArr[$Counter6][0] = "Indx_RealSize"
-		$IndxArr[$Counter5][0] = "Indx_File_Flags"
-		$IndxArr[$Counter4][0] = "Indx_NameLength"
-		$IndxArr[$Counter3][0] = "Indx_NameSpace"
-		$IndxArr[$Counter2][0] = "Indx_FileName"
-		$IndxArr[$Counter1][0] = "Padding2"
-;		$IndxArr[$Counter1][0] = "SubNodeVCN"
-		$IndxArr[$Counter18][$Current_Attrib_Number] = $EntryCounter
-		$IndxArr[$Counter17][$Current_Attrib_Number] = $MFTReference
-		$IndxArr[$Counter16][$Current_Attrib_Number] = $IndexEntryLength
-		$IndxArr[$Counter15][$Current_Attrib_Number] = $OffsetToFileName
-		$IndxArr[$Counter14][$Current_Attrib_Number] = $IndexFlags
-		$IndxArr[$Counter13][$Current_Attrib_Number] = $Padding
-		$IndxArr[$Counter12][$Current_Attrib_Number] = $MFTReferenceOfParent
-		$IndxArr[$Counter11][$Current_Attrib_Number] = $Indx_CTime
-		$IndxArr[$Counter10][$Current_Attrib_Number] = $Indx_ATime
-		$IndxArr[$Counter9][$Current_Attrib_Number] = $Indx_MTime
-		$IndxArr[$Counter8][$Current_Attrib_Number] = $Indx_RTime
-		$IndxArr[$Counter7][$Current_Attrib_Number] = $Indx_AllocSize
-		$IndxArr[$Counter6][$Current_Attrib_Number] = $Indx_RealSize
-		$IndxArr[$Counter5][$Current_Attrib_Number] = $Indx_File_Flags
-		$IndxArr[$Counter4][$Current_Attrib_Number] = $Indx_NameLength
-		$IndxArr[$Counter3][$Current_Attrib_Number] = $Indx_NameSpace
-		$IndxArr[$Counter2][$Current_Attrib_Number] = $Indx_FileName
-		$IndxArr[$Counter1][$Current_Attrib_Number] = $Padding2
-;		$IndxArr[$Counter1][$Current_Attrib_Number] = $SubNodeVCN
-;		ConsoleWrite("$MFTReference = " & $MFTReference & @crlf)
-;		ConsoleWrite("$Indx_FileName = " & $Indx_FileName & @crlf)
-;		_ArrayDisplay($IndxArr,"$IndxArr")
-;	Until $NextEntryOffset >= $IndxHdrSizeOfIndexEntries*2
-	Until $NextEntryOffset >= StringLen($Entry)
+		ReDim $IndxEntryNumberArr[1+$EntryCounter]
+		ReDim $IndxMFTReferenceArr[1+$EntryCounter]
+		ReDim $IndxIndexFlagsArr[1+$EntryCounter]
+		ReDim $IndxMFTReferenceOfParentArr[1+$EntryCounter]
+		ReDim $IndxCTimeArr[1+$EntryCounter]
+		ReDim $IndxATimeArr[1+$EntryCounter]
+		ReDim $IndxMTimeArr[1+$EntryCounter]
+		ReDim $IndxRTimeArr[1+$EntryCounter]
+		ReDim $IndxAllocSizeArr[1+$EntryCounter]
+		ReDim $IndxRealSizeArr[1+$EntryCounter]
+		ReDim $IndxFileFlagsArr[1+$EntryCounter]
+		ReDim $IndxFileNameArr[1+$EntryCounter]
+		ReDim $IndxNameSpaceArr[1+$EntryCounter]
+		ReDim $IndxSubNodeVCNArr[1+$EntryCounter]
+		$IndxEntryNumberArr[$EntryCounter] = $EntryCounter
+		$IndxMFTReferenceArr[$EntryCounter] = $MFTReference
+		$IndxIndexFlagsArr[$EntryCounter] = $IndexFlags
+		$IndxMFTReferenceOfParentArr[$EntryCounter] = $MFTReferenceOfParent
+		$IndxCTimeArr[$EntryCounter] = $Indx_CTime
+		$IndxATimeArr[$EntryCounter] = $Indx_ATime
+		$IndxMTimeArr[$EntryCounter] = $Indx_MTime
+		$IndxRTimeArr[$EntryCounter] = $Indx_RTime
+		$IndxAllocSizeArr[$EntryCounter] = $Indx_AllocSize
+		$IndxRealSizeArr[$EntryCounter] = $Indx_RealSize
+		$IndxFileFlagsArr[$EntryCounter] = $Indx_File_Flags
+		$IndxFileNameArr[$EntryCounter] = $Indx_FileName
+		$IndxNameSpaceArr[$EntryCounter] = $Indx_NameSpace
+		$IndxSubNodeVCNArr[$EntryCounter] = $SubNodeVCN
+	Until $NextEntryOffset+16 >= StringLen($Entry)
 EndFunc
