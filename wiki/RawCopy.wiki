@@ -24,10 +24,10 @@ So how do you get the index number of a given file. That can be retrived by usin
 = Sample usage =
 
 === Example for copying the SYSTEM hive off a running system ===
-"RawCopy C:\WINDOWS\system32\config\SYSTEM E:\output"
+"RawCopy.exe C:\WINDOWS\system32\config\SYSTEM E:\output"
 
 === Example for extracting the $MFT by specifying its index number ===
-"RawCopy C:0 E:\output"
+"RawCopy.exe C:0 E:\output"
 
 = Latest version =
 
