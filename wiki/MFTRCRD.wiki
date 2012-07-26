@@ -69,9 +69,11 @@ Running the tool without any parameter will display help information.
 
 
 = Latest version =
-v1.0.0.12
+v1.0.0.13
 
 = Changelog =
+
+v1.0.0.13: Fixed small bug in decode of certain weird INDX records. Also added full decode of all resident index entries in $INDEX_ROOT  
 
 v1.0.0.12: Fixed the bug in extraction of non-resident INDX records that caused some duplication of entries to occur. The INDX entry arrays logic have been turned aroung into a much easier and better way.
 
