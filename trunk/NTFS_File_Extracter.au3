@@ -1,6 +1,6 @@
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
 #AutoIt3Wrapper_Res_Description=Extract files from NTFS volumes
-#AutoIt3Wrapper_Res_Fileversion=3.0.0.1
+#AutoIt3Wrapper_Res_Fileversion=3.0.0.2
 #AutoIt3Wrapper_Res_requestedExecutionLevel=asInvoker
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
 #include <GUIConstantsEx.au3>
@@ -17,7 +17,7 @@
 ; http://code.google.com/p/mft2csv/
 ;
 Global $BrowsedFile,$TargetDrive = ""
-Global $SectorsPerCluster,$MFT_Record_Size,$BytesPerCluster,$BytesPerSector,$MFT_Offset
+Global $SectorsPerCluster,$MFT_Record_Size,$BytesPerCluster,$BytesPerSector,$MFT_Offset, $isSparse
 Global $HEADER_LSN,$HEADER_SequenceNo,$HEADER_Flags,$HEADER_RecordRealSize,$HEADER_RecordAllocSize,$HEADER_FileRef
 Global $HEADER_NextAttribID,$HEADER_MFTREcordNumber
 Global $FN_CTime,$FN_ATime,$FN_MTime,$FN_RTime,$FN_AllocSize,$FN_RealSize,$FN_Flags,$FN_FileName,$FN_NameType
@@ -79,7 +79,7 @@ Global Const $tagUNICODESTRING = "ushort Length;ushort MaximumLength;ptr Buffer"
 Global Const $tagFILEINTERNALINFORMATION = "int IndexNumber;"
 Global $outputpath = FileSelectFolder("Select output folder.", "",7,@scriptdir)
 If @error Then Exit
-$Form = GUICreate("NTFS File Extracter 3.1 - http://code.google.com/p/mft2csv/", 520, 250, -1, -1)
+$Form = GUICreate("NTFS File Extracter 3.2 - http://code.google.com/p/mft2csv/", 520, 250, -1, -1)
 $Combo1 = GUICtrlCreateCombo("", 20, 20, 400, 25)
 $ButtonRefresh = GUICtrlCreateButton("Refresh", 440, 20, 60, 20)
 $ButtonGetMFT = GUICtrlCreateButton("Extract $MFT", 20, 50, 100, 20)
@@ -189,33 +189,33 @@ Func _ExtractSingleFile($MFTReferenceNumber)
 		If $DATA_NonResidentFlag = '00' Then
 			_ExtractResidentFile($DATA_Name, $DATA_LengthOfAttribute)
 		Else
-		Global $RUN_VCN[1], $RUN_Clusters[1]
-		$TotalClusters = $DATA_LastVCN - $DATA_StartVCN + 1
-		$Size = $DATA_RealSize
-		_ExtractDataRuns()
-		If $TotalClusters * $BytesPerCluster >= $Size Then
-			ConsoleWrite(_ArrayToString($RUN_VCN) & @CRLF)
-			ConsoleWrite(_ArrayToString($RUN_Clusters) & @CRLF)
-			_ExtractFile()
-		Else 		 ;code to handle attribute list
-			$Flag = $IsCompressed		;preserve compression state
-		 	For $j =$i + 1 To UBound($DataQ) - 1
-				_DecodeDataQEntry($DataQ[$j])
-				$TotalClusters += $DATA_LastVCN - $DATA_StartVCN + 1
-				_ExtractDataRuns()
-				If $TotalClusters * $BytesPerCluster >= $Size Then
-					$DATA_RealSize = $Size
-					$IsCompressed = $Flag
-					ConsoleWrite(_ArrayToString($RUN_VCN) & @CRLF)
-					ConsoleWrite(_ArrayToString($RUN_Clusters) & @CRLF)
-					_ExtractFile()
-					ExitLoop
-				EndIf
-			Next
-			$i=$j
+			Global $RUN_VCN[1], $RUN_Clusters[1]
+			$TotalClusters = $DATA_LastVCN - $DATA_StartVCN + 1
+			$Size = $DATA_RealSize
+			_ExtractDataRuns()
+			If $TotalClusters * $BytesPerCluster >= $Size Then
+				ConsoleWrite(_ArrayToString($RUN_VCN) & @CRLF)
+				ConsoleWrite(_ArrayToString($RUN_Clusters) & @CRLF)
+				_ExtractFile()
+			Else 		 ;code to handle attribute list
+				$Flag = $IsCompressed		;preserve compression state
+				For $j =$i + 1 To UBound($DataQ) - 1
+					_DecodeDataQEntry($DataQ[$j])
+					$TotalClusters += $DATA_LastVCN - $DATA_StartVCN + 1
+					_ExtractDataRuns()
+					If $TotalClusters * $BytesPerCluster >= $Size Then
+						$DATA_RealSize = $Size
+						$IsCompressed = $Flag
+						ConsoleWrite(_ArrayToString($RUN_VCN) & @CRLF)
+						ConsoleWrite(_ArrayToString($RUN_Clusters) & @CRLF)
+						_ExtractFile()
+						ExitLoop
+					EndIf
+				Next
+				$i=$j
+			EndIf
 		EndIf
-	EndIf
-Next
+	Next
 EndFunc
 
 Func _ClearVar()
@@ -681,11 +681,11 @@ While 1
 			$NameSpace = StringMid($attr,179,2)
 			Select
 				Case $NameSpace = "00"	;POSIX
-					$NameQ[1] = $attr
+					$NameQ[2] = $attr
 				Case $NameSpace = "01"	;WIN32
 					$NameQ[4] = $attr
 				Case $NameSpace = "02"	;DOS
-					$NameQ[2] = $attr
+					$NameQ[1] = $attr
 				Case $NameSpace = "03"	;DOS+WIN32
 					$NameQ[3] = $attr
 			EndSelect
@@ -819,7 +819,6 @@ Func _ExtractDataRuns()
 EndFunc
 
 Func _ExtractFile()
-	Local $nBytes
 	$hFile = _WinAPI_CreateFile("\\.\" & $TargetDrive, 2, 6, 6)
 	If $hFile = 0 Then
 		ConsoleWrite("Error in function _WinAPI_CreateFile when trying to open target drive." & @CRLF)
@@ -839,18 +838,18 @@ Func _ExtractFile()
 	$tBuffer = DllStructCreate("byte[" & $BytesPerCluster * 16 & "]")
 	Select
 		Case UBound($RUN_VCN) = 1		;no data, do nothing
-		Case (UBound($RUN_VCN) = 2) Or (Not $IsCompressed)	;may be normal or sparse
-			If $RUN_VCN[1] = $RUN_VCN[0] And $DATA_Name <> "$Boot" Then		;sparse, unless $Boot
-				_DoSparse($htest)
+		Case UBound($RUN_VCN) = 2 	;may be normal or sparse
+			If $RUN_VCN[1] = 0 And $IsSparse Then		;sparse
+				$FileSize = _DoSparse(1, $htest, $DATA_RealSize)
 			Else								;normal
-				_DoNormal($hFile, $htest, $tBuffer)
+				$FileSize = _DoNormal(1, $hFile, $htest, $tBuffer, $DATA_RealSize)
 			EndIf
 		Case Else					;may be compressed
 			_DoCompressed($hFile, $htest, $tBuffer)
 	EndSelect
-   _DisplayInfo("Successfully extracted target file: " & $DATA_Name & " to " & $outputpath & "\" & $DATA_Name  & @CRLF)
-   _WinAPI_CloseHandle($hFile)
-   _WinAPI_CloseHandle($htest)
+	_DisplayInfo("Successfully extracted target file: " & $DATA_Name & " to " & $outputpath & "\" & $DATA_Name  & @CRLF)
+	_WinAPI_CloseHandle($hFile)
+	_WinAPI_CloseHandle($htest)
 EndFunc
 
 Func _DoCompressed($hFile, $htest, $tBuffer)
@@ -860,7 +859,7 @@ Func _DoCompressed($hFile, $htest, $tBuffer)
 	Do
 		_WinAPI_SetFilePointerEx($hFile, $RUN_VCN[$r]*$BytesPerCluster, $FILE_BEGIN)
 		$i = $RUN_Clusters[$r]
-		If (($RUN_VCN[$r+1]=0) And ($i+$RUN_Clusters[$r+1]=16)) Then
+		If (($RUN_VCN[$r+1]=0) And ($i+$RUN_Clusters[$r+1]=16) And $IsCompressed) Then
 			_WinAPI_ReadFile($hFile, DllStructGetPtr($tBuffer), $BytesPerCluster * $i, $nBytes)
 			$Decompressed = _LZNTDecompress($tBuffer, $BytesPerCluster * $i)
 			If IsString($Decompressed) Then
@@ -878,122 +877,63 @@ Func _DoCompressed($hFile, $htest, $tBuffer)
 			EndIf
 			$r += 1
 		ElseIf $RUN_VCN[$r]=0 Then
-			If Not IsDllStruct($sBuffer) Then _CreateSparseBuffer()
-			While $i > 16 And $FileSize > $BytesPerCluster * 16
-				_WinAPI_WriteFile($htest, DllStructGetPtr($sBuffer), $BytesPerCluster * 16, $nBytes)
-				$i -= 16
-				$FileSize -= $BytesPerCluster * 16
-			WEnd
-			If $i <> 0 Then
-				If $FileSize > $BytesPerCluster * $i Then
-					_WinAPI_WriteFile($htest, DllStructGetPtr($sBuffer), $BytesPerCluster * $i, $nBytes)
-					$FileSize -= $BytesPerCluster * $i
-				Else
-					_WinAPI_WriteFile($htest, DllStructGetPtr($sBuffer), $FileSize, $nBytes)
-				EndIf
-			EndIf
+			$FileSize = _DoSparse($r, $htest, $FileSize)
 		Else
-			While $i > 16 And $FileSize > $BytesPerCluster * 16
-				_WinAPI_ReadFile($hFile, DllStructGetPtr($tBuffer), $BytesPerCluster * 16, $nBytes)
-				_WinAPI_WriteFile($htest, DllStructGetPtr($tBuffer), $BytesPerCluster * 16, $nBytes)
-				$i -= 16
-				$FileSize -= $BytesPerCluster * 16
-			WEnd
-			If $i <> 0 Then
-				_WinAPI_ReadFile($hFile, DllStructGetPtr($tBuffer), $BytesPerCluster * $i, $nBytes)
-				If $FileSize > $BytesPerCluster * $i Then
-					_WinAPI_WriteFile($htest, DllStructGetPtr($tBuffer), $BytesPerCluster * $i, $nBytes)
-					$FileSize -= $BytesPerCluster * $i
-				Else
-					_WinAPI_WriteFile($htest, DllStructGetPtr($tBuffer), $FileSize, $nBytes)
-				EndIf
-			EndIf
+			$FileSize = _DoNormal($r, $hFile, $htest, $tBuffer, $FileSize)
 		EndIf
 		$r += 1
 	Until $r > UBound($RUN_VCN)-2
 	If $r = UBound($RUN_VCN)-1 Then
-		$i = $RUN_Clusters[$r]
 		If $RUN_VCN[$r]=0 Then
-			If Not IsDllStruct($sBuffer) Then _CreateSparseBuffer()
-			While $i > 16 And $FileSize > $BytesPerCluster * 16
-				_WinAPI_WriteFile($htest, DllStructGetPtr($sBuffer), $BytesPerCluster * 16, $nBytes)
-				$i -= 16
-				$FileSize -= $BytesPerCluster * 16
-			WEnd
-			If $i <> 0 Then
-				If $FileSize > $BytesPerCluster * $i Then
-					_WinAPI_WriteFile($htest, DllStructGetPtr($sBuffer), $BytesPerCluster * $i, $nBytes)
-					$FileSize -= $BytesPerCluster * $i
-				Else
-					_WinAPI_WriteFile($htest, DllStructGetPtr($sBuffer), $FileSize, $nBytes)
-				EndIf
-			EndIf
+			$FileSize = _DoSparse($r, $htest, $FileSize)
 		Else
-			While $i > 16 And $FileSize > $BytesPerCluster * 16
-				_WinAPI_ReadFile($hFile, DllStructGetPtr($tBuffer), $BytesPerCluster * 16, $nBytes)
-				_WinAPI_WriteFile($htest, DllStructGetPtr($tBuffer), $BytesPerCluster * 16, $nBytes)
-				$i -= 16
-				$FileSize -= $BytesPerCluster * 16
-			WEnd
-			If $i <> 0 Then
-				_WinAPI_ReadFile($hFile, DllStructGetPtr($tBuffer), $BytesPerCluster * $i, $nBytes)
-				If $FileSize > $BytesPerCluster * $i Then
-					_WinAPI_WriteFile($htest, DllStructGetPtr($tBuffer), $BytesPerCluster * $i, $nBytes)
-					$FileSize -= $BytesPerCluster * $i
-				Else
-					_WinAPI_WriteFile($htest, DllStructGetPtr($tBuffer), $FileSize, $nBytes)
-				EndIf
-			EndIf
+			$FileSize = _DoNormal($r, $hFile, $htest, $tBuffer, $FileSize)
 		EndIf
 	EndIf
 EndFunc
 
-Func _DoNormal($hFile, $htest, $tBuffer)
+Func _DoNormal($r, $hFile, $htest, $tBuffer, $FileSize)
 	Local $nBytes
-	$FileSize = $DATA_RealSize
-	For $r = 1 To UBound($RUN_VCN)-1
-		_WinAPI_SetFilePointerEx($hFile, $RUN_VCN[$r]*$BytesPerCluster, $FILE_BEGIN)
-		$i = $RUN_Clusters[$r]
-		While $i > 16 And $FileSize > $BytesPerCluster * 16
-			_WinAPI_ReadFile($hFile, DllStructGetPtr($tBuffer), $BytesPerCluster * 16, $nBytes)
-			_WinAPI_WriteFile($htest, DllStructGetPtr($tBuffer), $BytesPerCluster * 16, $nBytes)
-			$i -= 16
-			$FileSize -= $BytesPerCluster * 16
-		WEnd
-		If $i <> 0 Then
-			_WinAPI_ReadFile($hFile, DllStructGetPtr($tBuffer), $BytesPerCluster * $i, $nBytes)
-			If $FileSize > $BytesPerCluster * $i Then
-				_WinAPI_WriteFile($htest, DllStructGetPtr($tBuffer), $BytesPerCluster * $i, $nBytes)
-				$FileSize -= $BytesPerCluster * $i
-			Else
-				_WinAPI_WriteFile($htest, DllStructGetPtr($tBuffer), $FileSize, $nBytes)
-				Return
-			EndIf
+	_WinAPI_SetFilePointerEx($hFile, $RUN_VCN[$r]*$BytesPerCluster, $FILE_BEGIN)
+	$i = $RUN_Clusters[$r]
+	While $i > 16 And $FileSize > $BytesPerCluster * 16
+		_WinAPI_ReadFile($hFile, DllStructGetPtr($tBuffer), $BytesPerCluster * 16, $nBytes)
+		_WinAPI_WriteFile($htest, DllStructGetPtr($tBuffer), $BytesPerCluster * 16, $nBytes)
+		$i -= 16
+		$FileSize -= $BytesPerCluster * 16
+	WEnd
+	If $i <> 0 Then
+		_WinAPI_ReadFile($hFile, DllStructGetPtr($tBuffer), $BytesPerCluster * $i, $nBytes)
+		If $FileSize > $BytesPerCluster * $i Then
+			_WinAPI_WriteFile($htest, DllStructGetPtr($tBuffer), $BytesPerCluster * $i, $nBytes)
+			$FileSize -= $BytesPerCluster * $i
+		Else
+			_WinAPI_WriteFile($htest, DllStructGetPtr($tBuffer), $FileSize, $nBytes)
+			Return 0
 		EndIf
-	Next
+	EndIf
+	Return $FileSize
 EndFunc
 
-Func _DoSparse($htest)
+Func _DoSparse($r,$htest,$FileSize)
 	Local $nBytes
 	If Not IsDllStruct($sBuffer) Then _CreateSparseBuffer()
-	$FileSize = $DATA_RealSize
-	For $r = 1 To UBound($RUN_VCN)-1
-		$i = $RUN_Clusters[$r]
-		While $i > 16 And $FileSize > $BytesPerCluster * 16
-			_WinAPI_WriteFile($htest, DllStructGetPtr($sBuffer), $BytesPerCluster * 16, $nBytes)
-			$i -= 16
-			$FileSize -= $BytesPerCluster * 16
-		WEnd
-		If $i <> 0 Then
-			If $FileSize > $BytesPerCluster * $i Then
-				_WinAPI_WriteFile($htest, DllStructGetPtr($sBuffer), $BytesPerCluster * $i, $nBytes)
-				$FileSize -= $BytesPerCluster * $i
-			Else
-				_WinAPI_WriteFile($htest, DllStructGetPtr($sBuffer), $FileSize, $nBytes)
-				Return
-			EndIf
+	$i = $RUN_Clusters[$r]
+	While $i > 16 And $FileSize > $BytesPerCluster * 16
+		_WinAPI_WriteFile($htest, DllStructGetPtr($sBuffer), $BytesPerCluster * 16, $nBytes)
+		$i -= 16
+		$FileSize -= $BytesPerCluster * 16
+	WEnd
+	If $i <> 0 Then
+		If $FileSize > $BytesPerCluster * $i Then
+			_WinAPI_WriteFile($htest, DllStructGetPtr($sBuffer), $BytesPerCluster * $i, $nBytes)
+			$FileSize -= $BytesPerCluster * $i
+		Else
+			_WinAPI_WriteFile($htest, DllStructGetPtr($sBuffer), $FileSize, $nBytes)
+			Return 0
 		EndIf
-	Next
+	EndIf
+	Return $FileSize
 EndFunc
 
 Func _CreateSparseBuffer()
@@ -1007,7 +947,7 @@ Func _LZNTDecompress($tInput, $Size)	;note function returns a null string if err
 	Local $tOutput[2]
 	Local $tBuffer = DllStructCreate("byte[" & $BytesPerCluster*16 & "]")
     Local $a_Call = DllCall("ntdll.dll", "int", "RtlDecompressBuffer", _
-			"ushort", 2, _
+            "ushort", 2, _
             "ptr", DllStructGetPtr($tBuffer), _
             "dword", DllStructGetSize($tBuffer), _
             "ptr", DllStructGetPtr($tInput), _
