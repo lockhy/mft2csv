@@ -21,6 +21,14 @@ Using file path is not fool proof, because the system may have put locks on the 
 
 So how do you get the index number of a given file. That can be retrived by using MFTRCRD. See its respective wiki page. It will decode a file or directory's $MFT record, including the index entries for directories. That way, although complicated, one can search into directories such as the "SYSTEM VOLUME INFORMATION". Read off the index numbers under the INDX decode, where directories usually are recognized by a size of 0. Rerun MFTRCRD and specify the index number. 
 
+= Sample usage =
+
+=== Example for copying the SYSTEM hive off a running system ===
+RawCopy C:\WINDOWS\system32\config\SYSTEM E:\output
+
+=== Example for extracting the $MFT by specifying its index number ===
+RawCopy C:0 E:\output
+
 = Latest version =
 
 v.1.0.0.1
