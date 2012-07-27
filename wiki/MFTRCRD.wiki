@@ -69,9 +69,11 @@ Running the tool without any parameter will display help information.
 
 
 = Latest version =
-v1.0.0.13
+v1.0.0.14
 
 = Changelog =
+
+v1.0.0.14: Added ability to also decode files marked as deleted. Fixed a wrong return when record not found. Changed some output text.
 
 v1.0.0.13: Fixed small bug in decode of certain weird INDX records. Also added full decode of all resident index entries in $INDEX_ROOT  
 
