@@ -4,7 +4,7 @@
 #AutoIt3Wrapper_Change2CUI=y
 #AutoIt3Wrapper_Res_Comment=Quick $MFT record dump
 #AutoIt3Wrapper_Res_Description=Decode a file's attributes from $MFT
-#AutoIt3Wrapper_Res_Fileversion=1.0.0.12
+#AutoIt3Wrapper_Res_Fileversion=1.0.0.14
 #AutoIt3Wrapper_Res_LegalCopyright=Joakim Schicht
 #AutoIt3Wrapper_Res_requestedExecutionLevel=asInvoker
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
@@ -98,7 +98,7 @@ Dim $FormattedTimestamp
 
 ConsoleWrite("" & @CRLF)
 ConsoleWrite("Starting MFTRCRD by Joakim Schicht" & @CRLF)
-ConsoleWrite("Version 1.0.0.12" & @CRLF)
+ConsoleWrite("Version 1.0.0.14" & @CRLF)
 ConsoleWrite("" & @CRLF)
 _validate_parameters()
 If StringIsDigit(StringMid($cmdline[1],3)) Then
@@ -318,7 +318,7 @@ Func _ExtractSingleFile($MFTReferenceNumber)
 	EndIf
 	If $MFTRecord = "" Then
 		ConsoleWrite("Target " & $MFTReferenceNumber & " not found" & @CRLF)
-		Return
+		Exit
 	EndIf
 	_DecodeMFTRecord($MFTRecord)
 	_DecodeNameQ($NameQ)
@@ -700,7 +700,7 @@ $UpdSeqArrPart2 = StringMid($UpdSeqArr,9,4)
 $RecordEnd1 = StringMid($MFTEntry,1023,4)
 $RecordEnd2 = StringMid($MFTEntry,2047,4)
 If $UpdSeqArrPart0 <> $RecordEnd1 OR $UpdSeqArrPart0 <> $RecordEnd2 Then
-	ConsoleWrite("Error the $MFT record is corrupt" & @CRLF)
+	ConsoleWrite("Error: the $MFT record is corrupt" & @CRLF)
 	Return
  Else
 	$MFTEntry = StringMid($MFTEntry,1,1022) & $UpdSeqArrPart1 & StringMid($MFTEntry,1027,1020) & $UpdSeqArrPart2
@@ -1292,7 +1292,9 @@ Func _FindFileMFTRecord($TargetFile)
 		For $i = 0 To $MFT_RUN_Clusters[$r]*$BytesPerCluster Step $MFT_Record_Size
 			_WinAPI_ReadFile($hFile, DllStructGetPtr($tBuffer), $MFT_Record_Size, $nBytes)
 			$record = DllStructGetData($tBuffer, 1)
-			If BitAND(Dec(StringMid($record,47,4)),Dec("0100")) AND StringMid($record,91,8) = $TargetFile Then
+;			If BitAND(Dec(StringMid($record,47,4)),Dec("0100")) AND StringMid($record,91,8) = $TargetFile Then
+			If StringMid($record,91,8) = $TargetFile Then
+				MsgBox(0,"StringMid($record,47,4)",StringMid($record,47,4))
 				ConsoleWrite("Target " & $TargetFile & " found" & @CRLF)
 ;				$TmpOffset = DllCall('kernel32.dll', 'int', 'SetFilePointerEx', 'ptr', $hFile, 'int64', 0, 'int64*', 0, 'dword', 1)
 ;				ConsoleWrite("$TmpOffset: " & $TmpOffset & @CRLF)
@@ -1463,7 +1465,7 @@ $RecordHdrArr[8][0] = "Real size of the FILE record"
 $RecordHdrArr[9][0] = "Allocated size of the FILE record"
 $RecordHdrArr[10][0] = "File reference to the base FILE record"
 $RecordHdrArr[11][0] = "Next Attribute Id"
-$RecordHdrArr[12][0] = "Number of this MFT Record"
+$RecordHdrArr[12][0] = "File reference (MFT Record number)"
 $RecordHdrArr[13][0] = "Update Sequence Number (a)"
 $RecordHdrArr[14][0] = "Update Sequence Array (a)"
 $SIArr[0][0] = "Field name:"
@@ -2586,7 +2588,8 @@ Func _ProcessMftArray($TargetFile)
 ;	ConsoleWrite(_HexEncode($record) & @crlf)
 ;	$TmpOffset = DllCall('kernel32.dll', 'int', 'SetFilePointerEx', 'ptr', $hFile, 'int64', 0, 'int64*', 0, 'dword', 1)
 ;	ConsoleWrite("$TmpOffset: " & $TmpOffset[3] & @CRLF)
-	If BitAND(Dec(StringMid($record,47,4)),Dec("0100")) AND StringMid($record,91,8) = $TargetFile Then
+	If StringMid($record,91,8) = $TargetFile Then ; Also include deleted files
+;	If BitAND(Dec(StringMid($record,47,4)),Dec("0100")) AND StringMid($record,91,8) = $TargetFile Then
 		ConsoleWrite("Target " & $TargetFile & " found" & @CRLF)
 		_WinAPI_CloseHandle($hFile)
 		Return $record		;returns MFT record for file
