@@ -31,6 +31,10 @@ So how do you get the index number of a given file. That can be retrived by usin
 
 = Latest version =
 
-v.1.0.0.1
+v.1.0.0.2
 
 = Changelog =
+
+v1.0.0.2: Added ability to also extract files marked as deleted.
+
+v1.0.0.1: First version.
