@@ -4,7 +4,7 @@
 #AutoIt3Wrapper_Change2CUI=y
 #AutoIt3Wrapper_Res_Comment=Quick $MFT record dump
 #AutoIt3Wrapper_Res_Description=Decode a file's attributes from $MFT
-#AutoIt3Wrapper_Res_Fileversion=1.0.0.14
+#AutoIt3Wrapper_Res_Fileversion=1.0.0.15
 #AutoIt3Wrapper_Res_LegalCopyright=Joakim Schicht
 #AutoIt3Wrapper_Res_requestedExecutionLevel=asInvoker
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
@@ -98,7 +98,7 @@ Dim $FormattedTimestamp
 
 ConsoleWrite("" & @CRLF)
 ConsoleWrite("Starting MFTRCRD by Joakim Schicht" & @CRLF)
-ConsoleWrite("Version 1.0.0.14" & @CRLF)
+ConsoleWrite("Version 1.0.0.15" & @CRLF)
 ConsoleWrite("" & @CRLF)
 _validate_parameters()
 If StringIsDigit(StringMid($cmdline[1],3)) Then
@@ -489,7 +489,7 @@ Func _DecodeAttrList($TargetFile, $AttrList)
 		$size = Dec(_SwapEndian(StringMid($AttrList, $offset*2 + 97, 16)))
 		$offset = ($offset + Dec(_SwapEndian(StringMid($AttrList, $offset*2 + 65, 4))))*2
 		$DataRun = StringMid($AttrList, $offset+1, StringLen($AttrList)-$offset)
-		ConsoleWrite("Attribute_List DataRun is " & $DataRun & @CRLF)
+;		ConsoleWrite("Attribute_List DataRun is " & $DataRun & @CRLF)
 		Global $RUN_VCN[1], $RUN_Clusters[1]
 		_ExtractDataRuns()
 		$tBuffer = DllStructCreate("byte[" & $BytesPerCluster & "]")
@@ -507,10 +507,10 @@ Func _DecodeAttrList($TargetFile, $AttrList)
 				$List &= StringTrimLeft(DllStructGetData($tBuffer, 1),2)
 			Next
 		Next
+;		_DebugOut("***AttrList New:",$List)
 		_WinAPI_CloseHandle($hFile)
 		$List = StringMid($List, 1, $size*2)
 	EndIf
-;	_DebugOut("$List", $List & @CRLF)
 	$IsolatedAttributeList = $list
 	$offset=0
 	$str=""
@@ -522,9 +522,11 @@ Func _DecodeAttrList($TargetFile, $AttrList)
 		$TestVCN = Dec(_SwapEndian(StringMid($List, $offset*2 + 17, 16)))
 		$ref=Dec(_SwapEndian(StringMid($List, $offset*2 + 33, 8)))
 		$LocalAttribID = "0x" & StringMid($List, $offset*2 + 49, 2) & StringMid($List, $offset*2 + 51, 2)
-		If $ALRecordLength > 0 Then
+		If $ALNameLength > 0 Then
 			$LocalName = StringMid($List, $offset*2 + 53, $ALNameLength*2*2)
 			$LocalName = _UnicodeHexToStr($LocalName)
+		Else
+			$LocalName = ""
 		EndIf
 		If $ref <> $TargetFile Then		;new attribute
 			If Not StringInStr($str, $ref) Then $str &= $ref & "-"
@@ -573,7 +575,6 @@ Func _StripMftRecord($MFTEntry)
 	$RecordSize = Dec(_SwapEndian(StringMid($MFTEntry,51,8)),2)
 	$HeaderSize = Dec(_SwapEndian(StringMid($MFTEntry,43,4)),2)
 	$MFTEntry = StringMid($MFTEntry,$HeaderSize*2+3,($RecordSize-$HeaderSize-8)*2)        ;strip "0x..." and "FFFFFFFF..."
-;	_DebugOut("Stripped Record", $MFTEntry)
 	Return $MFTEntry
 EndFunc
 
@@ -581,23 +582,17 @@ Func _DecodeDataQEntry($Entry)
 	$DATA_Length = StringMid($Entry,9,8)
 	$DATA_Length = Dec(StringMid($DATA_Length,7,2) & StringMid($DATA_Length,5,2) & StringMid($DATA_Length,3,2) & StringMid($DATA_Length,1,2))
 	$DATA_NonResidentFlag = StringMid($Entry,17,2)
-;	ConsoleWrite("$DATA_NonResidentFlag = " & $DATA_NonResidentFlag & @crlf)
 	$DATA_NameLength = Dec(StringMid($Entry,19,2))
-;	ConsoleWrite("$DATA_NameLength = " & $DATA_NameLength & @crlf)
 	$DATA_NameRelativeOffset = StringMid($Entry,21,4)
-;	ConsoleWrite("$DATA_NameRelativeOffset = " & $DATA_NameRelativeOffset & @crlf)
 	$DATA_NameRelativeOffset = Dec(_SwapEndian($DATA_NameRelativeOffset))
-;	ConsoleWrite("$DATA_NameRelativeOffset = " & $DATA_NameRelativeOffset & @crlf)
 	If $DATA_NameLength > 0 Then
 		$DATA_Name = _UnicodeHexToStr(StringMid($Entry,$DATA_NameRelativeOffset*2 + 1,$DATA_NameLength*4))
 		$DATA_Name_Core = $DATA_Name
 		$DATA_Name = $FN_FileName & "[" & $DATA_Name & "]"		;must be ADS
-;		ConsoleWrite("$DATA_Name = " & $DATA_Name & @crlf)
 	Else
 		$DATA_Name = $FN_FileName
 	EndIf
 	$DATA_Flags = _SwapEndian(StringMid($Entry,25,4))
-;	ConsoleWrite("$DATA_Flags = " & $DATA_Flags & @crlf)
 	$Flags = ""
 	If $DATA_Flags = "0000" Then
 		$Flags = "NORMAL"
@@ -616,63 +611,41 @@ Func _DecodeDataQEntry($Entry)
 		EndIf
 		$Flags = StringTrimRight($Flags,1)
 	EndIf
-;	ConsoleWrite("File is " & $Flags & @CRLF)
 	$DATA_AttributeID = StringMid($Entry,29,4)
 	$DATA_AttributeID = StringMid($DATA_AttributeID,3,2) & StringMid($DATA_AttributeID,1,2)
 	If $DATA_NonResidentFlag = '01' Then
 		$DATA_StartVCN = StringMid($Entry,33,16)
-;		ConsoleWrite("$DATA_StartVCN = " & $DATA_StartVCN & @crlf)
 		$DATA_StartVCN = Dec(_SwapEndian($DATA_StartVCN),2)
-;		ConsoleWrite("$DATA_StartVCN = " & $DATA_StartVCN & @crlf)
 		$DATA_LastVCN = StringMid($Entry,49,16)
-;		ConsoleWrite("$DATA_LastVCN = " & $DATA_LastVCN & @crlf)
 		$DATA_LastVCN = Dec(_SwapEndian($DATA_LastVCN),2)
-;		ConsoleWrite("$DATA_LastVCN = " & $DATA_LastVCN & @crlf)
 		$DATA_VCNs = $DATA_LastVCN - $DATA_StartVCN
-;		ConsoleWrite("$DATA_VCNs = " & $DATA_VCNs & @crlf)
 		$DATA_OffsetToDataRuns = StringMid($Entry,65,4)
 		$DATA_OffsetToDataRuns = Dec(StringMid($DATA_OffsetToDataRuns,3,1) & StringMid($DATA_OffsetToDataRuns,3,1))
 		$DATA_CompressionUnitSize = Dec(_SwapEndian(StringMid($Entry,69,4)))
-;		ConsoleWrite("$DATA_CompressionUnitSize = " & $DATA_CompressionUnitSize & @crlf)
 		$IsCompressed = 0
 		If $DATA_CompressionUnitSize = 4 Then $IsCompressed = 1
 		$DATA_Padding = StringMid($Entry,73,8)
 		$DATA_Padding = StringMid($DATA_Padding,7,2) & StringMid($DATA_Padding,5,2) & StringMid($DATA_Padding,3,2) & StringMid($DATA_Padding,1,2)
 		$DATA_AllocatedSize = StringMid($Entry,81,16)
-;		ConsoleWrite("$DATA_AllocatedSize = " & $DATA_AllocatedSize & @crlf)
 		$DATA_AllocatedSize = Dec(_SwapEndian($DATA_AllocatedSize),2)
-;		ConsoleWrite("$DATA_AllocatedSize = " & $DATA_AllocatedSize & @crlf)
 		$DATA_RealSize = StringMid($Entry,97,16)
-;		ConsoleWrite("$DATA_RealSize = " & $DATA_RealSize & @crlf)
 		$DATA_RealSize = Dec(_SwapEndian($DATA_RealSize),2)
-;		ConsoleWrite("$DATA_RealSize = " & $DATA_RealSize & @crlf)
 		$DATA_InitializedStreamSize = StringMid($Entry,113,16)
-;		ConsoleWrite("$DATA_InitializedStreamSize = " & $DATA_InitializedStreamSize & @crlf)
 		$DATA_InitializedStreamSize = Dec(_SwapEndian($DATA_InitializedStreamSize),2)
-;		ConsoleWrite("$DATA_InitializedStreamSize = " & $DATA_InitializedStreamSize & @crlf)
 		$RunListOffset = StringMid($Entry,65,4)
-;		ConsoleWrite("$RunListOffset = " & $RunListOffset & @crlf)
 		$RunListOffset = Dec(_SwapEndian($RunListOffset))
-;		ConsoleWrite("$RunListOffset = " & $RunListOffset & @crlf)
 		If $IsCompressed AND $RunListOffset = 72 Then
 			$DATA_CompressedSize = StringMid($Entry,129,16)
 			$DATA_CompressedSize = Dec(_SwapEndian($DATA_CompressedSize),2)
 		EndIf
 		$DataRun = StringMid($Entry,$RunListOffset*2+1,(StringLen($Entry)-$RunListOffset)*2)
-;		ConsoleWrite("$DataRun = " & $DataRun & @crlf)
 	ElseIf $DATA_NonResidentFlag = '00' Then
 		$DATA_LengthOfAttribute = StringMid($Entry,33,8)
-;		ConsoleWrite("$DATA_LengthOfAttribute = " & $DATA_LengthOfAttribute & @crlf)
 		$DATA_LengthOfAttribute = Dec(_SwapEndian($DATA_LengthOfAttribute),2)
-;		ConsoleWrite("$DATA_LengthOfAttribute = " & $DATA_LengthOfAttribute & @crlf)
-;		$DATA_OffsetToAttribute = StringMid($Entry,41,4)
-;		$DATA_OffsetToAttribute = Dec(StringMid($DATA_OffsetToAttribute,3,2) & StringMid($DATA_OffsetToAttribute,1,2))
 		$DATA_OffsetToAttribute = Dec(_SwapEndian(StringMid($Entry,41,4)))
-;		ConsoleWrite("$DATA_OffsetToAttribute = " & $DATA_OffsetToAttribute & @crlf)
 		$DATA_IndexedFlag = Dec(StringMid($Entry,45,2))
 		$DATA_Padding = StringMid($Entry,47,2)
 		$DataRun = StringMid($Entry,$DATA_OffsetToAttribute*2+1,$DATA_LengthOfAttribute*2)
-;		ConsoleWrite("$DataRun = " & $DataRun & @crlf)
 	EndIf
 EndFunc
 
@@ -761,14 +734,8 @@ $RecordHdrArr[14][1] = $UpdSeqArrPart1&$UpdSeqArrPart2
 _Arrayadd($HexDumpHeader,StringMid($MFTEntry,3,$AttributeOffset-3))
 While 1
 	$AttributeType = StringMid($MFTEntry,$AttributeOffset,8)
-;	ConsoleWrite("$AttributeType = " & $AttributeType & @crlf)
-;	If $AttributeType = $ATTRIBUTE_END_MARKER Then ExitLoop
 	$AttributeSize = StringMid($MFTEntry,$AttributeOffset+8,8)
-;	ConsoleWrite("$AttributeSize = " & $AttributeSize & @crlf)
 	$AttributeSize = Dec(_SwapEndian($AttributeSize),2)
-;	ConsoleWrite("$AttributeSize = " & $AttributeSize & @crlf)
-;	ConsoleWrite("$AttributeOffset Dec = " & $AttributeOffset & @crlf)
-;	ConsoleWrite("$AttributeOffset Hex = 0x" & Hex(Int(($AttributeOffset-3)/2),4) & @crlf)
 	Select
 		Case $AttributeType = $STANDARD_INFORMATION
 			$STANDARD_INFORMATION_ON = "TRUE"
@@ -785,8 +752,11 @@ While 1
 			_DecodeAttrList($HEADER_MFTRecordNumber, $AttrList)		;produces $AttrQ - extra record list
 			$str = ""
 			For $i = 1 To $AttrQ[0]
-;			   $record = _FindFileMFTRecord($AttrQ[$i])
-			   $record = _ProcessMftArray($AttrQ[$i])
+				If $cmdline[3] = "attriblist_on" Then
+					$record = _ProcessMftArray($AttrQ[$i])
+				Else
+					$record = _FindFileMFTRecord($AttrQ[$i])
+				EndIf
 			   $str &= _StripMftRecord($record)		;no header or end marker
 			Next
 			$str &= "FFFFFFFF"		;add end marker
@@ -975,11 +945,8 @@ Func _DecodeNameQ($NameQ)
 		$NameString = $NameQ[$name]
 		If $NameString = "" Then ContinueLoop
 		$FN_AllocSize = Dec(_SwapEndian(StringMid($NameString,129,16)),2)
-;		ConsoleWrite("$FN_AllocSize = " & $FN_AllocSize & @crlf)
 		$FN_RealSize = Dec(_SwapEndian(StringMid($NameString,145,16)),2)
-;		ConsoleWrite("$FN_RealSize = " & $FN_RealSize & @crlf)
 		$FN_NameLength = Dec(StringMid($NameString,177,2))
-;		ConsoleWrite("$FN_NameLength = " & $FN_NameLength & @crlf)
 		$FN_NameSpace = StringMid($NameString,179,2)
 		Select
 			Case $FN_NameSpace = '00'
@@ -993,11 +960,8 @@ Func _DecodeNameQ($NameQ)
 			Case Else
 				$FN_NameSpace = 'UNKNOWN'
 		EndSelect
-;		ConsoleWrite("$FN_NameSpace = " & $FN_NameSpace & @crlf)
 		$FN_FileName = StringMid($NameString,181,$FN_NameLength*4)
-;		ConsoleWrite("$FN_FileName = " & $FN_FileName & @crlf)
 		$FN_FileName = _UnicodeHexToStr($FN_FileName)
-;		ConsoleWrite("$FN_FileName = " & $FN_FileName & @crlf)
 		If StringLen($FN_FileName) <> $FN_NameLength Then $INVALID_FILENAME = 1
 	Next
 	Return
@@ -1012,14 +976,10 @@ Func _ExtractDataRuns()
 	Do
 		$RunListID = StringMid($DataRun,$i,2)
 		If $RunListID = "00" Then ExitLoop
-;		ConsoleWrite("$RunListID = " & $RunListID & @crlf)
 		$i += 2
 		$RunListClustersLength = Dec(StringMid($RunListID,2,1))
-;		ConsoleWrite("$RunListClustersLength = " & $RunListClustersLength & @crlf)
 		$RunListVCNLength = Dec(StringMid($RunListID,1,1))
-;		ConsoleWrite("$RunListVCNLength = " & $RunListVCNLength & @crlf)
 		$RunListClusters = Dec(_SwapEndian(StringMid($DataRun,$i,$RunListClustersLength*2)),2)
-;		ConsoleWrite("$RunListClusters = " & $RunListClusters & @crlf)
 		$i += $RunListClustersLength*2
 		$RunListVCN = _SwapEndian(StringMid($DataRun, $i, $RunListVCNLength*2))
 		;next line handles positive or negative move
@@ -1029,9 +989,7 @@ Func _ExtractDataRuns()
 		Else
 			$RunListVCN = 0			;$RUN_VCN[$r-1]		;0
 		EndIf
-;		ConsoleWrite("$RunListVCN = " & $RunListVCN & @crlf)
 		If (($RunListVCN=0) And ($RunListClusters>16) And (Mod($RunListClusters,16)>0)) Then
-		;If (($RunListVCN=$RUN_VCN[$r-1]) And ($RunListClusters>16) And (Mod($RunListClusters,16)>0)) Then
 		 ;may be sparse section at end of Compression Signature
 			_ArrayAdd($RUN_Clusters,Mod($RunListClusters,16))
 			_ArrayAdd($RUN_VCN,$RunListVCN)
@@ -1285,19 +1243,15 @@ Func _FindFileMFTRecord($TargetFile)
 		_WinAPI_CloseHandle($hFile)
 		Return ""
 	EndIf
-;	ConsoleWrite("Started searching through $MFT for the selected record number " & $TargetFile & " -> " & _DecToLittleEndian($TargetFile) & @CRLF)
 	$TargetFile = _DecToLittleEndian($TargetFile)
 	For $r = 1 To Ubound($MFT_RUN_VCN)-1
 		_WinAPI_SetFilePointerEx($hFile, $MFT_RUN_VCN[$r]*$BytesPerCluster, $FILE_BEGIN)
 		For $i = 0 To $MFT_RUN_Clusters[$r]*$BytesPerCluster Step $MFT_Record_Size
 			_WinAPI_ReadFile($hFile, DllStructGetPtr($tBuffer), $MFT_Record_Size, $nBytes)
 			$record = DllStructGetData($tBuffer, 1)
-;			If BitAND(Dec(StringMid($record,47,4)),Dec("0100")) AND StringMid($record,91,8) = $TargetFile Then
 			If StringMid($record,91,8) = $TargetFile Then
-				MsgBox(0,"StringMid($record,47,4)",StringMid($record,47,4))
+;				MsgBox(0,"StringMid($record,47,4)",StringMid($record,47,4))
 				ConsoleWrite("Target " & $TargetFile & " found" & @CRLF)
-;				$TmpOffset = DllCall('kernel32.dll', 'int', 'SetFilePointerEx', 'ptr', $hFile, 'int64', 0, 'int64*', 0, 'dword', 1)
-;				ConsoleWrite("$TmpOffset: " & $TmpOffset & @CRLF)
 				_WinAPI_CloseHandle($hFile)
 				Return $record		;returns MFT record for file
 			EndIf
