@@ -25,6 +25,8 @@ Attributes currently handled:
 
 Detailed runs information for $DATA can be retrived with version v1006.
 
+Beware that running MFTRCRD against the winsxs folder may take quite a long time (10 minutes or so). On my Windows 7 machine there is almost 24000 entries in the INDX records to decode when resolving the $INDEX_ALLOCATION atribute.
+
 Here is a sample console dump (older version): http://mft2csv.googlecode.com/files/dump_MTFRCRD.zip 
 
 
