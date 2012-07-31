@@ -77,9 +77,11 @@ Running the tool without any parameter will display help information.
 
 
 = Latest version =
-v1.0.0.16
+v1.0.0.17
 
 = Changelog =
+
+v1.0.0.17: Fixed wrong logic when displaying hex dump of attribute with the new offset mode.
 
 v1.0.0.16: Added option of specifying disk offset to decode. The syntax for using offset is driveletter+?+offset.
 
