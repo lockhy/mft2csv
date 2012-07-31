@@ -4,7 +4,7 @@
 #AutoIt3Wrapper_Change2CUI=y
 #AutoIt3Wrapper_Res_Comment=Quick $MFT record dump
 #AutoIt3Wrapper_Res_Description=Decode a file's attributes from $MFT
-#AutoIt3Wrapper_Res_Fileversion=1.0.0.15
+#AutoIt3Wrapper_Res_Fileversion=1.0.0.16
 #AutoIt3Wrapper_Res_LegalCopyright=Joakim Schicht
 #AutoIt3Wrapper_Res_requestedExecutionLevel=asInvoker
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
@@ -23,7 +23,7 @@
 ; http://code.google.com/p/mft2csv/
 ;
 Global $ReparseType,$ReparseDataLength,$ReparsePadding,$ReparseSubstititeNameOffset,$ReparseSubstituteNameLength,$ReparsePrintNameOffset,$ReparsePrintNameLength,$ResidentIndx
-Global $BrowsedFile,$TargetDrive = "", $ALInnerCouner, $MFTSize, $MFTRecordsArr[1][1]
+Global $BrowsedFile,$TargetDrive = "", $ALInnerCouner, $MFTSize, $MFTRecordsArr[1][1],$TargetIsOffset=0,$TargetOffset
 Global $SectorsPerCluster,$MFT_Record_Size,$BytesPerCluster,$BytesPerSector,$MFT_Offset
 Global $HEADER_LSN,$HEADER_SequenceNo,$HEADER_Flags,$HEADER_RecordRealSize,$HEADER_RecordAllocSize,$HEADER_FileRef
 Global $HEADER_NextAttribID,$HEADER_MFTREcordNumber
@@ -98,20 +98,22 @@ Dim $FormattedTimestamp
 
 ConsoleWrite("" & @CRLF)
 ConsoleWrite("Starting MFTRCRD by Joakim Schicht" & @CRLF)
-ConsoleWrite("Version 1.0.0.15" & @CRLF)
+ConsoleWrite("Version 1.0.0.16" & @CRLF)
 ConsoleWrite("" & @CRLF)
 _validate_parameters()
-If StringIsDigit(StringMid($cmdline[1],3)) Then
-	$TargetDrive = StringMid($cmdline[1],1,2);&"\"
-Else
-;	$TargetDrive = StringMid($cmdline[1],1,3)
-	$TargetDrive = StringMid($cmdline[1],1,2)
-EndIf
-$filesystem = DriveGetFileSystem($TargetDrive&"\")
+$TargetDrive = StringMid($cmdline[1],1,1)&":"
+$filesystem = DriveGetFileSystem(StringMid($TargetDrive,1,1)&":\")
 If $filesystem = "NTFS" Then
 	ConsoleWrite("Filesystem on " & $TargetDrive & " is " & $filesystem & @CRLF)
 Else
 	ConsoleWrite("Error: filesystem on " & $TargetDrive & " is " & $filesystem & @CRLF)
+	Exit
+EndIf
+If $TargetIsOffset Then
+	_ExtractSingleFile($TargetOffset)
+	_DumpInfo()
+	ConsoleWrite(@CRLF)
+	ConsoleWrite("FINISHED!!" & @CRLF)
 	Exit
 EndIf
 If StringIsDigit(StringMid($cmdline[1],3)) Then
@@ -164,10 +166,27 @@ EndIf
 If $cmdline[2] <> "-d" AND $cmdline[2] <> "-a" Then
 	ConsoleWrite("Error: Wrong parameter 2 supplied: " & $cmdline[2] & @CRLF)
 EndIf
-If FileExists($cmdline[1]) <> 1 OR StringMid($cmdline[1],2,1) <> ":" Then
-	If StringIsDigit(StringMid($cmdline[1],3)) <> 1 Then
-		ConsoleWrite("Error: Param1 is not valid: " & $cmdline[1] & @CRLF)
-		Exit
+If FileExists($cmdline[1]) <> 1 Then ;OR StringMid($cmdline[1],2,1) <> ":" OR StringMid($cmdline[1],2,1) <> "?" Then
+	If StringMid($cmdline[1],2,1) = "?" Then
+		If StringMid($cmdline[1],3,2) = "0x" Then
+			$TargetOffset = Dec(StringMid($cmdline[1],5),2)
+			$TargetIsOffset = 1
+		Else
+			$TargetOffset = StringMid($cmdline[1],3)
+			$TargetIsOffset = 1
+		EndIf
+		If Not StringIsDigit($TargetOffset) Then
+			ConsoleWrite("Error: Param1 omitted the offset part: " & $cmdline[1] & @CRLF)
+			Exit
+		EndIf
+		ConsoleWrite("Target offset is: " & $TargetOffset & @CRLF)
+	EndIf
+	If StringMid($cmdline[1],2,1) = ":" Then
+		If StringIsDigit(StringMid($cmdline[1],3)) <> 1 Then
+			ConsoleWrite("Error: Param1 is not valid: " & $cmdline[1] & @CRLF)
+			Exit
+		EndIf
+		$TargetOffset = StringMid($cmdline[1],3)
 	EndIf
 Else
 	$FileAttrib = FileGetAttrib($cmdline[1])
@@ -262,7 +281,7 @@ Func _GetIndexNumber($file, $mode)
                                 "int", 16384, "ptr", $FileInternalInformation)
 
     If NT_SUCCESS($ret[0]) Then
-        ConsoleWrite("NtQueryInformationFile: Success" & @CRLF)
+;        ConsoleWrite("NtQueryInformationFile: Success" & @CRLF)
         Local $pFSO = DllStructGetPtr($buffer)
 		Local $sFSO = DllStructCreate($tagFILEINTERNALINFORMATION, $pFSO)
 		Local $IndexNumber = DllStructGetData($sFSO, "IndexNumber")
@@ -311,7 +330,9 @@ EndFunc
 Func _ExtractSingleFile($MFTReferenceNumber)
 	Global $DataQ[1]				;clear array
 	_ClearVar()
-	If $MFTReferenceNumber > 24 AND $cmdline[3] = "attriblist_on" Then
+	If $TargetIsOffset Then
+		$MFTRecord = _DumpFromOffset($MFTReferenceNumber)
+	ElseIf $MFTReferenceNumber > 24 AND $cmdline[3] = "attriblist_on" Then
 		$MFTRecord = _ProcessMftArray($MFTReferenceNumber)
 	Else
 		$MFTRecord = _FindFileMFTRecord($MFTReferenceNumber)
@@ -495,9 +516,9 @@ Func _DecodeAttrList($TargetFile, $AttrList)
 		$tBuffer = DllStructCreate("byte[" & $BytesPerCluster & "]")
 		$hFile = _WinAPI_CreateFile("\\.\" & $TargetDrive, 2, 6, 6)
 		If $hFile = 0 Then
-			ConsoleWrite("Error in function _WinAPI_CreateFile when trying to locate Attribute List." & @CRLF)
+			ConsoleWrite("Error in function CreateFile when trying to locate Attribute List." & @CRLF)
 			_WinAPI_CloseHandle($hFile)
-			Return
+			Exit
 		EndIf
 		$List = ""
 		For $r = 1 To Ubound($RUN_VCN)-1
@@ -553,7 +574,7 @@ Func _DecodeAttrList($TargetFile, $AttrList)
 		ConsoleWrite("No extra MFT records found" & @CRLF)
 	Else
 		$AttrQ = StringSplit(StringTrimRight($str,1), "-")
-		ConsoleWrite("Decode of $ATTRIBUTE_LIST reveiled extra MFT Records to be examined = " & _ArrayToString($AttrQ, @CRLF) & @CRLF)
+;		ConsoleWrite("Decode of $ATTRIBUTE_LIST reveiled extra MFT Records to be examined = " & _ArrayToString($AttrQ, @CRLF) & @CRLF)
 	EndIf
 EndFunc
 
@@ -726,7 +747,7 @@ $RecordHdrArr[6][1] = $AttributeOffset
 $RecordHdrArr[7][1] = $HEADER_Flags
 $RecordHdrArr[8][1] = $HEADER_RecordRealSize
 $RecordHdrArr[9][1] = $HEADER_RecordAllocSize
-$RecordHdrArr[10][1] = $HEADER_FileRef
+$RecordHdrArr[10][1] = Dec($HEADER_FileRef)
 $RecordHdrArr[11][1] = $HEADER_NextAttribID
 $RecordHdrArr[12][1] = $HEADER_MFTREcordNumber
 $RecordHdrArr[13][1] = $UpdSeqArrPart0
@@ -1010,230 +1031,7 @@ Func _ExtractDataRuns()
 		$i += $RunListVCNLength*2
 	Until $i > StringLen($DataRun)
 EndFunc
-#cs
-Func _ExtractFile()
-	Local $nBytes,$outputpath=""
-	$hFile = _WinAPI_CreateFile("\\.\" & $TargetDrive, 2, 6, 6)
-	If $hFile = 0 Then
-		ConsoleWrite("Error in function _WinAPI_CreateFile when trying to open target drive." & @CRLF)
-		_WinAPI_CloseHandle($hFile)
-		Return
-	EndIf
-	If $DATA_Name ="" Then
-		$DATA_Name = $FN_Filename
-		$DATA_RealSize = $FN_RealSize
-	EndIf
-	$htest = _WinAPI_CreateFile($outputpath & "\" & $DATA_Name,3,6,7)
-	If $htest = 0 Then
-		ConsoleWrite("Error in function _WinAPI_CreateFile for: " & $outputpath & "\" & $DATA_Name & @crlf)
-		Return
-	EndIf
-	ConsoleWrite("$htest = " & $htest & @crlf)
-	$tBuffer = DllStructCreate("byte[" & $BytesPerCluster * 16 & "]")
-	Select
-		Case UBound($RUN_VCN) = 1		;no data, do nothing
-		Case (UBound($RUN_VCN) = 2) Or (Not $IsCompressed)	;may be normal or sparse
-			If $RUN_VCN[1] = $RUN_VCN[0] And $DATA_Name <> "$Boot" Then		;sparse, unless $Boot
-				_DoSparse($htest)
-			Else								;normal
-				_DoNormal($hFile, $htest, $tBuffer)
-			EndIf
-		Case Else					;may be compressed
-			_DoCompressed($hFile, $htest, $tBuffer)
-	EndSelect
-   ConsoleWrite("Successfully extracted target file: " & $DATA_Name & " to " & $outputpath & "\" & $DATA_Name  & @CRLF)
-   _WinAPI_CloseHandle($hFile)
-   _WinAPI_CloseHandle($htest)
-EndFunc
 
-Func _DoCompressed($hFile, $htest, $tBuffer)
-	Local $nBytes
-	$r=1
-	$FileSize = $DATA_RealSize
-	Do
-		_WinAPI_SetFilePointerEx($hFile, $RUN_VCN[$r]*$BytesPerCluster, $FILE_BEGIN)
-		$i = $RUN_Clusters[$r]
-		If (($RUN_VCN[$r+1]=0) And ($i+$RUN_Clusters[$r+1]=16)) Then
-			_WinAPI_ReadFile($hFile, DllStructGetPtr($tBuffer), $BytesPerCluster * $i, $nBytes)
-			$Decompressed = _LZNTDecompress($tBuffer, $BytesPerCluster * $i)
-			If IsString($Decompressed) Then
-				ConsoleWrite("Decompression error" & @CRLF)
-				Return
-			Else		;$Decompressed is an array
-				Local $DecompBuffer = DllStructCreate("byte[" & $Decompressed[1] & "]")
-				DllStructSetData($DecompBuffer, 1, $Decompressed[0])
-			EndIf
-			If $FileSize > $Decompressed[1] Then
-				_WinAPI_WriteFile($htest, DllStructGetPtr($DecompBuffer), $Decompressed[1], $nBytes)
-				$FileSize -= $Decompressed[1]
-			Else
-				_WinAPI_WriteFile($htest, DllStructGetPtr($DecompBuffer), $FileSize, $nBytes)
-			EndIf
-			$r += 1
-		ElseIf $RUN_VCN[$r]=0 Then
-			If Not IsDllStruct($sBuffer) Then _CreateSparseBuffer()
-			While $i > 16 And $FileSize > $BytesPerCluster * 16
-				_WinAPI_WriteFile($htest, DllStructGetPtr($sBuffer), $BytesPerCluster * 16, $nBytes)
-				$i -= 16
-				$FileSize -= $BytesPerCluster * 16
-			WEnd
-			If $i <> 0 Then
-				If $FileSize > $BytesPerCluster * $i Then
-					_WinAPI_WriteFile($htest, DllStructGetPtr($sBuffer), $BytesPerCluster * $i, $nBytes)
-					$FileSize -= $BytesPerCluster * $i
-				Else
-					_WinAPI_WriteFile($htest, DllStructGetPtr($sBuffer), $FileSize, $nBytes)
-				EndIf
-			EndIf
-		Else
-			While $i > 16 And $FileSize > $BytesPerCluster * 16
-				_WinAPI_ReadFile($hFile, DllStructGetPtr($tBuffer), $BytesPerCluster * 16, $nBytes)
-				_WinAPI_WriteFile($htest, DllStructGetPtr($tBuffer), $BytesPerCluster * 16, $nBytes)
-				$i -= 16
-				$FileSize -= $BytesPerCluster * 16
-			WEnd
-			If $i <> 0 Then
-				_WinAPI_ReadFile($hFile, DllStructGetPtr($tBuffer), $BytesPerCluster * $i, $nBytes)
-				If $FileSize > $BytesPerCluster * $i Then
-					_WinAPI_WriteFile($htest, DllStructGetPtr($tBuffer), $BytesPerCluster * $i, $nBytes)
-					$FileSize -= $BytesPerCluster * $i
-				Else
-					_WinAPI_WriteFile($htest, DllStructGetPtr($tBuffer), $FileSize, $nBytes)
-				EndIf
-			EndIf
-		EndIf
-		$r += 1
-	Until $r > UBound($RUN_VCN)-2
-	If $r = UBound($RUN_VCN)-1 Then
-		$i = $RUN_Clusters[$r]
-		If $RUN_VCN[$r]=0 Then
-			If Not IsDllStruct($sBuffer) Then _CreateSparseBuffer()
-			While $i > 16 And $FileSize > $BytesPerCluster * 16
-				_WinAPI_WriteFile($htest, DllStructGetPtr($sBuffer), $BytesPerCluster * 16, $nBytes)
-				$i -= 16
-				$FileSize -= $BytesPerCluster * 16
-			WEnd
-			If $i <> 0 Then
-				If $FileSize > $BytesPerCluster * $i Then
-					_WinAPI_WriteFile($htest, DllStructGetPtr($sBuffer), $BytesPerCluster * $i, $nBytes)
-					$FileSize -= $BytesPerCluster * $i
-				Else
-					_WinAPI_WriteFile($htest, DllStructGetPtr($sBuffer), $FileSize, $nBytes)
-				EndIf
-			EndIf
-		Else
-			While $i > 16 And $FileSize > $BytesPerCluster * 16
-				_WinAPI_ReadFile($hFile, DllStructGetPtr($tBuffer), $BytesPerCluster * 16, $nBytes)
-				_WinAPI_WriteFile($htest, DllStructGetPtr($tBuffer), $BytesPerCluster * 16, $nBytes)
-				$i -= 16
-				$FileSize -= $BytesPerCluster * 16
-			WEnd
-			If $i <> 0 Then
-				_WinAPI_ReadFile($hFile, DllStructGetPtr($tBuffer), $BytesPerCluster * $i, $nBytes)
-				If $FileSize > $BytesPerCluster * $i Then
-					_WinAPI_WriteFile($htest, DllStructGetPtr($tBuffer), $BytesPerCluster * $i, $nBytes)
-					$FileSize -= $BytesPerCluster * $i
-				Else
-					_WinAPI_WriteFile($htest, DllStructGetPtr($tBuffer), $FileSize, $nBytes)
-				EndIf
-			EndIf
-		EndIf
-	EndIf
-EndFunc
-
-Func _DoNormal($hFile, $htest, $tBuffer)
-	Local $nBytes
-	$FileSize = $DATA_RealSize
-	For $r = 1 To UBound($RUN_VCN)-1
-		_WinAPI_SetFilePointerEx($hFile, $RUN_VCN[$r]*$BytesPerCluster, $FILE_BEGIN)
-		$i = $RUN_Clusters[$r]
-		While $i > 16 And $FileSize > $BytesPerCluster * 16
-			_WinAPI_ReadFile($hFile, DllStructGetPtr($tBuffer), $BytesPerCluster * 16, $nBytes)
-			_WinAPI_WriteFile($htest, DllStructGetPtr($tBuffer), $BytesPerCluster * 16, $nBytes)
-			$i -= 16
-			$FileSize -= $BytesPerCluster * 16
-		WEnd
-		If $i <> 0 Then
-			_WinAPI_ReadFile($hFile, DllStructGetPtr($tBuffer), $BytesPerCluster * $i, $nBytes)
-			If $FileSize > $BytesPerCluster * $i Then
-				_WinAPI_WriteFile($htest, DllStructGetPtr($tBuffer), $BytesPerCluster * $i, $nBytes)
-				$FileSize -= $BytesPerCluster * $i
-			Else
-				_WinAPI_WriteFile($htest, DllStructGetPtr($tBuffer), $FileSize, $nBytes)
-				Return
-			EndIf
-		EndIf
-	Next
-EndFunc
-
-Func _DoSparse($htest)
-	Local $nBytes
-	If Not IsDllStruct($sBuffer) Then _CreateSparseBuffer()
-	$FileSize = $DATA_RealSize
-	For $r = 1 To UBound($RUN_VCN)-1
-		$i = $RUN_Clusters[$r]
-		While $i > 16 And $FileSize > $BytesPerCluster * 16
-			_WinAPI_WriteFile($htest, DllStructGetPtr($sBuffer), $BytesPerCluster * 16, $nBytes)
-			$i -= 16
-			$FileSize -= $BytesPerCluster * 16
-		WEnd
-		If $i <> 0 Then
-			If $FileSize > $BytesPerCluster * $i Then
-				_WinAPI_WriteFile($htest, DllStructGetPtr($sBuffer), $BytesPerCluster * $i, $nBytes)
-				$FileSize -= $BytesPerCluster * $i
-			Else
-				_WinAPI_WriteFile($htest, DllStructGetPtr($sBuffer), $FileSize, $nBytes)
-				Return
-			EndIf
-		EndIf
-	Next
-EndFunc
-
-Func _CreateSparseBuffer()
-	Global $sBuffer = DllStructCreate("byte[" & $BytesPerCluster * 16 & "]")
-	For $i = 1 To $BytesPerCluster * 16
-		DllStructSetData ($sBuffer, $i, 0)
-	Next
-EndFunc
-
-Func _LZNTDecompress($tInput, $Size)	;note function returns a null string if error, or an array if no error
-	Local $tOutput[2]
-	Local $tBuffer = DllStructCreate("byte[" & $BytesPerCluster*16 & "]")
-    Local $a_Call = DllCall("ntdll.dll", "int", "RtlDecompressBuffer", _
-			"ushort", 2, _
-            "ptr", DllStructGetPtr($tBuffer), _
-            "dword", DllStructGetSize($tBuffer), _
-            "ptr", DllStructGetPtr($tInput), _
-            "dword", $Size, _
-            "dword*", 0)
-
-    If @error Or $a_Call[0] Then	;if $a_Call[0]=0 then output size is in $a_Call[6], otherwise $a_Call[6] is invalid
-        Return SetError(1, 0, "") ; error decompressing
-    EndIf
-    Local $Decompressed = DllStructCreate("byte[" & $a_Call[6] & "]", DllStructGetPtr($tBuffer))
-	$tOutput[0] = DllStructGetData($Decompressed, 1)
-	$tOutput[1] = $a_Call[6]
-    Return SetError(0, 0, $tOutput)
-EndFunc
-
-Func _ExtractResidentFile($Name, $Size)
-	Local $nBytes, $outputpath=""
-	$hTest = _WinAPI_CreateFile($outputpath & "\" & $Name,3,6,7)
-	If $hTest = 0 Then
-		ConsoleWrite("Error in function _WinAPI_CreateFile for: " & $outputpath & "\" & $Name & @crlf)
-		Return
-	EndIf
-;	ConsoleWrite("$hTest = " & $hTest & @crlf)
-	_WinAPI_SetFilePointer($hTest, 0,$FILE_BEGIN)
-	$tBuffer = DllStructCreate("byte[" & $Size & "]")
-	DllStructSetData($tBuffer, 1, '0x' & $DataRun)
-;	ConsoleWrite("Size of buffer = " & $Size & @crlf)
-	_WinAPI_WriteFile($hTest, DllStructGetPtr($tBuffer), $Size, $nBytes)
-	_WinAPI_CloseHandle($hTest)
-	ConsoleWrite("Successfully extracted target file: " & $Name & " to " & $outputpath & "\" & $Name  & @CRLF)
-	ConsoleWrite("Size of extracted " & $Name & " is " & $Size & " bytes" & @CRLF)
-EndFunc
-#ce
 Func _FindFileMFTRecord($TargetFile)
 	Local $nBytes, $LocalCounter, $TmpOffset, $Timer, $aa
 	$tBuffer = DllStructCreate("byte[" & $MFT_Record_Size & "]")
@@ -1241,7 +1039,7 @@ Func _FindFileMFTRecord($TargetFile)
 	If $hFile = 0 Then
 		ConsoleWrite("Error in function _WinAPI_CreateFile when trying to locate target file." & @CRLF)
 		_WinAPI_CloseHandle($hFile)
-		Return ""
+		Exit
 	EndIf
 	$TargetFile = _DecToLittleEndian($TargetFile)
 	For $r = 1 To Ubound($MFT_RUN_VCN)-1
@@ -1251,7 +1049,7 @@ Func _FindFileMFTRecord($TargetFile)
 			$record = DllStructGetData($tBuffer, 1)
 			If StringMid($record,91,8) = $TargetFile Then
 ;				MsgBox(0,"StringMid($record,47,4)",StringMid($record,47,4))
-				ConsoleWrite("Target " & $TargetFile & " found" & @CRLF)
+;				ConsoleWrite("Target " & $TargetFile & " found" & @CRLF)
 				_WinAPI_CloseHandle($hFile)
 				Return $record		;returns MFT record for file
 			EndIf
@@ -1266,8 +1064,8 @@ Func _FindMFT($TargetFile)
 	$tBuffer = DllStructCreate("byte[" & $MFT_Record_Size & "]")
 	$hFile = _WinAPI_CreateFile("\\.\" & $TargetDrive, 2, 6, 6)
 	If $hFile = 0 Then
-		ConsoleWrite("Error in function _WinAPI_CreateFile when trying to locate MFT." & @CRLF)
-		Return ""
+		ConsoleWrite("Error in function CreateFile when trying to locate MFT." & @CRLF)
+		Exit
 	EndIf
 	_WinAPI_SetFilePointerEx($hFile, $MFT_Offset)
 	_WinAPI_ReadFile($hFile, DllStructGetPtr($tBuffer), $MFT_Record_Size, $nBytes)
@@ -1318,8 +1116,8 @@ Func _ReadBootSector($TargetDrive)
 	$tBuffer=DllStructCreate("byte[512]")
 	$hFile = _WinAPI_CreateFile("\\.\" & $TargetDrive,2,2,7)
 	If $hFile = 0 then
-		ConsoleWrite("Error in function _WinAPI_CreateFile for: " & "\\.\" & $TargetDrive & @crlf)
-		Return
+		ConsoleWrite("Error in function CreateFile for: " & "\\.\" & $TargetDrive & @crlf)
+		Exit
 	EndIf
 	$read = _WinAPI_ReadFile($hFile, DllStructGetPtr($tBuffer), 512, $nBytes)
 	If $read = 0 then
@@ -2544,7 +2342,7 @@ Func _ProcessMftArray($TargetFile)
 ;	ConsoleWrite("$TmpOffset: " & $TmpOffset[3] & @CRLF)
 	If StringMid($record,91,8) = $TargetFile Then ; Also include deleted files
 ;	If BitAND(Dec(StringMid($record,47,4)),Dec("0100")) AND StringMid($record,91,8) = $TargetFile Then
-		ConsoleWrite("Target " & $TargetFile & " found" & @CRLF)
+;		ConsoleWrite("Target " & $TargetFile & " found" & @CRLF)
 		_WinAPI_CloseHandle($hFile)
 		Return $record		;returns MFT record for file
 	EndIf
@@ -3028,6 +2826,7 @@ Func _Get_IndexRoot($Entry,$Current_Attrib_Number,$CurrentAttributeName)
 EndFunc
 
 Func _StripIndxRecord($Entry)
+;	ConsoleWrite("Starting function _StripIndxRecord()" & @crlf)
 	Local $LocalAttributeOffset = 1,$IndxHdrUpdateSeqArrOffset,$IndxHdrUpdateSeqArrSize,$IndxHdrUpdSeqArr,$IndxHdrUpdSeqArrPart0,$IndxHdrUpdSeqArrPart1,$IndxHdrUpdSeqArrPart2,$IndxHdrUpdSeqArrPart3,$IndxHdrUpdSeqArrPart4,$IndxHdrUpdSeqArrPart5,$IndxHdrUpdSeqArrPart6,$IndxHdrUpdSeqArrPart7,$IndxHdrUpdSeqArrPart8
 	Local $IndxRecordEnd1,$IndxRecordEnd2,$IndxRecordEnd3,$IndxRecordEnd4,$IndxRecordEnd5,$IndxRecordEnd6,$IndxRecordEnd7,$IndxRecordEnd8,$IndxRecordSize,$IndxHeaderSize,$IsNotLeafNode
 ;	ConsoleWrite("Unfixed INDX record:" & @crlf)
@@ -3070,11 +2869,13 @@ Func _StripIndxRecord($Entry)
 	$Entry = StringMid($Entry,$LocalAttributeOffset+48+($IndxHeaderSize*2),($IndxRecordSize-$IndxHeaderSize-16)*2)
 	If $IsNotLeafNode = "01" Then  ; This flag leads to the entry being 8 bytes of 00's longer than the others. Can be stripped I think.
 		$Entry = StringTrimRight($Entry,16)
+;		ConsoleWrite("Is not leaf node..." & @crlf)
 	EndIf
 	Return $Entry
 EndFunc
 
 Func _Get_IndexAllocation($Entry,$Current_Attrib_Number,$CurrentAttributeName)
+;	ConsoleWrite("Starting function _Get_IndexAllocation()" & @crlf)
 	Local $NextPosition = 1,$IndxHdrMagic,$IndxEntries,$TotalIndxEntries
 ;	ConsoleWrite("StringLen of chunk = " & StringLen($Entry) & @crlf)
 ;	ConsoleWrite("Expected records = " & StringLen($Entry)/8192 & @crlf)
@@ -3085,7 +2886,7 @@ Func _Get_IndexAllocation($Entry,$Current_Attrib_Number,$CurrentAttributeName)
 		$IndxHdrMagic = _HexToString($IndxHdrMagic)
 ;		ConsoleWrite("$IndxHdrMagic = " & $IndxHdrMagic & @crlf)
 		If $IndxHdrMagic <> "INDX" Then
-;			ConsoleWrite("" & @crlf)
+;			ConsoleWrite("$IndxHdrMagic: " & $IndxHdrMagic & @crlf)
 ;			ConsoleWrite("Error: Record is not of type INDX, and this was not expected.." & @crlf)
 			$NextPosition += 8192
 			ContinueLoop
@@ -3093,7 +2894,7 @@ Func _Get_IndexAllocation($Entry,$Current_Attrib_Number,$CurrentAttributeName)
 		$IndxEntries = _StripIndxRecord(StringMid($Entry,$NextPosition,8192))
 		$TotalIndxEntries &= $IndxEntries
 		$NextPosition += 8192
-	Until $NextPosition >= StringLen($Entry)
+	Until $NextPosition >= StringLen($Entry)+32
 ;	ConsoleWrite("INDX record:" & @crlf)
 ;	ConsoleWrite(_HexEncode("0x"& StringMid($Entry,1)) & @crlf)
 ;	ConsoleWrite("Total chunk of stripped INDX entries:" & @crlf)
@@ -3102,6 +2903,7 @@ Func _Get_IndexAllocation($Entry,$Current_Attrib_Number,$CurrentAttributeName)
 EndFunc
 
 Func _DecodeIndxEntries($Entry,$Current_Attrib_Number,$CurrentAttributeName)
+;	ConsoleWrite("Starting function _DecodeIndxEntries()" & @crlf)
 	Local $LocalAttributeOffset = 1,$NewLocalAttributeOffset,$IndxHdrMagic,$IndxHdrUpdateSeqArrOffset,$IndxHdrUpdateSeqArrSize,$IndxHdrLogFileSequenceNo,$IndxHdrVCNOfIndx,$IndxHdrOffsetToIndexEntries,$IndxHdrSizeOfIndexEntries,$IndxHdrAllocatedSizeOfIndexEntries
 	Local $IndxHdrFlag,$IndxHdrPadding,$IndxHdrUpdateSequence,$IndxHdrUpdSeqArr,$IndxHdrUpdSeqArrPart0,$IndxHdrUpdSeqArrPart1,$IndxHdrUpdSeqArrPart2,$IndxHdrUpdSeqArrPart3,$IndxRecordEnd4,$IndxRecordEnd1,$IndxRecordEnd2,$IndxRecordEnd3,$IndxRecordEnd4
 	Local $FileReference,$IndexEntryLength,$StreamLength,$Flags,$Stream,$SubNodeVCN,$tmp0=0,$tmp1=0,$tmp2=0,$tmp3=0,$EntryCounter=1,$Padding2,$EntryCounter=1
@@ -3246,6 +3048,7 @@ Func _DecodeIndxEntries($Entry,$Current_Attrib_Number,$CurrentAttributeName)
 	If $NextEntryOffset+64 >= StringLen($Entry) Then Return
 	Do
 		$EntryCounter += 1
+;		ConsoleWrite("$EntryCounter = " & $EntryCounter & @crlf)
 		$MFTReference = StringMid($Entry,$NextEntryOffset,16)
 ;		ConsoleWrite("$MFTReference = " & $MFTReference & @crlf)
 		$MFTReference = StringMid($MFTReference,7,2)&StringMid($MFTReference,5,2)&StringMid($MFTReference,3,2)&StringMid($MFTReference,1,2)
@@ -3384,5 +3187,26 @@ Func _DecodeIndxEntries($Entry,$Current_Attrib_Number,$CurrentAttributeName)
 		$IndxFileNameArr[$EntryCounter] = $Indx_FileName
 		$IndxNameSpaceArr[$EntryCounter] = $Indx_NameSpace
 		$IndxSubNodeVCNArr[$EntryCounter] = $SubNodeVCN
-	Until $NextEntryOffset+16 >= StringLen($Entry)
+;		_ArrayDisplay($IndxFileNameArr,"$IndxFileNameArr")
+	Until $NextEntryOffset+32 >= StringLen($Entry)
+EndFunc
+
+Func _DumpFromOffset($DriveOffset)
+	Local $ttBuffer,$nnBytes,$hhFile
+	$ttBuffer = DllStructCreate("byte[" & 1024 & "]")
+	$hhFile = _WinAPI_CreateFile("\\.\" & $TargetDrive, 2, 6, 6)
+	If $hhFile = 0 Then
+		ConsoleWrite("Error in function CreateFile when trying to access " & $TargetDrive & @CRLF)
+		_WinAPI_CloseHandle($hhFile)
+		Exit
+	EndIf
+	_WinAPI_SetFilePointerEx($hhFile, $DriveOffset, $FILE_BEGIN)
+	_WinAPI_ReadFile($hhFile, DllStructGetPtr($ttBuffer), 1024, $nnBytes)
+	$MFTRecord = DllStructGetData($ttBuffer, 1)
+	_WinAPI_CloseHandle($hhFile)
+	If $MFTRecord <> "" Then
+		Return $MFTRecord
+	Else
+		Return SetError(1, 0, "")
+	EndIf
 EndFunc
