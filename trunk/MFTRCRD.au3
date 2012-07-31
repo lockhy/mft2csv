@@ -4,7 +4,7 @@
 #AutoIt3Wrapper_Change2CUI=y
 #AutoIt3Wrapper_Res_Comment=Quick $MFT record dump
 #AutoIt3Wrapper_Res_Description=Decode a file's attributes from $MFT
-#AutoIt3Wrapper_Res_Fileversion=1.0.0.16
+#AutoIt3Wrapper_Res_Fileversion=1.0.0.17
 #AutoIt3Wrapper_Res_LegalCopyright=Joakim Schicht
 #AutoIt3Wrapper_Res_requestedExecutionLevel=asInvoker
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
@@ -98,7 +98,7 @@ Dim $FormattedTimestamp
 
 ConsoleWrite("" & @CRLF)
 ConsoleWrite("Starting MFTRCRD by Joakim Schicht" & @CRLF)
-ConsoleWrite("Version 1.0.0.16" & @CRLF)
+ConsoleWrite("Version 1.0.0.17" & @CRLF)
 ConsoleWrite("" & @CRLF)
 _validate_parameters()
 $TargetDrive = StringMid($cmdline[1],1,1)&":"
@@ -1937,35 +1937,40 @@ If $AttributesArr[10][2] = "TRUE" Then; $INDEX_ALLOCATION
 	For $p = 1 To $INDEXALLOC_Number
 		ConsoleWrite(@CRLF)
 		ConsoleWrite("$INDEX_ALLOCATION " & $p & ":" & @CRLF)
-		ConsoleWrite("Resolved and decoded INDX records:" & @CRLF)
-		For $j = 1 To Ubound($IndxEntryNumberArr)-1
-			ConsoleWrite(@CRLF)
-			ConsoleWrite($IndxEntryNumberArr[0] & ": " & $IndxEntryNumberArr[$j] & @CRLF)
-			ConsoleWrite($IndxFileNameArr[0] & ": " & $IndxFileNameArr[$j] & @CRLF)
-			ConsoleWrite($IndxMFTReferenceArr[0] & ": " & $IndxMFTReferenceArr[$j] & @CRLF)
-			ConsoleWrite($IndxIndexFlagsArr[0] & ": " & $IndxIndexFlagsArr[$j] & @CRLF)
-;			If $IndxIndexFlagsArr[$j] <> "0000" Then MsgBox(0,"Hey", "Something interesting to investigate") ; yeah don't know what to with it at the moment -> look SubNodeVCN
-			ConsoleWrite($IndxMFTReferenceOfParentArr[0] & ": " & $IndxMFTReferenceOfParentArr[$j] & @CRLF)
-			ConsoleWrite($IndxCTimeArr[0] & ": " & $IndxCTimeArr[$j] & @CRLF)
-			ConsoleWrite($IndxATimeArr[0] & ": " & $IndxATimeArr[$j] & @CRLF)
-			ConsoleWrite($IndxMTimeArr[0] & ": " & $IndxMTimeArr[$j] & @CRLF)
-			ConsoleWrite($IndxRTimeArr[0] & ": " & $IndxRTimeArr[$j] & @CRLF)
-			ConsoleWrite($IndxAllocSizeArr[0] & ": " & $IndxAllocSizeArr[$j] & @CRLF)
-			ConsoleWrite($IndxRealSizeArr[0] & ": " & $IndxRealSizeArr[$j] & @CRLF)
-			ConsoleWrite($IndxFileFlagsArr[0] & ": " & $IndxFileFlagsArr[$j] & @CRLF)
-			ConsoleWrite($IndxNameSpaceArr[0] & ": " & $IndxNameSpaceArr[$j] & @CRLF)
-			ConsoleWrite($IndxSubNodeVCNArr[0] & ": " & $IndxSubNodeVCNArr[$j] & @CRLF)
-		Next
+		If Not $TargetIsOffset Then
+			ConsoleWrite("Resolved and decoded INDX records:" & @CRLF)
+			For $j = 1 To Ubound($IndxEntryNumberArr)-1
+				ConsoleWrite(@CRLF)
+				ConsoleWrite($IndxEntryNumberArr[0] & ": " & $IndxEntryNumberArr[$j] & @CRLF)
+				ConsoleWrite($IndxFileNameArr[0] & ": " & $IndxFileNameArr[$j] & @CRLF)
+				ConsoleWrite($IndxMFTReferenceArr[0] & ": " & $IndxMFTReferenceArr[$j] & @CRLF)
+				ConsoleWrite($IndxIndexFlagsArr[0] & ": " & $IndxIndexFlagsArr[$j] & @CRLF)
+;				If $IndxIndexFlagsArr[$j] <> "0000" Then MsgBox(0,"Hey", "Something interesting to investigate") ; yeah don't know what to with it at the moment -> look SubNodeVCN
+				ConsoleWrite($IndxMFTReferenceOfParentArr[0] & ": " & $IndxMFTReferenceOfParentArr[$j] & @CRLF)
+				ConsoleWrite($IndxCTimeArr[0] & ": " & $IndxCTimeArr[$j] & @CRLF)
+				ConsoleWrite($IndxATimeArr[0] & ": " & $IndxATimeArr[$j] & @CRLF)
+				ConsoleWrite($IndxMTimeArr[0] & ": " & $IndxMTimeArr[$j] & @CRLF)
+				ConsoleWrite($IndxRTimeArr[0] & ": " & $IndxRTimeArr[$j] & @CRLF)
+				ConsoleWrite($IndxAllocSizeArr[0] & ": " & $IndxAllocSizeArr[$j] & @CRLF)
+				ConsoleWrite($IndxRealSizeArr[0] & ": " & $IndxRealSizeArr[$j] & @CRLF)
+				ConsoleWrite($IndxFileFlagsArr[0] & ": " & $IndxFileFlagsArr[$j] & @CRLF)
+				ConsoleWrite($IndxNameSpaceArr[0] & ": " & $IndxNameSpaceArr[$j] & @CRLF)
+				ConsoleWrite($IndxSubNodeVCNArr[0] & ": " & $IndxSubNodeVCNArr[$j] & @CRLF)
+			Next
+			If $cmdline[4] = "indxdump=on" Then
+				ConsoleWrite(@CRLF)
+				ConsoleWrite("Dump of resolved and extracted INDX records for $INDEX_ALLOCATION (" & $p & ")" & @crlf)
+				ConsoleWrite(_HexEncode("0x"&$HexDumpIndxRecord[$p]) & @crlf)
+			EndIf
+		Else
+			ConsoleWrite("INDX records decode not yet supported when using offset mode." & @crlf)
+		EndIf
 		If $cmdline[2] = "-a" Then
 			ConsoleWrite(@CRLF)
 			ConsoleWrite("Dump of $INDEX_ALLOCATION (" & $p & ")" & @crlf)
 			ConsoleWrite(_HexEncode("0x"&$HexDumpIndexAllocation[$p]) & @crlf)
 		EndIf
-		If $cmdline[4] = "indxdump=on" Then
-			ConsoleWrite(@CRLF)
-			ConsoleWrite("Dump of resolved and extracted INDX records for $INDEX_ALLOCATION (" & $p & ")" & @crlf)
-			ConsoleWrite(_HexEncode("0x"&$HexDumpIndxRecord[$p]) & @crlf)
-		EndIf
+
 	Next
 EndIf
 
