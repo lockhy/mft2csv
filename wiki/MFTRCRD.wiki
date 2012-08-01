@@ -77,7 +77,7 @@ Running the tool without any parameter will display help information.
 
 
 = Latest version =
-v1.0.0.17
+v1.0.0.18: Fixed INDX decode when using offset mode. Added offset correction when entering offset not aligned to sector size.
 
 = Changelog =
 
