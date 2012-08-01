@@ -77,9 +77,13 @@ Running the tool without any parameter will display help information.
 
 
 = Latest version =
-v1.0.0.18: Fixed INDX decode when using offset mode. Added offset correction when entering offset not aligned to sector size.
+v1.0.0.19
 
 = Changelog =
+
+v1.0.0.19: Fixed bug that caused "attriblist=on" not to be caught. Also added a timer.
+
+v1.0.0.18: Fixed INDX decode when using offset mode. Added offset correction when entering offset not aligned to sector size.
 
 v1.0.0.17: Fixed wrong logic when displaying hex dump of attribute with the new offset mode.
 
