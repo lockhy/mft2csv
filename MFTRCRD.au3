@@ -4,7 +4,7 @@
 #AutoIt3Wrapper_Change2CUI=y
 #AutoIt3Wrapper_Res_Comment=Quick $MFT record dump
 #AutoIt3Wrapper_Res_Description=Decode a file's attributes from $MFT
-#AutoIt3Wrapper_Res_Fileversion=1.0.0.19
+#AutoIt3Wrapper_Res_Fileversion=1.0.0.20
 #AutoIt3Wrapper_Res_LegalCopyright=Joakim Schicht
 #AutoIt3Wrapper_Res_requestedExecutionLevel=asInvoker
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
@@ -98,7 +98,7 @@ Global $FormattedTimestamp
 Global $Timerstart = TimerInit()
 ConsoleWrite("" & @CRLF)
 ConsoleWrite("Starting MFTRCRD by Joakim Schicht" & @CRLF)
-ConsoleWrite("Version 1.0.0.19" & @CRLF)
+ConsoleWrite("Version 1.0.0.20" & @CRLF)
 ConsoleWrite("" & @CRLF)
 _validate_parameters()
 $TargetDrive = StringMid($cmdline[1],1,1)&":"
@@ -742,7 +742,8 @@ $HEADER_RecordRealSize = Dec(_SwapEndian(StringMid($MFTEntry,51,8)),2)
 ;ConsoleWrite("$HEADER_RecordRealSize = " & $HEADER_RecordRealSize & " -> 0x" & Hex($HEADER_RecordRealSize,8) & @crlf)
 $HEADER_RecordAllocSize = Dec(_SwapEndian(StringMid($MFTEntry,59,8)),2)
 ;ConsoleWrite("$HEADER_RecordAllocSize = " & $HEADER_RecordAllocSize & @crlf)
-$HEADER_FileRef = StringMid($MFTEntry,67,16)
+;$HEADER_FileRef = StringMid($MFTEntry,67,16)
+$HEADER_FileRef = Dec(_SwapEndian(StringMid($MFTEntry,67,8)),2) ;Base file record
 ;ConsoleWrite("$HEADER_FileRef = " & $HEADER_FileRef & @crlf)
 $HEADER_NextAttribID = StringMid($MFTEntry,83,4)
 ;ConsoleWrite("$HEADER_NextAttribID = " & $HEADER_NextAttribID & @crlf)
@@ -760,7 +761,7 @@ $RecordHdrArr[6][1] = $AttributeOffset
 $RecordHdrArr[7][1] = $HEADER_Flags
 $RecordHdrArr[8][1] = $HEADER_RecordRealSize
 $RecordHdrArr[9][1] = $HEADER_RecordAllocSize
-$RecordHdrArr[10][1] = Dec($HEADER_FileRef)
+$RecordHdrArr[10][1] = $HEADER_FileRef
 $RecordHdrArr[11][1] = $HEADER_NextAttribID
 $RecordHdrArr[12][1] = $HEADER_MFTREcordNumber
 $RecordHdrArr[13][1] = $UpdSeqArrPart0
