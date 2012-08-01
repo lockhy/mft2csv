@@ -77,9 +77,11 @@ Running the tool without any parameter will display help information.
 
 
 = Latest version =
-v1.0.0.19
+v1.0.0.20
 
 = Changelog =
+
+v1.0.0.20: Fixed small bug in header decode that returned the whole 8 bytes of the base records, instead of the 4 bytes that are used.
 
 v1.0.0.19: Fixed bug that caused "attriblist=on" not to be caught. Also added a timer.
 
