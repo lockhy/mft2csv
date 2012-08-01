@@ -4,7 +4,7 @@
 #AutoIt3Wrapper_Change2CUI=y
 #AutoIt3Wrapper_Res_Comment=Quick $MFT record dump
 #AutoIt3Wrapper_Res_Description=Decode a file's attributes from $MFT
-#AutoIt3Wrapper_Res_Fileversion=1.0.0.17
+#AutoIt3Wrapper_Res_Fileversion=1.0.0.19
 #AutoIt3Wrapper_Res_LegalCopyright=Joakim Schicht
 #AutoIt3Wrapper_Res_requestedExecutionLevel=asInvoker
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
@@ -94,11 +94,11 @@ Global Const $tagOBJECTATTRIBUTES = "ulong Length;hwnd RootDirectory;ptr ObjectN
 Global Const $tagUNICODESTRING = "ushort Length;ushort MaximumLength;ptr Buffer"
 Global Const $tagFILEINTERNALINFORMATION = "int IndexNumber;"
 Global $NeedLock = 0
-Dim $FormattedTimestamp
-
+Global $FormattedTimestamp
+Global $Timerstart = TimerInit()
 ConsoleWrite("" & @CRLF)
 ConsoleWrite("Starting MFTRCRD by Joakim Schicht" & @CRLF)
-ConsoleWrite("Version 1.0.0.17" & @CRLF)
+ConsoleWrite("Version 1.0.0.19" & @CRLF)
 ConsoleWrite("" & @CRLF)
 _validate_parameters()
 $TargetDrive = StringMid($cmdline[1],1,1)&":"
@@ -110,9 +110,11 @@ Else
 	Exit
 EndIf
 If $TargetIsOffset Then
+	_ReadBootSector($TargetDrive)
 	_ExtractSingleFile($TargetOffset)
 	_DumpInfo()
 	ConsoleWrite(@CRLF)
+	_End($Timerstart)
 	ConsoleWrite("FINISHED!!" & @CRLF)
 	Exit
 EndIf
@@ -125,6 +127,7 @@ If $cmdline[2] = "-d" OR $cmdline[2] = "-a" Then
 	_SetIndexNumber()
 	_DumpInfo()
 	ConsoleWrite(@CRLF)
+	_End($Timerstart)
 	ConsoleWrite("FINISHED!!" & @CRLF)
 	Exit
 EndIf
@@ -179,7 +182,13 @@ If FileExists($cmdline[1]) <> 1 Then ;OR StringMid($cmdline[1],2,1) <> ":" OR St
 			ConsoleWrite("Error: Param1 omitted the offset part: " & $cmdline[1] & @CRLF)
 			Exit
 		EndIf
-		ConsoleWrite("Target offset is: " & $TargetOffset & @CRLF)
+		If Not IsInt($TargetOffset/512) Then
+			$TargetOffset = Floor($TargetOffset/512)*512
+			ConsoleWrite("Target offset was not sector aligned and was corrected downwards to: " & $TargetOffset & @CRLF)
+			ConsoleWrite(@CRLF)
+		Else
+			ConsoleWrite("Target offset is: " & $TargetOffset & @CRLF)
+		EndIf
 	EndIf
 	If StringMid($cmdline[1],2,1) = ":" Then
 		If StringIsDigit(StringMid($cmdline[1],3)) <> 1 Then
@@ -317,7 +326,7 @@ Func _ExtractSystemfile($TargetFile)
 		Next
 	Else
 ;		ConsoleWrite("TargetFile is " & $TargetFile & @CRLF)
-		If $TargetFile > 24 AND $cmdline[3] = "attriblist_on" Then _InitiateMftArray()
+		If $TargetFile > 24 AND $cmdline[3] = "attriblist=on" Then _InitiateMftArray()
 		If @error Then
 			ConsoleWrite("Error when creating the MFT arrays" & @crlf)
 			Exit
@@ -332,13 +341,17 @@ Func _ExtractSingleFile($MFTReferenceNumber)
 	_ClearVar()
 	If $TargetIsOffset Then
 		$MFTRecord = _DumpFromOffset($MFTReferenceNumber)
-	ElseIf $MFTReferenceNumber > 24 AND $cmdline[3] = "attriblist_on" Then
+	ElseIf $MFTReferenceNumber > 24 AND $cmdline[3] = "attriblist=on" Then
 		$MFTRecord = _ProcessMftArray($MFTReferenceNumber)
 	Else
 		$MFTRecord = _FindFileMFTRecord($MFTReferenceNumber)
 	EndIf
 	If $MFTRecord = "" Then
 		ConsoleWrite("Target " & $MFTReferenceNumber & " not found" & @CRLF)
+		Exit
+	ElseIf StringMid($MFTRecord,3,8) <> $RecordSignature AND StringMid($MFTRecord,3,8) <> $RecordSignatureBad Then
+		ConsoleWrite("Found record is not valid:" & @CRLF)
+		ConsoleWrite(_HexEncode($MFTRecord) & @crlf)
 		Exit
 	EndIf
 	_DecodeMFTRecord($MFTRecord)
@@ -773,7 +786,7 @@ While 1
 			_DecodeAttrList($HEADER_MFTRecordNumber, $AttrList)		;produces $AttrQ - extra record list
 			$str = ""
 			For $i = 1 To $AttrQ[0]
-				If $cmdline[3] = "attriblist_on" Then
+				If $cmdline[3] = "attriblist=on" Then
 					$record = _ProcessMftArray($AttrQ[$i])
 				Else
 					$record = _FindFileMFTRecord($AttrQ[$i])
@@ -784,6 +797,7 @@ While 1
 			$MFTEntry = StringMid($MFTEntry,1,($HEADER_RecordRealSize-8)*2+2) & $str       ;strip "FFFFFFFF..." first
 			ReDim $HexDumpAttributeList[$ATTRIBLIST_Number]
 			_Arrayadd($HexDumpAttributeList,StringMid($MFTEntry,$AttributeOffset,$AttributeSize*2))
+;			_DebugOut("***AttrList",StringMid($MFTEntry,3))
    		Case $AttributeType = $FILE_NAME
 			$FILE_NAME_ON = "TRUE"
 			$FN_Number += 1
@@ -1049,7 +1063,6 @@ Func _FindFileMFTRecord($TargetFile)
 			$record = DllStructGetData($tBuffer, 1)
 			If StringMid($record,91,8) = $TargetFile Then
 ;				MsgBox(0,"StringMid($record,47,4)",StringMid($record,47,4))
-;				ConsoleWrite("Target " & $TargetFile & " found" & @CRLF)
 				_WinAPI_CloseHandle($hFile)
 				Return $record		;returns MFT record for file
 			EndIf
@@ -1937,7 +1950,7 @@ If $AttributesArr[10][2] = "TRUE" Then; $INDEX_ALLOCATION
 	For $p = 1 To $INDEXALLOC_Number
 		ConsoleWrite(@CRLF)
 		ConsoleWrite("$INDEX_ALLOCATION " & $p & ":" & @CRLF)
-		If Not $TargetIsOffset Then
+;		If Not $TargetIsOffset Then
 			ConsoleWrite("Resolved and decoded INDX records:" & @CRLF)
 			For $j = 1 To Ubound($IndxEntryNumberArr)-1
 				ConsoleWrite(@CRLF)
@@ -1962,9 +1975,9 @@ If $AttributesArr[10][2] = "TRUE" Then; $INDEX_ALLOCATION
 				ConsoleWrite("Dump of resolved and extracted INDX records for $INDEX_ALLOCATION (" & $p & ")" & @crlf)
 				ConsoleWrite(_HexEncode("0x"&$HexDumpIndxRecord[$p]) & @crlf)
 			EndIf
-		Else
-			ConsoleWrite("INDX records decode not yet supported when using offset mode." & @crlf)
-		EndIf
+;		Else
+;			ConsoleWrite("INDX records decode not yet supported when using offset mode." & @crlf)
+;		EndIf
 		If $cmdline[2] = "-a" Then
 			ConsoleWrite(@CRLF)
 			ConsoleWrite("Dump of $INDEX_ALLOCATION (" & $p & ")" & @crlf)
@@ -3215,3 +3228,11 @@ Func _DumpFromOffset($DriveOffset)
 		Return SetError(1, 0, "")
 	EndIf
 EndFunc
+
+Func _End($begin)
+	Local $timerdiff = TimerDiff($begin)
+	$timerdiff = Round(($timerdiff / 1000), 2)
+	ConsoleWrite("Job took " & $timerdiff & " seconds" & @CRLF)
+;	Exit
+EndFunc
+
