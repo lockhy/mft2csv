@@ -167,9 +167,11 @@ The timestamps are now at the precision of nanoseconds. Prior to processing, the
 
 = Latest Version =
 
-v1.8
+v1.9
 
 = Changelog =
+
+v1.9. Added decode of hardlinks as specified in the record header. Corrected base record to properly reflect 6 bytes, and added new variable as base record sequence number for the last 2 bytes of this 8 byte MFT base reference. Fixed the HEADER_LSN and SI_USN to be specified in decimal (consistent views in Excel). Fixed missing clearing of 9 global variables.
 
 v1.8. Changed the progress updating to use AdlibRegister, which increase performance.
 
