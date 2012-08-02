@@ -4,7 +4,7 @@
 #AutoIt3Wrapper_Change2CUI=y
 #AutoIt3Wrapper_Res_Comment=Quick $MFT record dump
 #AutoIt3Wrapper_Res_Description=Decode a file's attributes from $MFT
-#AutoIt3Wrapper_Res_Fileversion=1.0.0.20
+#AutoIt3Wrapper_Res_Fileversion=1.0.0.21
 #AutoIt3Wrapper_Res_LegalCopyright=Joakim Schicht
 #AutoIt3Wrapper_Res_requestedExecutionLevel=asInvoker
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
@@ -25,7 +25,7 @@
 Global $ReparseType,$ReparseDataLength,$ReparsePadding,$ReparseSubstititeNameOffset,$ReparseSubstituteNameLength,$ReparsePrintNameOffset,$ReparsePrintNameLength,$ResidentIndx
 Global $BrowsedFile,$TargetDrive = "", $ALInnerCouner, $MFTSize, $MFTRecordsArr[1][1],$TargetIsOffset=0,$TargetOffset
 Global $SectorsPerCluster,$MFT_Record_Size,$BytesPerCluster,$BytesPerSector,$MFT_Offset
-Global $HEADER_LSN,$HEADER_SequenceNo,$HEADER_Flags,$HEADER_RecordRealSize,$HEADER_RecordAllocSize,$HEADER_FileRef
+Global $HEADER_LSN,$HEADER_SequenceNo,$HEADER_Flags,$HEADER_RecordRealSize,$HEADER_RecordAllocSize,$HEADER_BaseRecord
 Global $HEADER_NextAttribID,$HEADER_MFTREcordNumber
 Global $IsolatedAttributeList, $AttribListNonResident=0
 Global $FN_CTime,$FN_ATime,$FN_MTime,$FN_RTime,$FN_AllocSize,$FN_RealSize,$FN_Flags,$FN_FileName,$FN_NameType
@@ -35,8 +35,8 @@ Global $DATA_CompressionUnitSize,$DATA_ON,$DATA_CompressedSize,$DATA_LengthOfAtt
 Global $DATA_AllocatedSize,$DATA_RealSize,$DATA_InitializedStreamSize,$RunListOffset,$DataRun,$IsCompressed
 Global $RUN_VCN[1],$RUN_Clusters[1],$MFT_RUN_Clusters[1],$MFT_RUN_VCN[1],$NameQ[5],$DataQ[1],$sBuffer,$AttrQ[1], $RUN_Sparse[1], $MFT_RUN_Sparse[1], $RUN_Complete[1][4], $MFT_RUN_Complete[1][4], $RUN_Sectors, $MFT_RUN_Sectors
 Global $SI_CTime,$SI_ATime,$SI_MTime,$SI_RTime,$SI_FilePermission,$SI_USN,$Errors,$RecordSlackSpace
-Global $IndxEntryNumberArr[1],$IndxMFTReferenceArr[1],$IndxIndexFlagsArr[1],$IndxMFTReferenceOfParentArr[1],$IndxCTimeArr[1],$IndxATimeArr[1],$IndxMTimeArr[1],$IndxRTimeArr[1],$IndxAllocSizeArr[1],$IndxRealSizeArr[1],$IndxFileFlagsArr[1],$IndxFileNameArr[1],$IndxSubNodeVCNArr[1],$IndxNameSpaceArr[1]
-Global $IsDirectory = 0, $AttributesArr[18][4], $SIArr[13][2], $FNArr[14][1], $RecordHdrArr[15][2], $ObjectIDArr[5][2], $DataArr[20][2], $AttribListArr[9][2],$VolumeNameArr[2][2],$VolumeInformationArr[3][2],$RPArr[11][2],$LUSArr[3][2],$EAInfoArr[5][2],$EAArr[8][2],$IRArr[12][2],$IndxArr[20][2]
+Global $IndxEntryNumberArr[1],$IndxMFTReferenceArr[1],$IndxMFTRefSeqNoArr[1],$IndxIndexFlagsArr[1],$IndxMFTReferenceOfParentArr[1],$IndxMFTParentRefSeqNoArr[1],$IndxCTimeArr[1],$IndxATimeArr[1],$IndxMTimeArr[1],$IndxRTimeArr[1],$IndxAllocSizeArr[1],$IndxRealSizeArr[1],$IndxFileFlagsArr[1],$IndxFileNameArr[1],$IndxSubNodeVCNArr[1],$IndxNameSpaceArr[1]
+Global $IsDirectory = 0, $AttributesArr[18][4], $SIArr[13][2], $FNArr[14][1], $RecordHdrArr[16][2], $ObjectIDArr[5][2], $DataArr[20][2], $AttribListArr[9][2],$VolumeNameArr[2][2],$VolumeInformationArr[3][2],$RPArr[11][2],$LUSArr[3][2],$EAInfoArr[5][2],$EAArr[8][2],$IRArr[12][2],$IndxArr[20][2]
 Global $HexDumpRecordSlack[1],$HexDumpRecord[1],$HexDumpHeader[1],$HexDumpStandardInformation[1],$HexDumpAttributeList[1],$HexDumpFileName[1],$HexDumpObjectId[1],$HexDumpSecurityDescriptor[1],$HexDumpVolumeName[1],$HexDumpVolumeInformation[1],$HexDumpData[1],$HexDumpIndexRoot[1],$HexDumpIndexAllocation[1],$HexDumpBitmap[1],$HexDumpReparsePoint[1],$HexDumpEaInformation[1],$HexDumpEa[1],$HexDumpPropertySet[1],$HexDumpLoggedUtilityStream[1],$HexDumpIndxRecord[1]
 Global $FN_Number,$DATA_Number,$SI_Number,$ATTRIBLIST_Number,$OBJID_Number,$SECURITY_Number,$VOLNAME_Number,$VOLINFO_Number,$INDEXROOT_Number,$INDEXALLOC_Number,$BITMAP_Number,$REPARSEPOINT_Number,$EAINFO_Number,$EA_Number,$PROPERTYSET_Number,$LOGGEDUTILSTREAM_Number
 Global $STANDARD_INFORMATION_ON,$ATTRIBUTE_LIST_ON,$FILE_NAME_ON,$OBJECT_ID_ON,$SECURITY_DESCRIPTOR_ON,$VOLUME_NAME_ON,$VOLUME_INFORMATION_ON,$DATA_ON,$INDEX_ROOT_ON,$INDEX_ALLOCATION_ON,$BITMAP_ON,$REPARSE_POINT_ON,$EA_INFORMATION_ON,$EA_ON,$PROPERTY_SET_ON,$LOGGED_UTILITY_STREAM_ON,$ATTRIBUTE_END_MARKER_ON
@@ -98,7 +98,7 @@ Global $FormattedTimestamp
 Global $Timerstart = TimerInit()
 ConsoleWrite("" & @CRLF)
 ConsoleWrite("Starting MFTRCRD by Joakim Schicht" & @CRLF)
-ConsoleWrite("Version 1.0.0.20" & @CRLF)
+ConsoleWrite("Version 1.0.0.21" & @CRLF)
 ConsoleWrite("" & @CRLF)
 _validate_parameters()
 $TargetDrive = StringMid($cmdline[1],1,1)&":"
@@ -695,7 +695,7 @@ $HEADER_SequenceNo = ""
 $HEADER_Flags = ""
 $HEADER_RecordRealSize = ""
 $HEADER_RecordAllocSize = ""
-$HEADER_FileRef = ""
+$HEADER_BaseRecord = ""
 $HEADER_NextAttribID = ""
 $HEADER_MFTREcordNumber = ""
 $UpdSeqArrOffset = Dec(_SwapEndian(StringMid($MFTEntry,11,4)))
@@ -716,7 +716,7 @@ Local $MFTHeader = StringMid($MFTEntry,1,2+32)
 ;ConsoleWrite("$MFTHeader = " & $MFTHeader & @crlf)
 $HEADER_LSN = StringMid($MFTEntry,19,16)
 ;ConsoleWrite("$HEADER_LSN = " & $HEADER_LSN & @crlf)
-$HEADER_LSN = _SwapEndian($HEADER_LSN)
+$HEADER_LSN = Dec(_SwapEndian($HEADER_LSN),2)
 ;ConsoleWrite("$HEADER_LSN = " & $HEADER_LSN & @crlf)
 $HEADER_SequenceNo = Dec(_SwapEndian(StringMid($MFTEntry,35,4)))
 ;ConsoleWrite("$HEADER_SequenceNo = " & $HEADER_SequenceNo & @crlf)
@@ -742,12 +742,13 @@ $HEADER_RecordRealSize = Dec(_SwapEndian(StringMid($MFTEntry,51,8)),2)
 ;ConsoleWrite("$HEADER_RecordRealSize = " & $HEADER_RecordRealSize & " -> 0x" & Hex($HEADER_RecordRealSize,8) & @crlf)
 $HEADER_RecordAllocSize = Dec(_SwapEndian(StringMid($MFTEntry,59,8)),2)
 ;ConsoleWrite("$HEADER_RecordAllocSize = " & $HEADER_RecordAllocSize & @crlf)
-;$HEADER_FileRef = StringMid($MFTEntry,67,16)
-$HEADER_FileRef = Dec(_SwapEndian(StringMid($MFTEntry,67,8)),2) ;Base file record
-;ConsoleWrite("$HEADER_FileRef = " & $HEADER_FileRef & @crlf)
+;$HEADER_BaseRecord = StringMid($MFTEntry,67,16)
+$HEADER_BaseRecord = Dec(_SwapEndian(StringMid($MFTEntry,67,12)),2) ;Base file record
+;ConsoleWrite("$HEADER_BaseRecord = " & $HEADER_BaseRecord & @crlf)
+$HEADER_BaseRecSeqNo = Dec(_SwapEndian(StringMid($MFTEntry,79,4)),2)
 $HEADER_NextAttribID = StringMid($MFTEntry,83,4)
 ;ConsoleWrite("$HEADER_NextAttribID = " & $HEADER_NextAttribID & @crlf)
-$HEADER_NextAttribID = _SwapEndian($HEADER_NextAttribID)
+$HEADER_NextAttribID = "0x"&_SwapEndian($HEADER_NextAttribID)
 $HEADER_MFTRecordNumber = Dec(_SwapEndian(StringMid($MFTEntry,91,8)),2)
 ;ConsoleWrite("$HEADER_MFTRecordNumber = " & $HEADER_MFTRecordNumber & @crlf)
 $AttributeOffset = (Dec(StringMid($MFTEntry,43,2))*2)+3
@@ -761,11 +762,12 @@ $RecordHdrArr[6][1] = $AttributeOffset
 $RecordHdrArr[7][1] = $HEADER_Flags
 $RecordHdrArr[8][1] = $HEADER_RecordRealSize
 $RecordHdrArr[9][1] = $HEADER_RecordAllocSize
-$RecordHdrArr[10][1] = $HEADER_FileRef
-$RecordHdrArr[11][1] = $HEADER_NextAttribID
-$RecordHdrArr[12][1] = $HEADER_MFTREcordNumber
-$RecordHdrArr[13][1] = $UpdSeqArrPart0
-$RecordHdrArr[14][1] = $UpdSeqArrPart1&$UpdSeqArrPart2
+$RecordHdrArr[10][1] = $HEADER_BaseRecord
+$RecordHdrArr[11][1] = $HEADER_BaseRecSeqNo
+$RecordHdrArr[12][1] = $HEADER_NextAttribID
+$RecordHdrArr[13][1] = $HEADER_MFTREcordNumber
+$RecordHdrArr[14][1] = $UpdSeqArrPart0
+$RecordHdrArr[15][1] = $UpdSeqArrPart1&$UpdSeqArrPart2
 _Arrayadd($HexDumpHeader,StringMid($MFTEntry,3,$AttributeOffset-3))
 While 1
 	$AttributeType = StringMid($MFTEntry,$AttributeOffset,8)
@@ -1199,7 +1201,7 @@ Func _ReadBootSector($TargetDrive)
 EndFunc
 
 Func _SetArrays()
-Global $AttributesArr[18][4], $SIArr[13][4], $FNArr[14][1], $RecordHdrArr[15][2], $ObjectIDArr[5][2], $DataArr[20][2], $AttribListArr[9][2], $VolumeNameArr[2][2], $VolumeInformationArr[3][2]
+Global $AttributesArr[18][4], $SIArr[13][4], $FNArr[14][1], $RecordHdrArr[16][2], $ObjectIDArr[5][2], $DataArr[20][2], $AttribListArr[9][2], $VolumeNameArr[2][2], $VolumeInformationArr[3][2]
 $AttributesArr[0][0] = "Attribute name:"
 $AttributesArr[1][0] = "STANDARD_INFORMATION"
 $AttributesArr[2][0] = "ATTRIBUTE_LIST"
@@ -1229,11 +1231,12 @@ $RecordHdrArr[6][0] = "Offset to first Attribute"
 $RecordHdrArr[7][0] = "Flags"
 $RecordHdrArr[8][0] = "Real size of the FILE record"
 $RecordHdrArr[9][0] = "Allocated size of the FILE record"
-$RecordHdrArr[10][0] = "File reference to the base FILE record"
-$RecordHdrArr[11][0] = "Next Attribute Id"
-$RecordHdrArr[12][0] = "File reference (MFT Record number)"
-$RecordHdrArr[13][0] = "Update Sequence Number (a)"
-$RecordHdrArr[14][0] = "Update Sequence Array (a)"
+$RecordHdrArr[10][0] = "Base record MFT Ref"
+$RecordHdrArr[11][0] = "Base record MFT Ref SequenceNo"
+$RecordHdrArr[12][0] = "Next Attribute Id"
+$RecordHdrArr[13][0] = "File reference (MFT Record number)"
+$RecordHdrArr[14][0] = "Update Sequence Number (a)"
+$RecordHdrArr[15][0] = "Update Sequence Array (a)"
 $SIArr[0][0] = "Field name:"
 $SIArr[1][0] = "HEADER_Flags"
 $SIArr[2][0] = "CreationTime (CTime)"
@@ -1263,7 +1266,7 @@ $FNArr[9][0] = "NameLength"
 $FNArr[10][0] = "NameType"
 $FNArr[11][0] = "NameSpace"
 $FNArr[12][0] = "FileName"
-$FNArr[13][0] = "ParentReferenceNo"
+$FNArr[13][0] = "Parent MFTReference"
 $ObjectIDArr[0][0] = "Field name"
 $ObjectIDArr[1][0] = "GUID Object Id"
 $ObjectIDArr[2][0] = "GUID Birth Volume Id"
@@ -1344,8 +1347,10 @@ $IRArr[10][0] = "Flags"
 $IRArr[11][0] = "IRPadding2"
 $IndxEntryNumberArr[0] = "Entry number"
 $IndxMFTReferenceArr[0] = "MFTReference"
+$IndxMFTRefSeqNoArr[0] = "MFTReference SeqNo"
 $IndxIndexFlagsArr[0] = "IndexFlags"
-$IndxMFTReferenceOfParentArr[0] = "MFTReferenceOfParent"
+$IndxMFTReferenceOfParentArr[0] = "Parent MFTReference"
+$IndxMFTParentRefSeqNoArr[0] = "Parent MFTReference SeqNo"
 $IndxCTimeArr[0] = "CTime"
 $IndxATimeArr[0] = "ATime"
 $IndxMTimeArr[0] = "MTime"
@@ -1464,7 +1469,7 @@ $SI_SecurityID = StringMid($MFTEntry,$SI_Offset+152,8)
 $SI_SecurityID = Dec(StringMid($SI_SecurityID,7,2) & StringMid($SI_SecurityID,5,2) & StringMid($SI_SecurityID,3,2) & StringMid($SI_SecurityID,1,2))
 ;$SI_SecurityID = Dec($SI_SecurityID)
 $SI_USN = StringMid($MFTEntry,$SI_Offset+176,16)
-$SI_USN = StringMid($SI_USN,15,2) & StringMid($SI_USN,13,2) & StringMid($SI_USN,11,2) & StringMid($SI_USN,9,2) & StringMid($SI_USN,7,2) & StringMid($SI_USN,5,2) & StringMid($SI_USN,3,2) & StringMid($SI_USN,1,2)
+$SI_USN = Dec(StringMid($SI_USN,15,2) & StringMid($SI_USN,13,2) & StringMid($SI_USN,11,2) & StringMid($SI_USN,9,2) & StringMid($SI_USN,7,2) & StringMid($SI_USN,5,2) & StringMid($SI_USN,3,2) & StringMid($SI_USN,1,2),2)
 ;$SI_USN = Dec($SI_USN)
 ;ConsoleWrite("$SI_USN = " & $SI_USN & @crlf)
 
@@ -1924,9 +1929,11 @@ If $AttributesArr[9][2] = "TRUE" Then; $INDEX_ROOT
 				ConsoleWrite($IndxEntryNumberArr[0] & ": " & $IndxEntryNumberArr[$k] & @CRLF)
 				ConsoleWrite($IndxFileNameArr[0] & ": " & $IndxFileNameArr[$k] & @CRLF)
 				ConsoleWrite($IndxMFTReferenceArr[0] & ": " & $IndxMFTReferenceArr[$k] & @CRLF)
+				ConsoleWrite($IndxMFTRefSeqNoArr[0] & ": " & $IndxMFTRefSeqNoArr[$k] & @CRLF)
 				ConsoleWrite($IndxIndexFlagsArr[0] & ": " & $IndxIndexFlagsArr[$k] & @CRLF)
 ;				If $IndxIndexFlagsArr[$j] <> "0000" Then MsgBox(0,"Hey", "Something interesting to investigate") ; yeah don't know what to with it at the moment -> look SubNodeVCN
 				ConsoleWrite($IndxMFTReferenceOfParentArr[0] & ": " & $IndxMFTReferenceOfParentArr[$k] & @CRLF)
+				ConsoleWrite($IndxMFTParentRefSeqNoArr[0] & ": " & $IndxMFTParentRefSeqNoArr[$k] & @CRLF)
 				ConsoleWrite($IndxCTimeArr[0] & ": " & $IndxCTimeArr[$k] & @CRLF)
 				ConsoleWrite($IndxATimeArr[0] & ": " & $IndxATimeArr[$k] & @CRLF)
 				ConsoleWrite($IndxMTimeArr[0] & ": " & $IndxMTimeArr[$k] & @CRLF)
@@ -1958,9 +1965,11 @@ If $AttributesArr[10][2] = "TRUE" Then; $INDEX_ALLOCATION
 				ConsoleWrite($IndxEntryNumberArr[0] & ": " & $IndxEntryNumberArr[$j] & @CRLF)
 				ConsoleWrite($IndxFileNameArr[0] & ": " & $IndxFileNameArr[$j] & @CRLF)
 				ConsoleWrite($IndxMFTReferenceArr[0] & ": " & $IndxMFTReferenceArr[$j] & @CRLF)
+				ConsoleWrite($IndxMFTRefSeqNoArr[0] & ": " & $IndxMFTRefSeqNoArr[$j] & @CRLF)
 				ConsoleWrite($IndxIndexFlagsArr[0] & ": " & $IndxIndexFlagsArr[$j] & @CRLF)
 ;				If $IndxIndexFlagsArr[$j] <> "0000" Then MsgBox(0,"Hey", "Something interesting to investigate") ; yeah don't know what to with it at the moment -> look SubNodeVCN
 				ConsoleWrite($IndxMFTReferenceOfParentArr[0] & ": " & $IndxMFTReferenceOfParentArr[$j] & @CRLF)
+				ConsoleWrite($IndxMFTParentRefSeqNoArr[0] & ": " & $IndxMFTParentRefSeqNoArr[$j] & @CRLF)
 				ConsoleWrite($IndxCTimeArr[0] & ": " & $IndxCTimeArr[$j] & @CRLF)
 				ConsoleWrite($IndxATimeArr[0] & ": " & $IndxATimeArr[$j] & @CRLF)
 				ConsoleWrite($IndxMTimeArr[0] & ": " & $IndxMTimeArr[$j] & @CRLF)
@@ -2346,7 +2355,7 @@ Func _ProcessMftArray($TargetFile)
 		_WinAPI_CloseHandle($hFile)
 		Return ""
 	EndIf
-	ConsoleWrite("Searching through the $MFT arrays for the selected record number " & $TargetFile & " -> " & _DecToLittleEndian($TargetFile) & @CRLF)
+;	ConsoleWrite("Searching through the $MFT arrays for the selected record number " & $TargetFile & " -> " & _DecToLittleEndian($TargetFile) & @CRLF)
 	$TargetFile = _DecToLittleEndian($TargetFile)
 	$LocalMftSearch = _SearchMftArray($TargetFile)
 	If @error Then
@@ -2928,12 +2937,14 @@ Func _DecodeIndxEntries($Entry,$Current_Attrib_Number,$CurrentAttributeName)
 	Local $FileReference,$IndexEntryLength,$StreamLength,$Flags,$Stream,$SubNodeVCN,$tmp0=0,$tmp1=0,$tmp2=0,$tmp3=0,$EntryCounter=1,$Padding2,$EntryCounter=1
 	$NewLocalAttributeOffset = 1
 ;	ConsoleWrite("$NewLocalAttributeOffset = " & $NewLocalAttributeOffset & @crlf)
-	$MFTReference = StringMid($Entry,$NewLocalAttributeOffset,16)
+	$MFTReference = StringMid($Entry,$NewLocalAttributeOffset,12)
 ;	ConsoleWrite("$MFTReference = " & $MFTReference & @crlf)
 	$MFTReference = StringMid($MFTReference,7,2)&StringMid($MFTReference,5,2)&StringMid($MFTReference,3,2)&StringMid($MFTReference,1,2)
 ;	$MFTReference = StringMid($MFTReference,15,2)&StringMid($MFTReference,13,2)&StringMid($MFTReference,11,2)&StringMid($MFTReference,9,2)&StringMid($MFTReference,7,2)&StringMid($MFTReference,5,2)&StringMid($MFTReference,3,2)&StringMid($MFTReference,1,2)
 ;	ConsoleWrite("$MFTReference = " & $MFTReference & @crlf)
 	$MFTReference = Dec($MFTReference)
+	$MFTReferenceSeqNo = StringMid($Entry,$NewLocalAttributeOffset+12,4)
+	$MFTReferenceSeqNo = Dec(StringMid($MFTReferenceSeqNo,3,2)&StringMid($MFTReferenceSeqNo,1,2))
 	$IndexEntryLength = StringMid($Entry,$NewLocalAttributeOffset+16,4)
 ;	ConsoleWrite("$IndexEntryLength = " & $IndexEntryLength & @crlf)
 	$IndexEntryLength = Dec(StringMid($IndexEntryLength,3,2)&StringMid($IndexEntryLength,3,2))
@@ -2946,12 +2957,14 @@ Func _DecodeIndxEntries($Entry,$Current_Attrib_Number,$CurrentAttributeName)
 ;	ConsoleWrite("$IndexFlags = " & $IndexFlags & @crlf)
 	$Padding = StringMid($Entry,$NewLocalAttributeOffset+28,4)
 ;	ConsoleWrite("$Padding = " & $Padding & @crlf)
-	$MFTReferenceOfParent = StringMid($Entry,$NewLocalAttributeOffset+32,16)
+	$MFTReferenceOfParent = StringMid($Entry,$NewLocalAttributeOffset+32,12)
 ;	ConsoleWrite("$MFTReferenceOfParent = " & $MFTReferenceOfParent & @crlf)
 	$MFTReferenceOfParent = StringMid($MFTReferenceOfParent,7,2)&StringMid($MFTReferenceOfParent,5,2)&StringMid($MFTReferenceOfParent,3,2)&StringMid($MFTReferenceOfParent,1,2)
 ;	$MFTReferenceOfParent = StringMid($MFTReferenceOfParent,15,2)&StringMid($MFTReferenceOfParent,13,2)&StringMid($MFTReferenceOfParent,11,2)&StringMid($MFTReferenceOfParent,9,2)&StringMid($MFTReferenceOfParent,7,2)&StringMid($MFTReferenceOfParent,5,2)&StringMid($MFTReferenceOfParent,3,2)&StringMid($MFTReferenceOfParent,1,2)
 	$MFTReferenceOfParent = Dec($MFTReferenceOfParent)
 ;	ConsoleWrite("$MFTReferenceOfParent = " & $MFTReferenceOfParent & @crlf)
+	$MFTReferenceOfParentSeqNo = StringMid($Entry,$NewLocalAttributeOffset+44,4)
+	$MFTReferenceOfParentSeqNo = Dec(StringMid($MFTReferenceOfParentSeqNo,3,2) & StringMid($MFTReferenceOfParentSeqNo,3,2))
 
 	$Indx_CTime = StringMid($Entry,$NewLocalAttributeOffset+48,16)
 	$Indx_CTime = StringMid($Indx_CTime,15,2) & StringMid($Indx_CTime,13,2) & StringMid($Indx_CTime,11,2) & StringMid($Indx_CTime,9,2) & StringMid($Indx_CTime,7,2) & StringMid($Indx_CTime,5,2) & StringMid($Indx_CTime,3,2) & StringMid($Indx_CTime,1,2)
@@ -3036,8 +3049,10 @@ Func _DecodeIndxEntries($Entry,$Current_Attrib_Number,$CurrentAttributeName)
 ;	ConsoleWrite("$SubNodeVCN = " & $SubNodeVCN & @crlf)
 	ReDim $IndxEntryNumberArr[1+$EntryCounter]
 	ReDim $IndxMFTReferenceArr[1+$EntryCounter]
+	ReDim $IndxMFTRefSeqNoArr[1+$EntryCounter]
 	ReDim $IndxIndexFlagsArr[1+$EntryCounter]
 	ReDim $IndxMFTReferenceOfParentArr[1+$EntryCounter]
+	ReDim $IndxMFTParentRefSeqNoArr[1+$EntryCounter]
 	ReDim $IndxCTimeArr[1+$EntryCounter]
 	ReDim $IndxATimeArr[1+$EntryCounter]
 	ReDim $IndxMTimeArr[1+$EntryCounter]
@@ -3050,8 +3065,10 @@ Func _DecodeIndxEntries($Entry,$Current_Attrib_Number,$CurrentAttributeName)
 	ReDim $IndxSubNodeVCNArr[1+$EntryCounter]
 	$IndxEntryNumberArr[$EntryCounter] = $EntryCounter
 	$IndxMFTReferenceArr[$EntryCounter] = $MFTReference
+	$IndxMFTRefSeqNoArr[$EntryCounter] = $MFTReferenceSeqNo
 	$IndxIndexFlagsArr[$EntryCounter] = $IndexFlags
 	$IndxMFTReferenceOfParentArr[$EntryCounter] = $MFTReferenceOfParent
+	$IndxMFTParentRefSeqNoArr[$EntryCounter] = $MFTReferenceOfParentSeqNo
 	$IndxCTimeArr[$EntryCounter] = $Indx_CTime
 	$IndxATimeArr[$EntryCounter] = $Indx_ATime
 	$IndxMTimeArr[$EntryCounter] = $Indx_MTime
@@ -3068,12 +3085,14 @@ Func _DecodeIndxEntries($Entry,$Current_Attrib_Number,$CurrentAttributeName)
 	Do
 		$EntryCounter += 1
 ;		ConsoleWrite("$EntryCounter = " & $EntryCounter & @crlf)
-		$MFTReference = StringMid($Entry,$NextEntryOffset,16)
+		$MFTReference = StringMid($Entry,$NextEntryOffset,12)
 ;		ConsoleWrite("$MFTReference = " & $MFTReference & @crlf)
 		$MFTReference = StringMid($MFTReference,7,2)&StringMid($MFTReference,5,2)&StringMid($MFTReference,3,2)&StringMid($MFTReference,1,2)
 ;		$MFTReference = StringMid($MFTReference,15,2)&StringMid($MFTReference,13,2)&StringMid($MFTReference,11,2)&StringMid($MFTReference,9,2)&StringMid($MFTReference,7,2)&StringMid($MFTReference,5,2)&StringMid($MFTReference,3,2)&StringMid($MFTReference,1,2)
 ;		ConsoleWrite("$MFTReference = " & $MFTReference & @crlf)
 		$MFTReference = Dec($MFTReference)
+		$MFTReferenceSeqNo = StringMid($Entry,$NextEntryOffset+12,4)
+		$MFTReferenceSeqNo = Dec(StringMid($MFTReferenceSeqNo,3,2)&StringMid($MFTReferenceSeqNo,1,2))
 		$IndexEntryLength = StringMid($Entry,$NextEntryOffset+16,4)
 ;		ConsoleWrite("$IndexEntryLength = " & $IndexEntryLength & @crlf)
 		$IndexEntryLength = Dec(StringMid($IndexEntryLength,3,2)&StringMid($IndexEntryLength,3,2))
@@ -3086,12 +3105,14 @@ Func _DecodeIndxEntries($Entry,$Current_Attrib_Number,$CurrentAttributeName)
 ;		ConsoleWrite("$IndexFlags = " & $IndexFlags & @crlf)
 		$Padding = StringMid($Entry,$NextEntryOffset+28,4)
 ;		ConsoleWrite("$Padding = " & $Padding & @crlf)
-		$MFTReferenceOfParent = StringMid($Entry,$NextEntryOffset+32,16)
+		$MFTReferenceOfParent = StringMid($Entry,$NextEntryOffset+32,12)
 ;		ConsoleWrite("$MFTReferenceOfParent = " & $MFTReferenceOfParent & @crlf)
 		$MFTReferenceOfParent = StringMid($MFTReferenceOfParent,7,2)&StringMid($MFTReferenceOfParent,5,2)&StringMid($MFTReferenceOfParent,3,2)&StringMid($MFTReferenceOfParent,1,2)
 ;		$MFTReferenceOfParent = StringMid($MFTReferenceOfParent,15,2)&StringMid($MFTReferenceOfParent,13,2)&StringMid($MFTReferenceOfParent,11,2)&StringMid($MFTReferenceOfParent,9,2)&StringMid($MFTReferenceOfParent,7,2)&StringMid($MFTReferenceOfParent,5,2)&StringMid($MFTReferenceOfParent,3,2)&StringMid($MFTReferenceOfParent,1,2)
 ;		ConsoleWrite("$MFTReferenceOfParent = " & $MFTReferenceOfParent & @crlf)
 		$MFTReferenceOfParent = Dec($MFTReferenceOfParent)
+		$MFTReferenceOfParentSeqNo = StringMid($Entry,$NextEntryOffset+44,4)
+		$MFTReferenceOfParentSeqNo = Dec(StringMid($MFTReferenceOfParentSeqNo,3,2) & StringMid($MFTReferenceOfParentSeqNo,3,2))
 
 		$Indx_CTime = StringMid($Entry,$NextEntryOffset+48,16)
 		$Indx_CTime = StringMid($Indx_CTime,15,2) & StringMid($Indx_CTime,13,2) & StringMid($Indx_CTime,11,2) & StringMid($Indx_CTime,9,2) & StringMid($Indx_CTime,7,2) & StringMid($Indx_CTime,5,2) & StringMid($Indx_CTime,3,2) & StringMid($Indx_CTime,1,2)
@@ -3180,8 +3201,10 @@ Func _DecodeIndxEntries($Entry,$Current_Attrib_Number,$CurrentAttributeName)
 		$NextEntryOffset = $NextEntryOffset+164+($Indx_NameLength*2*2)+$PaddingLength+$SubNodeVCNLength
 		ReDim $IndxEntryNumberArr[1+$EntryCounter]
 		ReDim $IndxMFTReferenceArr[1+$EntryCounter]
+		Redim $IndxMFTRefSeqNoArr[1+$EntryCounter]
 		ReDim $IndxIndexFlagsArr[1+$EntryCounter]
 		ReDim $IndxMFTReferenceOfParentArr[1+$EntryCounter]
+		ReDim $IndxMFTParentRefSeqNoArr[1+$EntryCounter]
 		ReDim $IndxCTimeArr[1+$EntryCounter]
 		ReDim $IndxATimeArr[1+$EntryCounter]
 		ReDim $IndxMTimeArr[1+$EntryCounter]
@@ -3194,8 +3217,10 @@ Func _DecodeIndxEntries($Entry,$Current_Attrib_Number,$CurrentAttributeName)
 		ReDim $IndxSubNodeVCNArr[1+$EntryCounter]
 		$IndxEntryNumberArr[$EntryCounter] = $EntryCounter
 		$IndxMFTReferenceArr[$EntryCounter] = $MFTReference
+		$IndxMFTRefSeqNoArr[$EntryCounter] = $MFTReferenceSeqNo
 		$IndxIndexFlagsArr[$EntryCounter] = $IndexFlags
 		$IndxMFTReferenceOfParentArr[$EntryCounter] = $MFTReferenceOfParent
+		$IndxMFTParentRefSeqNoArr[$EntryCounter] = $MFTReferenceOfParentSeqNo
 		$IndxCTimeArr[$EntryCounter] = $Indx_CTime
 		$IndxATimeArr[$EntryCounter] = $Indx_ATime
 		$IndxMTimeArr[$EntryCounter] = $Indx_MTime
