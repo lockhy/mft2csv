@@ -77,9 +77,11 @@ Running the tool without any parameter will display help information.
 
 
 = Latest version =
-v1.0.0.20
+v1.0.0.21
 
 = Changelog =
+
+v1.0.0.21: Fixed the split of 6+2 bytes (Reference and SeqNo) for both MFTRef and Parent MFTRef when index decoding. Also changed SI_USN to display in decimal.
 
 v1.0.0.20: Fixed small bug in header decode that returned the whole 8 bytes of the base records, instead of the 4 bytes that are used.
 
