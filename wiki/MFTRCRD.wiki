@@ -77,9 +77,11 @@ Running the tool without any parameter will display help information.
 
 
 = Latest version =
-v1.0.0.22
+v1.0.0.23
 
 = Changelog =
+
+v1.0.0.23: Fixed a missing declaration of 2 global variables that caused certain issues under certain circumstances. Fixed issue with the "NT style" record identification.
 
 v1.0.0.22: Added text "NT style" in place of MFT reference when NT style record. Fixed bug in idenfying hte "param attriblist=on". Also fixed a small bug in the MFT array generation, that caused certain index numbers not to be found.
 
