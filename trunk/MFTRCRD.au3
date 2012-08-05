@@ -1,6 +1,5 @@
 #RequireAdmin
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
-#AutoIt3Wrapper_UseX64=y
 #AutoIt3Wrapper_Change2CUI=y
 #AutoIt3Wrapper_Res_Comment=Quick $MFT record dump
 #AutoIt3Wrapper_Res_Description=Decode a file's attributes from $MFT
@@ -749,7 +748,12 @@ $HEADER_BaseRecSeqNo = Dec(_SwapEndian(StringMid($MFTEntry,79,4)),2)
 $HEADER_NextAttribID = StringMid($MFTEntry,83,4)
 ;ConsoleWrite("$HEADER_NextAttribID = " & $HEADER_NextAttribID & @crlf)
 $HEADER_NextAttribID = "0x"&_SwapEndian($HEADER_NextAttribID)
-$HEADER_MFTRecordNumber = Dec(_SwapEndian(StringMid($MFTEntry,91,8)),2)
+If $UpdSeqArrOffset = 96 Then
+	$HEADER_MFTREcordNumber = Dec(_SwapEndian(StringMid($MFTEntry,91,8)),2)
+Else
+	$HEADER_MFTREcordNumber = "NT style"
+EndIf
+;$HEADER_MFTRecordNumber = Dec(_SwapEndian(StringMid($MFTEntry,91,8)),2)
 ;ConsoleWrite("$HEADER_MFTRecordNumber = " & $HEADER_MFTRecordNumber & @crlf)
 $AttributeOffset = (Dec(StringMid($MFTEntry,43,2))*2)+3
 $RecordHdrArr[0][1] = "Field value"
@@ -2099,115 +2103,115 @@ If $TheCounter < 65530 Then
 	$MFTRecordsArr1[$TheCounter][0] = $RecNumber
 	$MFTRecordsArr1[$TheCounter][1] = $TmpOffset[3]
 EndIf
-If $TheCounter > 65530 and $TheCounter < 131060 Then
+If $TheCounter >= 65530 and $TheCounter < 131060 Then
 	$ArrOffset = $TheCounter-65530
 	$TmpOffset = DllCall('kernel32.dll', 'int', 'SetFilePointerEx', 'ptr', $DiskHandle, 'int64', 0, 'int64*', 0, 'dword', 1)
 	$MFTRecordsArr2[$ArrOffset][0] = $RecNumber;StringMid($record,91,8)
 	$MFTRecordsArr2[$ArrOffset][1] = $TmpOffset[3]
 EndIf
-If $TheCounter > 131060 and $TheCounter < 196590 Then
+If $TheCounter >= 131060 and $TheCounter < 196590 Then
 	$ArrOffset = $TheCounter-131060
 	$TmpOffset = DllCall('kernel32.dll', 'int', 'SetFilePointerEx', 'ptr', $DiskHandle, 'int64', 0, 'int64*', 0, 'dword', 1)
 	$MFTRecordsArr3[$ArrOffset][0] = $RecNumber;StringMid($record,91,8)
 	$MFTRecordsArr3[$ArrOffset][1] = $TmpOffset[3]
 EndIf
-If $TheCounter > 196590 and $TheCounter < 262120 Then
+If $TheCounter >= 196590 and $TheCounter < 262120 Then
 	$ArrOffset = $TheCounter-196590
 	$TmpOffset = DllCall('kernel32.dll', 'int', 'SetFilePointerEx', 'ptr', $DiskHandle, 'int64', 0, 'int64*', 0, 'dword', 1)
 	$MFTRecordsArr4[$ArrOffset][0] = $RecNumber;StringMid($record,91,8)
 	$MFTRecordsArr4[$ArrOffset][1] = $TmpOffset[3]
 EndIf
-If $TheCounter > 262120 and $TheCounter < 327650 Then
+If $TheCounter >= 262120 and $TheCounter < 327650 Then
 	$ArrOffset = $TheCounter-262120
 	$TmpOffset = DllCall('kernel32.dll', 'int', 'SetFilePointerEx', 'ptr', $DiskHandle, 'int64', 0, 'int64*', 0, 'dword', 1)
 	$MFTRecordsArr5[$ArrOffset][0] = $RecNumber;StringMid($record,91,8)
 	$MFTRecordsArr5[$ArrOffset][1] = $TmpOffset[3]
 EndIf
-If $TheCounter > 327650 and $TheCounter < 393180 Then
+If $TheCounter >= 327650 and $TheCounter < 393180 Then
 	$ArrOffset = $TheCounter-327650
 	$TmpOffset = DllCall('kernel32.dll', 'int', 'SetFilePointerEx', 'ptr', $DiskHandle, 'int64', 0, 'int64*', 0, 'dword', 1)
 	$MFTRecordsArr6[$ArrOffset][0] = $RecNumber;StringMid($record,91,8)
 	$MFTRecordsArr6[$ArrOffset][1] = $TmpOffset[3]
 EndIf
-If $TheCounter > 393180 and $TheCounter < 458710 Then
+If $TheCounter >= 393180 and $TheCounter < 458710 Then
 	$ArrOffset = $TheCounter-393180
 	$TmpOffset = DllCall('kernel32.dll', 'int', 'SetFilePointerEx', 'ptr', $DiskHandle, 'int64', 0, 'int64*', 0, 'dword', 1)
 	$MFTRecordsArr7[$ArrOffset][0] = $RecNumber;StringMid($record,91,8)
 	$MFTRecordsArr7[$ArrOffset][1] = $TmpOffset[3]
 EndIf
-If $TheCounter > 458710 and $TheCounter < 524240 Then
+If $TheCounter >= 458710 and $TheCounter < 524240 Then
 	$ArrOffset = $TheCounter-458710
 	$TmpOffset = DllCall('kernel32.dll', 'int', 'SetFilePointerEx', 'ptr', $DiskHandle, 'int64', 0, 'int64*', 0, 'dword', 1)
 	$MFTRecordsArr8[$ArrOffset][0] = $RecNumber;StringMid($record,91,8)
 	$MFTRecordsArr8[$ArrOffset][1] = $TmpOffset[3]
 EndIf
-If $TheCounter > 524240 and $TheCounter < 589770 Then
+If $TheCounter >= 524240 and $TheCounter < 589770 Then
 	$ArrOffset = $TheCounter-524240
 	$TmpOffset = DllCall('kernel32.dll', 'int', 'SetFilePointerEx', 'ptr', $DiskHandle, 'int64', 0, 'int64*', 0, 'dword', 1)
 	$MFTRecordsArr9[$ArrOffset][0] = $RecNumber;StringMid($record,91,8)
 	$MFTRecordsArr9[$ArrOffset][1] = $TmpOffset[3]
 EndIf
-If $TheCounter > 589770 and $TheCounter < 655300 Then
+If $TheCounter >= 589770 and $TheCounter < 655300 Then
 	$ArrOffset = $TheCounter-589770
 	$TmpOffset = DllCall('kernel32.dll', 'int', 'SetFilePointerEx', 'ptr', $DiskHandle, 'int64', 0, 'int64*', 0, 'dword', 1)
 	$MFTRecordsArr10[$ArrOffset][0] = $RecNumber;StringMid($record,91,8)
 	$MFTRecordsArr10[$ArrOffset][1] = $TmpOffset[3]
 EndIf
-If $TheCounter > 655300 and $TheCounter < 720830 Then
+If $TheCounter >= 655300 and $TheCounter < 720830 Then
 	$ArrOffset = $TheCounter-655300
 	$TmpOffset = DllCall('kernel32.dll', 'int', 'SetFilePointerEx', 'ptr', $DiskHandle, 'int64', 0, 'int64*', 0, 'dword', 1)
 	$MFTRecordsArr11[$ArrOffset][0] = $RecNumber;StringMid($record,91,8)
 	$MFTRecordsArr11[$ArrOffset][1] = $TmpOffset[3]
 EndIf
-If $TheCounter > 720830 and $TheCounter < 786360 Then
+If $TheCounter >= 720830 and $TheCounter < 786360 Then
 	$ArrOffset = $TheCounter-720830
 	$TmpOffset = DllCall('kernel32.dll', 'int', 'SetFilePointerEx', 'ptr', $DiskHandle, 'int64', 0, 'int64*', 0, 'dword', 1)
 	$MFTRecordsArr12[$ArrOffset][0] = $RecNumber;StringMid($record,91,8)
 	$MFTRecordsArr12[$ArrOffset][1] = $TmpOffset[3]
 EndIf
-If $TheCounter > 786360 and $TheCounter < 851890 Then
+If $TheCounter >= 786360 and $TheCounter < 851890 Then
 	$ArrOffset = $TheCounter-786360
 	$TmpOffset = DllCall('kernel32.dll', 'int', 'SetFilePointerEx', 'ptr', $DiskHandle, 'int64', 0, 'int64*', 0, 'dword', 1)
 	$MFTRecordsArr13[$ArrOffset][0] = $RecNumber;StringMid($record,91,8)
 	$MFTRecordsArr13[$ArrOffset][1] = $TmpOffset[3]
 EndIf
-If $TheCounter > 851890 and $TheCounter < 917420 Then
+If $TheCounter >= 851890 and $TheCounter < 917420 Then
 	$ArrOffset = $TheCounter-851890
 	$TmpOffset = DllCall('kernel32.dll', 'int', 'SetFilePointerEx', 'ptr', $DiskHandle, 'int64', 0, 'int64*', 0, 'dword', 1)
 	$MFTRecordsArr14[$ArrOffset][0] = $RecNumber;StringMid($record,91,8)
 	$MFTRecordsArr14[$ArrOffset][1] = $TmpOffset[3]
 EndIf
-If $TheCounter > 917420 and $TheCounter < 982950 Then
+If $TheCounter >= 917420 and $TheCounter < 982950 Then
 	$ArrOffset = $TheCounter-917420
 	$TmpOffset = DllCall('kernel32.dll', 'int', 'SetFilePointerEx', 'ptr', $DiskHandle, 'int64', 0, 'int64*', 0, 'dword', 1)
 	$MFTRecordsArr15[$ArrOffset][0] = $RecNumber;StringMid($record,91,8)
 	$MFTRecordsArr15[$ArrOffset][1] = $TmpOffset[3]
 EndIf
-If $TheCounter > 982950 and $TheCounter < 1048480 Then
+If $TheCounter >= 982950 and $TheCounter < 1048480 Then
 	$ArrOffset = $TheCounter-982950
 	$TmpOffset = DllCall('kernel32.dll', 'int', 'SetFilePointerEx', 'ptr', $DiskHandle, 'int64', 0, 'int64*', 0, 'dword', 1)
 	$MFTRecordsArr16[$ArrOffset][0] = $RecNumber;StringMid($record,91,8)
 	$MFTRecordsArr16[$ArrOffset][1] = $TmpOffset[3]
 EndIf
-If $TheCounter > 1048480 and $TheCounter < 1114010 Then
+If $TheCounter >= 1048480 and $TheCounter < 1114010 Then
 	$ArrOffset = $TheCounter-1048480
 	$TmpOffset = DllCall('kernel32.dll', 'int', 'SetFilePointerEx', 'ptr', $DiskHandle, 'int64', 0, 'int64*', 0, 'dword', 1)
 	$MFTRecordsArr17[$ArrOffset][0] = $RecNumber;StringMid($record,91,8)
 	$MFTRecordsArr17[$ArrOffset][1] = $TmpOffset[3]
 EndIf
-If $TheCounter > 1114010 and $TheCounter < 1179540 Then
+If $TheCounter >= 1114010 and $TheCounter < 1179540 Then
 	$ArrOffset = $TheCounter-1114010
 	$TmpOffset = DllCall('kernel32.dll', 'int', 'SetFilePointerEx', 'ptr', $DiskHandle, 'int64', 0, 'int64*', 0, 'dword', 1)
 	$MFTRecordsArr18[$ArrOffset][0] = $RecNumber;StringMid($record,91,8)
 	$MFTRecordsArr18[$ArrOffset][1] = $TmpOffset[3]
 EndIf
-If $TheCounter > 1179540 and $TheCounter < 1245070 Then
+If $TheCounter >= 1179540 and $TheCounter < 1245070 Then
 	$ArrOffset = $TheCounter-1179540
 	$TmpOffset = DllCall('kernel32.dll', 'int', 'SetFilePointerEx', 'ptr', $DiskHandle, 'int64', 0, 'int64*', 0, 'dword', 1)
 	$MFTRecordsArr19[$ArrOffset][0] = $RecNumber;StringMid($record,91,8)
 	$MFTRecordsArr19[$ArrOffset][1] = $TmpOffset[3]
 EndIf
-If $TheCounter > 1245070 and $TheCounter < 1310600 Then
+If $TheCounter >= 1245070 and $TheCounter < 1310600 Then
 	$ArrOffset = $TheCounter-1245070
 	$TmpOffset = DllCall('kernel32.dll', 'int', 'SetFilePointerEx', 'ptr', $DiskHandle, 'int64', 0, 'int64*', 0, 'dword', 1)
 	$MFTRecordsArr20[$ArrOffset][0] = $RecNumber;StringMid($record,91,8)
