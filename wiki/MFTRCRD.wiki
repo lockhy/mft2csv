@@ -77,9 +77,11 @@ Running the tool without any parameter will display help information.
 
 
 = Latest version =
-v1.0.0.21
+v1.0.0.22
 
 = Changelog =
+
+v1.0.0.22: Added text "NT style" in place of MFT reference when NT style record. Fixed bug in idenfying hte "param attriblist=on". Also fixed a small bug in the MFT array generation, that caused certain index numbers not to be found.
 
 v1.0.0.21: Fixed the split of 6+2 bytes (Reference and SeqNo) for both MFTRef and Parent MFTRef when index decoding. Also changed SI_USN to display in decimal.
 
