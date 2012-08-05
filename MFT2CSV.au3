@@ -1,6 +1,8 @@
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
-#AutoIt3Wrapper_Res_Description=Decode $MFT and write to CSV
-#AutoIt3Wrapper_Res_Fileversion=1.0.0.8
+#AutoIt3Wrapper_Res_Comment=Master File Table decoder
+#AutoIt3Wrapper_Res_Description=Decode $MFT and dump result to CSV
+#AutoIt3Wrapper_Res_Fileversion=1.0.0.10
+#AutoIt3Wrapper_Res_LegalCopyright=Joakim Schicht
 #AutoIt3Wrapper_Res_requestedExecutionLevel=asInvoker
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
 #include <winapi.au3>
@@ -25,7 +27,7 @@ Global $GUID_ObjectID, $GUID_BirthVolumeID, $GUID_BirthObjectID, $GUID_BirthDoma
 Global $FileSizeBytes, $IntegrityCheck
 Global Const $HX_REF = "0123456789ABCDEF"
 Global Const $RecordSignature = '46494C45' ; FILE signature
-Global Const $RecordSignatureBad = '44414142' ; BAAD signature
+Global Const $RecordSignatureBad = '42414144' ; BAAD signature
 Global Const $MFT_Record_Size = 1024
 Global Const $STANDARD_INFORMATION = '10000000'; Standard Information
 Global Const $ATTRIBUTE_LIST = '20000000'
@@ -119,7 +121,7 @@ For $i = 0 To $ExpectedRecords
 	If (StringMid($MFTEntry, 3, 8) = '46494C45') Then
 		$Signature = "GOOD"
 		;		ConsoleWrite("Signature not found here.. "& @crlf)
-	ElseIf (StringMid($MFTEntry, 3, 8) = '44414142') Then
+	ElseIf (StringMid($MFTEntry, 3, 8) = '42414144') Then
 		$Signature = "BAAD"
 	ElseIf (StringMid($MFTEntry, 3, 8) = '00000000') Then
 		_ClearVar()
@@ -242,10 +244,14 @@ Func _DecodeMFTRecord($MFTEntry)
 	$HEADER_NextAttribID = StringMid($MFTEntry, 83, 4)
 	;ConsoleWrite("$HEADER_NextAttribID = " & $HEADER_NextAttribID & @crlf)
 	$HEADER_NextAttribID = "0x"&StringMid($HEADER_NextAttribID, 3, 2) & StringMid($HEADER_NextAttribID, 1, 2)
-	$HEADER_MFTREcordNumber = StringMid($MFTEntry, 91, 8)
-	$HEADER_MFTREcordNumber = Dec(StringMid($HEADER_MFTREcordNumber, 7, 2) & StringMid($HEADER_MFTREcordNumber, 5, 2) & StringMid($HEADER_MFTREcordNumber, 3, 2) & StringMid($HEADER_MFTREcordNumber, 1, 2))
-	;$HEADER_MFTREcordNumber = Dec($HEADER_MFTREcordNumber)
-	;ConsoleWrite("$HEADER_MFTREcordNumber = " & $HEADER_MFTREcordNumber & @crlf)
+	If $UpdSeqArrOffset = 48 Then
+		$HEADER_MFTREcordNumber = StringMid($MFTEntry, 91, 8)
+		$HEADER_MFTREcordNumber = Dec(StringMid($HEADER_MFTREcordNumber, 7, 2) & StringMid($HEADER_MFTREcordNumber, 5, 2) & StringMid($HEADER_MFTREcordNumber, 3, 2) & StringMid($HEADER_MFTREcordNumber, 1, 2))
+	;	$HEADER_MFTREcordNumber = Dec($HEADER_MFTREcordNumber)
+	;	ConsoleWrite("$HEADER_MFTREcordNumber = " & $HEADER_MFTREcordNumber & @crlf)
+	Else
+		$HEADER_MFTREcordNumber = "NT style"
+	EndIf
 	$NextAttributeOffset = (Dec(StringMid($MFTEntry, 43, 2)) * 2) + 3
 	;ConsoleWrite("$NextAttributeOffset = " & $NextAttributeOffset & @crlf)
 	;ConsoleWrite("$NextAttributeOffset Hex = 0x" & Hex((($NextAttributeOffset-3)/2)) & @crlf)
@@ -1525,6 +1531,8 @@ Func _WriteCSV()
 			$DATA_VCNs_2 & ',' & $DATA_CompressionUnitSize_2 & ',' & $DATA_AllocatedSize_2 & ',' & $DATA_RealSize_2 & ',' & $DATA_InitializedStreamSize_2 & ',' & $DATA_Name_3 & ',' & $DATA_NonResidentFlag_3 & ',' & $DATA_Flags_3 & ',' & $DATA_LengthOfAttribute_3 & ',' & $DATA_IndexedFlag_3 & ',' & $DATA_StartVCN_3 & ',' & $DATA_LastVCN_3 & ',' & $DATA_VCNs_3 & ',' & $DATA_CompressionUnitSize_3 & ',' & $DATA_AllocatedSize_3 & ',' & _
 			$DATA_RealSize_3 & ',' & $DATA_InitializedStreamSize_3 & ',' & $STANDARD_INFORMATION_ON & ',' & $ATTRIBUTE_LIST_ON & ',' & $FILE_NAME_ON & ',' & $OBJECT_ID_ON & ',' & $SECURITY_DESCRIPTOR_ON & ',' & $VOLUME_NAME_ON & ',' & $VOLUME_INFORMATION_ON & ',' & $DATA_ON & ',' & $INDEX_ROOT_ON & ',' & $INDEX_ALLOCATION_ON & ',' & $BITMAP_ON & ',' & $REPARSE_POINT_ON & ',' & $EA_INFORMATION_ON & ',' & $EA_ON & ',' & $PROPERTY_SET_ON & ',' & $LOGGED_UTILITY_STREAM_ON & @CRLF)
 EndFunc   ;==>_WriteCSV
+
+
 
 
 
