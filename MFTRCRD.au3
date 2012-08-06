@@ -1,9 +1,10 @@
 #RequireAdmin
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
+#AutoIt3Wrapper_UseX64=y
 #AutoIt3Wrapper_Change2CUI=y
 #AutoIt3Wrapper_Res_Comment=Quick $MFT record dump
 #AutoIt3Wrapper_Res_Description=Decode a file's attributes from $MFT
-#AutoIt3Wrapper_Res_Fileversion=1.0.0.21
+#AutoIt3Wrapper_Res_Fileversion=1.0.0.23
 #AutoIt3Wrapper_Res_LegalCopyright=Joakim Schicht
 #AutoIt3Wrapper_Res_requestedExecutionLevel=asInvoker
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
@@ -31,7 +32,7 @@ Global $FN_CTime,$FN_ATime,$FN_MTime,$FN_RTime,$FN_AllocSize,$FN_RealSize,$FN_Fl
 Global $DATA_NameLength,$DATA_NameRelativeOffset,$DATA_Flags,$DATA_NameSpace,$DATA_Name,$RecordActive,$DATA_CompressionUnitSize,$DATA_Length,$DATA_AttributeID,$DATA_OffsetToDataRuns,$DATA_Padding,$DATA_OffsetToAttribute,$DATA_IndexedFlag,$DATA_Name_Core
 Global $DATA_NonResidentFlag,$DATA_NameLength,$DATA_NameRelativeOffset,$DATA_Flags,$DATA_Name,$RecordActive
 Global $DATA_CompressionUnitSize,$DATA_ON,$DATA_CompressedSize,$DATA_LengthOfAttribute,$DATA_StartVCN,$DATA_LastVCN
-Global $DATA_AllocatedSize,$DATA_RealSize,$DATA_InitializedStreamSize,$RunListOffset,$DataRun,$IsCompressed
+Global $DATA_AllocatedSize,$DATA_RealSize,$DATA_InitializedStreamSize,$RunListOffset,$DataRun,$IsCompressed,$IsSparse
 Global $RUN_VCN[1],$RUN_Clusters[1],$MFT_RUN_Clusters[1],$MFT_RUN_VCN[1],$NameQ[5],$DataQ[1],$sBuffer,$AttrQ[1], $RUN_Sparse[1], $MFT_RUN_Sparse[1], $RUN_Complete[1][4], $MFT_RUN_Complete[1][4], $RUN_Sectors, $MFT_RUN_Sectors
 Global $SI_CTime,$SI_ATime,$SI_MTime,$SI_RTime,$SI_FilePermission,$SI_USN,$Errors,$RecordSlackSpace
 Global $IndxEntryNumberArr[1],$IndxMFTReferenceArr[1],$IndxMFTRefSeqNoArr[1],$IndxIndexFlagsArr[1],$IndxMFTReferenceOfParentArr[1],$IndxMFTParentRefSeqNoArr[1],$IndxCTimeArr[1],$IndxATimeArr[1],$IndxMTimeArr[1],$IndxRTimeArr[1],$IndxAllocSizeArr[1],$IndxRealSizeArr[1],$IndxFileFlagsArr[1],$IndxFileNameArr[1],$IndxSubNodeVCNArr[1],$IndxNameSpaceArr[1]
@@ -97,7 +98,7 @@ Global $FormattedTimestamp
 Global $Timerstart = TimerInit()
 ConsoleWrite("" & @CRLF)
 ConsoleWrite("Starting MFTRCRD by Joakim Schicht" & @CRLF)
-ConsoleWrite("Version 1.0.0.21" & @CRLF)
+ConsoleWrite("Version 1.0.0.23" & @CRLF)
 ConsoleWrite("" & @CRLF)
 _validate_parameters()
 $TargetDrive = StringMid($cmdline[1],1,1)&":"
@@ -246,7 +247,6 @@ If $bIndexNumber = 0 Then
 	$IsMFT = 1
 	_ExtractSystemfile("$MFT")
 Else
-;	_ExtractSystemfile(_DecToLittleEndian($bIndexNumber))
 	_ExtractSystemfile($bIndexNumber)
 EndIf
 EndFunc
@@ -303,17 +303,18 @@ Func _GetIndexNumber($file, $mode)
 EndFunc
 
 Func _ExtractSystemfile($TargetFile)
-		Global $DataQ[1], $RUN_VCN[1], $RUN_Clusters[1]
-		_ReadBootSector($TargetDrive)
-		$BytesPerCluster = $SectorsPerCluster*$BytesPerSector
-		$MFTEntry = _FindMFT(0)
-		_DecodeMFTRecord($MFTEntry)
-		_DecodeDataQEntry($DataQ[1])
-		$MFTSize = $DATA_RealSize
-		_SetDataInfo(1)
-		_ExtractDataRuns()
-		$MFT_RUN_VCN = $RUN_VCN
-		$MFT_RUN_Clusters = $RUN_Clusters
+	Global $DataQ[1], $RUN_VCN[1], $RUN_Clusters[1]
+	_ReadBootSector($TargetDrive)
+	$BytesPerCluster = $SectorsPerCluster*$BytesPerSector
+	$MFTEntry = _FindMFT(0)
+	_DecodeMFTRecord($MFTEntry)
+	_DecodeDataQEntry($DataQ[1])
+	$MFTSize = $DATA_RealSize
+	_SetDataInfo(1)
+	Global $RUN_VCN[1], $RUN_Clusters[1]
+	_ExtractDataRuns()
+	$MFT_RUN_VCN = $RUN_VCN
+	$MFT_RUN_Clusters = $RUN_Clusters
 	If $TargetFile = "$MFT" Then
 		ConsoleWrite("TargetFile is $MFT" & @CRLF)
 		_ExtractSingleFile(0)
@@ -616,8 +617,7 @@ Func _DecodeDataQEntry($Entry)
 	$DATA_Length = Dec(StringMid($DATA_Length,7,2) & StringMid($DATA_Length,5,2) & StringMid($DATA_Length,3,2) & StringMid($DATA_Length,1,2))
 	$DATA_NonResidentFlag = StringMid($Entry,17,2)
 	$DATA_NameLength = Dec(StringMid($Entry,19,2))
-	$DATA_NameRelativeOffset = StringMid($Entry,21,4)
-	$DATA_NameRelativeOffset = Dec(_SwapEndian($DATA_NameRelativeOffset))
+	$DATA_NameRelativeOffset = Dec(_SwapEndian(StringMid($Entry,21,4)))
 	If $DATA_NameLength > 0 Then
 		$DATA_Name = _UnicodeHexToStr(StringMid($Entry,$DATA_NameRelativeOffset*2 + 1,$DATA_NameLength*4))
 		$DATA_Name_Core = $DATA_Name
@@ -647,30 +647,19 @@ Func _DecodeDataQEntry($Entry)
 	$DATA_AttributeID = StringMid($Entry,29,4)
 	$DATA_AttributeID = StringMid($DATA_AttributeID,3,2) & StringMid($DATA_AttributeID,1,2)
 	If $DATA_NonResidentFlag = '01' Then
-		$DATA_StartVCN = StringMid($Entry,33,16)
-		$DATA_StartVCN = Dec(_SwapEndian($DATA_StartVCN),2)
-		$DATA_LastVCN = StringMid($Entry,49,16)
-		$DATA_LastVCN = Dec(_SwapEndian($DATA_LastVCN),2)
+		$DATA_StartVCN = Dec(_SwapEndian(StringMid($Entry,33,16)),2)
+		$DATA_LastVCN = Dec(_SwapEndian(StringMid($Entry,49,16)),2)
 		$DATA_VCNs = $DATA_LastVCN - $DATA_StartVCN
 		$DATA_OffsetToDataRuns = StringMid($Entry,65,4)
 		$DATA_OffsetToDataRuns = Dec(StringMid($DATA_OffsetToDataRuns,3,1) & StringMid($DATA_OffsetToDataRuns,3,1))
 		$DATA_CompressionUnitSize = Dec(_SwapEndian(StringMid($Entry,69,4)))
-		$IsCompressed = 0
-		If $DATA_CompressionUnitSize = 4 Then $IsCompressed = 1
 		$DATA_Padding = StringMid($Entry,73,8)
 		$DATA_Padding = StringMid($DATA_Padding,7,2) & StringMid($DATA_Padding,5,2) & StringMid($DATA_Padding,3,2) & StringMid($DATA_Padding,1,2)
-		$DATA_AllocatedSize = StringMid($Entry,81,16)
-		$DATA_AllocatedSize = Dec(_SwapEndian($DATA_AllocatedSize),2)
-		$DATA_RealSize = StringMid($Entry,97,16)
-		$DATA_RealSize = Dec(_SwapEndian($DATA_RealSize),2)
-		$DATA_InitializedStreamSize = StringMid($Entry,113,16)
-		$DATA_InitializedStreamSize = Dec(_SwapEndian($DATA_InitializedStreamSize),2)
-		$RunListOffset = StringMid($Entry,65,4)
-		$RunListOffset = Dec(_SwapEndian($RunListOffset))
-		If $IsCompressed AND $RunListOffset = 72 Then
-			$DATA_CompressedSize = StringMid($Entry,129,16)
-			$DATA_CompressedSize = Dec(_SwapEndian($DATA_CompressedSize),2)
-		EndIf
+		$DATA_AllocatedSize = Dec(_SwapEndian( StringMid($Entry,81,16)),2)
+		$DATA_RealSize = Dec(_SwapEndian(StringMid($Entry,97,16)),2)
+		$DATA_InitializedStreamSize = Dec(_SwapEndian(StringMid($Entry,113,16)),2)
+		$RunListOffset = Dec(_SwapEndian(StringMid($Entry,65,4)))
+		If $IsCompressed AND $RunListOffset = 72 Then $DATA_CompressedSize = Dec(_SwapEndian(StringMid($Entry,129,16)),2)
 		$DataRun = StringMid($Entry,$RunListOffset*2+1,(StringLen($Entry)-$RunListOffset)*2)
 	ElseIf $DATA_NonResidentFlag = '00' Then
 		$DATA_LengthOfAttribute = StringMid($Entry,33,8)
@@ -712,13 +701,9 @@ If $UpdSeqArrPart0 <> $RecordEnd1 OR $UpdSeqArrPart0 <> $RecordEnd2 Then
 	$MFTEntry = StringMid($MFTEntry,1,1022) & $UpdSeqArrPart1 & StringMid($MFTEntry,1027,1020) & $UpdSeqArrPart2
 EndIf
 Local $MFTHeader = StringMid($MFTEntry,1,2+32)
-;ConsoleWrite("$MFTHeader = " & $MFTHeader & @crlf)
 $HEADER_LSN = StringMid($MFTEntry,19,16)
-;ConsoleWrite("$HEADER_LSN = " & $HEADER_LSN & @crlf)
 $HEADER_LSN = Dec(_SwapEndian($HEADER_LSN),2)
-;ConsoleWrite("$HEADER_LSN = " & $HEADER_LSN & @crlf)
 $HEADER_SequenceNo = Dec(_SwapEndian(StringMid($MFTEntry,35,4)))
-;ConsoleWrite("$HEADER_SequenceNo = " & $HEADER_SequenceNo & @crlf)
 $Header_HardLinkCount = StringMid($MFTEntry,39,4)
 $Header_HardLinkCount = Dec(StringMid($Header_HardLinkCount,3,2) & StringMid($Header_HardLinkCount,1,2))
 $HEADER_Flags = StringMid($MFTEntry,47,4)
@@ -736,25 +721,17 @@ Select
 	Case Else
 		$HEADER_Flags = 'UNKNOWN'
 EndSelect
-;ConsoleWrite("$HEADER_Flags = " & $HEADER_Flags & @crlf)
 $HEADER_RecordRealSize = Dec(_SwapEndian(StringMid($MFTEntry,51,8)),2)
-;ConsoleWrite("$HEADER_RecordRealSize = " & $HEADER_RecordRealSize & " -> 0x" & Hex($HEADER_RecordRealSize,8) & @crlf)
 $HEADER_RecordAllocSize = Dec(_SwapEndian(StringMid($MFTEntry,59,8)),2)
-;ConsoleWrite("$HEADER_RecordAllocSize = " & $HEADER_RecordAllocSize & @crlf)
-;$HEADER_BaseRecord = StringMid($MFTEntry,67,16)
 $HEADER_BaseRecord = Dec(_SwapEndian(StringMid($MFTEntry,67,12)),2) ;Base file record
-;ConsoleWrite("$HEADER_BaseRecord = " & $HEADER_BaseRecord & @crlf)
 $HEADER_BaseRecSeqNo = Dec(_SwapEndian(StringMid($MFTEntry,79,4)),2)
 $HEADER_NextAttribID = StringMid($MFTEntry,83,4)
-;ConsoleWrite("$HEADER_NextAttribID = " & $HEADER_NextAttribID & @crlf)
 $HEADER_NextAttribID = "0x"&_SwapEndian($HEADER_NextAttribID)
-If $UpdSeqArrOffset = 96 Then
+If $UpdSeqArrOffset = 48 Then
 	$HEADER_MFTREcordNumber = Dec(_SwapEndian(StringMid($MFTEntry,91,8)),2)
 Else
 	$HEADER_MFTREcordNumber = "NT style"
 EndIf
-;$HEADER_MFTRecordNumber = Dec(_SwapEndian(StringMid($MFTEntry,91,8)),2)
-;ConsoleWrite("$HEADER_MFTRecordNumber = " & $HEADER_MFTRecordNumber & @crlf)
 $AttributeOffset = (Dec(StringMid($MFTEntry,43,2))*2)+3
 $RecordHdrArr[0][1] = "Field value"
 $RecordHdrArr[1][1] = $UpdSeqArrOffset
@@ -1054,7 +1031,7 @@ Func _ExtractDataRuns()
 EndFunc
 
 Func _FindFileMFTRecord($TargetFile)
-	Local $nBytes, $LocalCounter, $TmpOffset, $Timer, $aa
+	Local $nBytes, $TmpOffset
 	$tBuffer = DllStructCreate("byte[" & $MFT_Record_Size & "]")
 	$hFile = _WinAPI_CreateFile("\\.\" & $TargetDrive, 2, 6, 6)
 	If $hFile = 0 Then
@@ -1069,7 +1046,8 @@ Func _FindFileMFTRecord($TargetFile)
 			_WinAPI_ReadFile($hFile, DllStructGetPtr($tBuffer), $MFT_Record_Size, $nBytes)
 			$record = DllStructGetData($tBuffer, 1)
 			If StringMid($record,91,8) = $TargetFile Then
-;				MsgBox(0,"StringMid($record,47,4)",StringMid($record,47,4))
+				$TmpOffset = DllCall('kernel32.dll', 'int', 'SetFilePointerEx', 'ptr', $hFile, 'int64', 0, 'int64*', 0, 'dword', 1)
+				ConsoleWrite("Target record number: " & Dec(_SwapEndian($TargetFile),2) & " found at disk offset: " & $TmpOffset[3] & @CRLF)
 				_WinAPI_CloseHandle($hFile)
 				Return $record		;returns MFT record for file
 			EndIf
@@ -1560,6 +1538,7 @@ $VOL_INFO_NTFS_VERSION = Dec(StringMid($MFTEntry,$VOLUME_INFO_Offset+64,2)) & ",
 $VOL_INFO_FLAGS = StringMid($MFTEntry,$VOLUME_INFO_Offset+68,4)
 $VOL_INFO_FLAGS = StringMid($VOL_INFO_FLAGS,3,2) & StringMid($VOL_INFO_FLAGS,1,2)
 $VOL_INFO_FLAGS = _VolInfoFlag("0x" & $VOL_INFO_FLAGS)
+If $VOL_INFO_FLAGS = "" Then $VOL_INFO_FLAGS = "EMPTY"
 ;ConsoleWrite("$VOL_INFO_FLAGS = " & $VOL_INFO_FLAGS & @crlf)
 $VolumeInformationArr[1][$Current_VI_Number] = $VOL_INFO_NTFS_VERSION
 $VolumeInformationArr[2][$Current_VI_Number] = $VOL_INFO_FLAGS
@@ -2369,12 +2348,9 @@ Func _ProcessMftArray($TargetFile)
 	_WinAPI_SetFilePointerEx($hFile, $LocalMftSearch-1024, $FILE_BEGIN)
 	_WinAPI_ReadFile($hFile, DllStructGetPtr($tBuffer), $MFT_Record_Size, $nBytes)
 	$record = DllStructGetData($tBuffer, 1)
-;	ConsoleWrite(_HexEncode($record) & @crlf)
-;	$TmpOffset = DllCall('kernel32.dll', 'int', 'SetFilePointerEx', 'ptr', $hFile, 'int64', 0, 'int64*', 0, 'dword', 1)
-;	ConsoleWrite("$TmpOffset: " & $TmpOffset[3] & @CRLF)
 	If StringMid($record,91,8) = $TargetFile Then ; Also include deleted files
-;	If BitAND(Dec(StringMid($record,47,4)),Dec("0100")) AND StringMid($record,91,8) = $TargetFile Then
-;		ConsoleWrite("Target " & $TargetFile & " found" & @CRLF)
+		$TmpOffset = DllCall('kernel32.dll', 'int', 'SetFilePointerEx', 'ptr', $hFile, 'int64', 0, 'int64*', 0, 'dword', 1)
+		ConsoleWrite("Target record number: " & Dec(_SwapEndian($TargetFile),2) & " found at disk offset: " & $TmpOffset[3] & @CRLF)
 		_WinAPI_CloseHandle($hFile)
 		Return $record		;returns MFT record for file
 	EndIf
