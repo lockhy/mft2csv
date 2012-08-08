@@ -1,0 +1,43 @@
+#summary Registry timestamp manipulation.
+
+= Introduction =
+
+It is a small utility providing only 1 feature. And that is to manipulate registry key's timestamp (LastWriteTime). I could not find much information about this, and some places it is clamed to not be possible. So I decided to make a proof of concept.
+
+
+= Details =
+
+The LastWriteTime timstamps that every registry key has, is similar to NTFS timestamps. They are 64-bit in UTC and  counted in 100 nanosec since 01 January 1601. There does not exist such timestamp for registry values, only for keys.
+
+The tool will let you set any timestamp within the whole 64-bit range. It takes immediate effect, as the key is flushed to disk instantly. Since it uses native NT apis in ntdll.dll, it does not work with user friendly registry names like HKEY_LOCAL_MACHINE, HKCU etc. It uwill only take the Windows internal registry names, those starting with \Registry\... Below is a listing of the most important translations:
+
+HKEY_LOCAL_MACHINE             \registry\machine
+HKEY_USERS                     \registry\user
+HKEY_CURRENT_USER              \registry\user\user_sid
+HKEY_CLASSES_ROOT              \registry\machine\software\classes
+HKEY_CURRENT_CONFIG            \Registry\Machine\System\CurrentControlSet\Hardware Profiles\Current
+
+The user sid is the one similar to this: S-1-5-21-2895024241-3518395705-1366494917-288
+
+Some real world command examples:
+
+SetRegTime_x64.exe "\Registry\Machine\Software\test" "1743:04:01:00:00:00:000:0000"
+SetRegTime_x64.exe "\Registry\Machine\System\mounteddevices" "1976:04:01:00:00:00:000:0000"
+SetRegTime_x64.exe "\Registry\Machine\Security\policy\polacdms" "1944:12:24:00:00:00:000:0000"
+
+Now usually you will not get access to the security hive just like that, so instead we launch a process from the local system account, and then we have full access. A sample program for launching cmd from the system account can be found on the same site; http://code.google.com/p/mft2csv/downloads/list Not very surprising that we can do almost anything when we are SYSTEM. 
+
+The timstamp format is like this; YYYY:MM:DD:HH:MM:SS:MSMSMS:NSNSNSNS
+
+Setting the timestamp outside of the range for unix, will result in most forensic utilities displaying blank timestamps are they are not able to handle these numbers (ie RegRipper..). Obviously such extreme modification would immediately raise any suspicion.
+
+What important winapi are utilized?
+* NtCreateKey
+* NtOpenKey
+* NtSetInformationKey
+* NtFlushKey
+
+This was tested on Windows 7 SP1 x64, but I really don't see any reason why it should not work on previous Windows versions.
+
+Extra:
+A nice powershell to quickly display registry timestamps on live systems can be found here: http://blog.securitywhole.com/2010/02/02/getting-registry-last-write-time-with-powershell.aspx?view=threaded
