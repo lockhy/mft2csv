@@ -22,7 +22,9 @@ The user sid is the one similar to this: S-1-5-21-2895024241-3518395705-13664949
 Some real world command examples:
 
 SetRegTime_x64.exe "\Registry\Machine\Software\test" "1743:04:01:00:00:00:000:0000"
+
 SetRegTime_x64.exe "\Registry\Machine\System\mounteddevices" "1976:04:01:00:00:00:000:0000"
+
 SetRegTime_x64.exe "\Registry\Machine\Security\policy\polacdms" "1944:12:24:00:00:00:000:0000"
 
 Now usually you will not get access to the security hive just like that, so instead we launch a process from the local system account, and then we have full access. A sample program for launching cmd from the system account (RunasSystem) can be found in the download section. Not very surprising that we can do almost anything when we are SYSTEM. 
