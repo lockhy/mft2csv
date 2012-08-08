@@ -25,7 +25,7 @@ SetRegTime_x64.exe "\Registry\Machine\Software\test" "1743:04:01:00:00:00:000:00
 SetRegTime_x64.exe "\Registry\Machine\System\mounteddevices" "1976:04:01:00:00:00:000:0000"
 SetRegTime_x64.exe "\Registry\Machine\Security\policy\polacdms" "1944:12:24:00:00:00:000:0000"
 
-Now usually you will not get access to the security hive just like that, so instead we launch a process from the local system account, and then we have full access. A sample program for launching cmd from the system account can be found on the same site; http://code.google.com/p/mft2csv/downloads/list Not very surprising that we can do almost anything when we are SYSTEM. 
+Now usually you will not get access to the security hive just like that, so instead we launch a process from the local system account, and then we have full access. A sample program for launching cmd from the system account (RunasSystem) can be found in the download section. Not very surprising that we can do almost anything when we are SYSTEM. 
 
 The timstamp format is like this; YYYY:MM:DD:HH:MM:SS:MSMSMS:NSNSNSNS
 
