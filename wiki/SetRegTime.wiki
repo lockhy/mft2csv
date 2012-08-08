@@ -29,7 +29,7 @@ SetRegTime_x64.exe "\Registry\Machine\Security\policy\polacdms" "1944:12:24:00:0
 
 Some images to lighten up the dry material:
 
-http://s402.photobucket.com/albums/pp106/jokke49/?action=view&current=Set_Run.png
+[IMG]http://s402.photobucket.com/albums/pp106/jokke49/?action=view&current=Set_Run.png[/IMG]
 
 http://s402.photobucket.com/albums/pp106/jokke49/?action=view&current=Get_Run.png
 
