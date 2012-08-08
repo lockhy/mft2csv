@@ -27,6 +27,22 @@ SetRegTime_x64.exe "\Registry\Machine\System\mounteddevices" "1976:04:01:00:00:0
 
 SetRegTime_x64.exe "\Registry\Machine\Security\policy\polacdms" "1944:12:24:00:00:00:000:0000"
 
+Some images to lighten up the dry material:
+
+http://s402.photobucket.com/albums/pp106/jokke49/?action=view&current=Set_Run.png
+
+http://s402.photobucket.com/albums/pp106/jokke49/?action=view&current=Get_Run.png
+
+http://s402.photobucket.com/albums/pp106/jokke49/?action=view&current=Set_MountedDevices.png
+
+http://s402.photobucket.com/albums/pp106/jokke49/?action=view&current=Get_MountedDevices.png
+
+http://s402.photobucket.com/albums/pp106/jokke49/?action=view&current=Set_Security.png
+
+http://s402.photobucket.com/albums/pp106/jokke49/?action=view&current=Get_Security.png
+
+Notice how the modifications look like in the output from RegRipper.
+
 Now usually you will not get access to the security hive just like that, so instead we launch a process from the local system account, and then we have full access. A sample program for launching cmd from the system account (RunasSystem) can be found in the download section. Not very surprising that we can do almost anything when we are SYSTEM. 
 
 The timstamp format is like this; YYYY:MM:DD:HH:MM:SS:MSMSMS:NSNSNSNS
