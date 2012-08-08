@@ -29,17 +29,17 @@ SetRegTime_x64.exe "\Registry\Machine\Security\policy\polacdms" "1944:12:24:00:0
 
 Some images to lighten up the dry material:
 
-http://s402.photobucket.com/albums/pp106/jokke49/?action=view&current=Set_Run.png
+http://i402.photobucket.com/albums/pp106/jokke49/Set_Run.png
 
-http://s402.photobucket.com/albums/pp106/jokke49/?action=view&current=Get_Run.png
+http://i402.photobucket.com/albums/pp106/jokke49/Get_Run.png
 
-http://s402.photobucket.com/albums/pp106/jokke49/?action=view&current=Set_MountedDevices.png
+http://i402.photobucket.com/albums/pp106/jokke49/Set_MountedDevices.png
 
-http://s402.photobucket.com/albums/pp106/jokke49/?action=view&current=Get_MountedDevices.png
+http://i402.photobucket.com/albums/pp106/jokke49/Get_MountedDevices.png
 
-http://s402.photobucket.com/albums/pp106/jokke49/?action=view&current=Set_Security.png
+http://i402.photobucket.com/albums/pp106/jokke49/Set_Security.png
 
-http://s402.photobucket.com/albums/pp106/jokke49/?action=view&current=Get_Security.png
+http://i402.photobucket.com/albums/pp106/jokke49/Get_Security.png
 
 Notice how the modifications look like in the output from RegRipper.
 
