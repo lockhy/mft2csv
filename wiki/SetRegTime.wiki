@@ -50,10 +50,10 @@ The timstamp format is like this; YYYY:MM:DD:HH:MM:SS:MSMSMS:NSNSNSNS
 Setting the timestamp outside of the range for unix, will result in most forensic utilities displaying blank timestamps are they are not able to handle these numbers (ie RegRipper..). Obviously such extreme modification would immediately raise any suspicion.
 
 What important winapi are utilized?
-* NtCreateKey
-* NtOpenKey
-* NtSetInformationKey
-* NtFlushKey
+ *  NtCreateKey
+ *  NtOpenKey
+ *  NtSetInformationKey
+ *  NtFlushKey
 
 This was tested on Windows 7 SP1 x64, but I really don't see any reason why it should not work on previous Windows versions.
 
