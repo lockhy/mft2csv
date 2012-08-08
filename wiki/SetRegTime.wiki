@@ -10,12 +10,12 @@ It is a small utility providing only 1 feature. And that is to manipulate regist
 The LastWriteTime timstamps that every registry key has, is similar to NTFS timestamps. They are 64-bit in UTC and  counted in 100 nanosec since 01 January 1601. There does not exist such timestamp for registry values, only for keys.
 
 The tool will let you set any timestamp within the whole 64-bit range. It takes immediate effect, as the key is flushed to disk instantly. Since it uses native NT apis in ntdll.dll, it does not work with user friendly registry names like HKEY_LOCAL_MACHINE, HKCU etc. It uwill only take the Windows internal registry names, those starting with \Registry\... Below is a listing of the most important translations:
-
-HKEY_LOCAL_MACHINE             \registry\machine
-HKEY_USERS                     \registry\user
-HKEY_CURRENT_USER              \registry\user\user_sid
-HKEY_CLASSES_ROOT              \registry\machine\software\classes
-HKEY_CURRENT_CONFIG            \Registry\Machine\System\CurrentControlSet\Hardware Profiles\Current
+|| *User mode* || *Internal* ||
+|| HKEY_LOCAL_MACHINE || \registry\machine ||
+|| HKEY_USERS || \registry\user ||
+|| HKEY_CURRENT_USER || \registry\user\user_sid ||
+|| HKEY_CLASSES_ROOT || \registry\machine\software\classes ||
+|| HKEY_CURRENT_CONFIG  |||\Registry\Machine\System\CurrentControlSet\Hardware Profiles\Current ||
 
 The user sid is the one similar to this: S-1-5-21-2895024241-3518395705-1366494917-288
 
