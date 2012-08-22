@@ -47,7 +47,7 @@ Now usually you will not get access to the security hive just like that, so inst
 
 The timstamp format is like this; YYYY:MM:DD:HH:MM:SS:MSMSMS:NSNSNSNS
 
-Setting the timestamps way off, like for instance outside the range for unix time, may prevent certain tools from decoding the true timestamp. Other tools may only decode timestamps correctly when they are within a certain range, because they where coded so. In these cases, extreme timestamps like 1766 or 2387, may not be decoded/displayed. This particular "issue", if one can call it, really has nothing to do with the point being raised on this page. It is just worth noting that this "issue" may be observed when using certain tools, so that you know why.
+Setting the timestamps way off, like for instance outside the range for unix time, may prevent certain tools from decoding the true timestamp. Other tools may only decode timestamps correctly when they are within a certain range, because they where coded so. In these cases, extreme timestamps like 1766 or 2387, may not be decoded/displayed. This particular "issue", if one can call it, really has nothing to do with the point being raised on this page. It is just worth noting that this "issue" may be observed when using certain tools, and so that you now know why strange decode-behaviour may occur.
 
 What important winapi are utilized?
  *  NtCreateKey
