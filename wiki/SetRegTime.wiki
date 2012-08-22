@@ -2,7 +2,7 @@
 
 = Introduction =
 
-It is a small utility providing only 1 feature. And that is to manipulate registry key's timestamp (LastWriteTime). I could not find much information about this, and some places it is clamed to not be possible. So I decided to make a proof of concept.
+It is a small utility providing only 1 feature. And that is to manipulate registry key's timestamp (LastWriteTime). From what I have read about forensics and registry, I got the impression that information about timestamp manipulation in registry was lacking. Worth mentioning that I have by no means read the entire litterature on the field, so I may be slightly off. Still, I believe there is some news to be found on this page. My goal is to shed some light on the reality that registry timestamp manipulation is in fact very trivial. As a consequence it further reinforces the importance of proper (timeline) analysis, to get at the full picture and detect such attempts at timestamp modification. So I decided to make a proof of concept.
 
 
 = Details =
@@ -43,11 +43,11 @@ http://i402.photobucket.com/albums/pp106/jokke49/Get_Security.png
 
 Notice how the modifications look like in the output from RegRipper.
 
-Now usually you will not get access to the security hive just like that, so instead we launch a process from the local system account, and then we have full access. A sample program for launching cmd from the system account (RunasSystem) can be found in the download section. Not very surprising that we can do almost anything when we are SYSTEM. 
+Now usually you will not get access to the security hive just like that, so instead we launch a process from the local system account, and then we have full access. A sample program for launching cmd from the system account (RunasSystem) can be found in the download section. Maybe not very surprising that we can do almost anything when the process is running as SYSTEM. 
 
 The timstamp format is like this; YYYY:MM:DD:HH:MM:SS:MSMSMS:NSNSNSNS
 
-Setting the timestamp outside of the range for unix, will result in most forensic utilities displaying blank timestamps are they are not able to handle these numbers (ie RegRipper..). Obviously such extreme modification would immediately raise any suspicion.
+Setting the timestamps way off, like for instance outside the range for unix time, may prevent certain tools from decoding the true timestamp. Other tools may only decode timestamps correctly when they are within a certain range, because they where coded so. In these cases, extreme timestamps like 1766 or 2387, may not be decoded/displayed. This particular "issue", if one can call it, really has nothing to do with the point being raised on this page. It is just worth noting that this "issue" may be observed when using certain tools, so that you know why.
 
 What important winapi are utilized?
  *  NtCreateKey
@@ -55,7 +55,9 @@ What important winapi are utilized?
  *  NtSetInformationKey
  *  NtFlushKey
 
-This was tested on Windows 7 SP1 x64, but I really don't see any reason why it should not work on previous Windows versions.
+The NtFlushKey is strictly not needed, but I used it to be absolutely sure that the modification is written to disk instantly.
 
-Extra:
-A nice powershell to quickly display registry timestamps on live systems can be found here: http://blog.securitywhole.com/2010/02/02/getting-registry-last-write-time-with-powershell.aspx?view=threaded
+This was tested on Windows 7 SP1 x64 and XP SP3 x86, so I would assume it working on most modern Windows versions.
+
+Note:
+To retrieve the current timestamp of a given key, run the tool with just the key path as parameter (ie exclude the timestamp parameter).
