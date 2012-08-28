@@ -35,6 +35,7 @@ SetRegTime_x64.exe "\Registry\Machine\Software" "1743:04:01:00:00:00:000:0000" -
 
 Writing timestamps on singel keys:
 SetRegTime_x64.exe "\Registry\Machine\System\mounteddevices" "1976:04:01:00:00:00:000:0000" -n
+
 SetRegTime_x64.exe "\Registry\Machine\Security\policy\polacdms" "1944:12:24:00:00:00:000:0000" -n
 
 Some images to lighten up the dry material:
