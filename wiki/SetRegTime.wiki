@@ -35,15 +35,15 @@ SetRegTime.exe RegPath timestamp switch
 
 *Some real world command examples:*
 
-Reading timestamp:
+ *  Reading timestamp:
 
 SetRegTime_x64.exe "\Registry\Machine\Software\test"
 
-Writing timestamp recursively:
+ *  Writing timestamp recursively:
 
 SetRegTime_x64.exe "\Registry\Machine\Software" "1743:04:01:00:00:00:000:0000" -s
 
-Writing timestamps on singel keys:
+ *  Writing timestamps on singel keys:
 
 SetRegTime_x64.exe "\Registry\Machine\System\mounteddevices" "1976:04:01:00:00:00:000:0000" -n
 
