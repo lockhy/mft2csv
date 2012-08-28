@@ -19,13 +19,23 @@ The tool will let you set any timestamp within the whole 64-bit range. It takes 
 
 The user sid is the one similar to this: S-1-5-21-2895024241-3518395705-1366494917-288
 
+Syntax is:
+SetRegTime.exe RegPath timestamp switch
+-RegPath is a path similar to the ones listed above.
+-Timestamp is in the format YYYY:MM:DD:HH:MM:SS:MSMSMS:NSNSNSNS
+-Switch can be "-s" for recursive mode, or "-n" for singel key
+
 Some real world command examples:
 
-SetRegTime_x64.exe "\Registry\Machine\Software\test" "1743:04:01:00:00:00:000:0000"
+Reading timestamp:
+SetRegTime_x64.exe "\Registry\Machine\Software\test"
 
-SetRegTime_x64.exe "\Registry\Machine\System\mounteddevices" "1976:04:01:00:00:00:000:0000"
+Writing timestamp recursively:
+SetRegTime_x64.exe "\Registry\Machine\Software" "1743:04:01:00:00:00:000:0000" -s
 
-SetRegTime_x64.exe "\Registry\Machine\Security\policy\polacdms" "1944:12:24:00:00:00:000:0000"
+Writing timestamps on singel keys:
+SetRegTime_x64.exe "\Registry\Machine\System\mounteddevices" "1976:04:01:00:00:00:000:0000" -n
+SetRegTime_x64.exe "\Registry\Machine\Security\policy\polacdms" "1944:12:24:00:00:00:000:0000" -n
 
 Some images to lighten up the dry material:
 
@@ -53,6 +63,8 @@ What important winapi are utilized?
  *  NtCreateKey
  *  NtOpenKey
  *  NtSetInformationKey
+ *  NtEnumerateKey
+ *  NtQueryKey
  *  NtFlushKey
 
 The NtFlushKey is strictly not needed, but I used it to be absolutely sure that the modification is written to disk instantly.
