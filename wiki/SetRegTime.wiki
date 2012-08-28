@@ -21,10 +21,10 @@ The user sid is the one similar to this: S-1-5-21-2895024241-3518395705-13664949
 
 
 *Syntax is:*
-SetRegTime.exe RegPath timestamp switch
--RegPath is a path similar to the ones listed above.
--Timestamp is in the format YYYY:MM:DD:HH:MM:SS:MSMSMS:NSNSNSNS
--Switch can be "-s" for recursive mode, or "-n" for singel key
+ SetRegTime.exe RegPath timestamp switch
+ -RegPath is a path similar to the ones listed above.
+ -Timestamp is in the format YYYY:MM:DD:HH:MM:SS:MSMSMS:NSNSNSNS
+ -Switch can be "-s" for recursive mode, or "-n" for singel key
 
 
 *Some real world command examples:*
