@@ -89,3 +89,9 @@ This was tested on Windows 7 SP1 x64 and XP SP3 x86, so I would assume it workin
 
 Note:
 To retrieve the current timestamp of a given key, run the tool with just the key path as parameter (ie exclude the timestamp parameter).
+
+= Latest version =
+v1.0.0.4
+
+= Changelog =
+v1.0.0.4: Added recursion as optional processing.
