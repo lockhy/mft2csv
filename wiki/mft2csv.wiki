@@ -2,9 +2,17 @@
 
 = Introduction =
 
-This AutoIt script is parsing, decoding and logging information from the Master File Table ($MFT) to a csv. It is logging a large amount of data and that has been the main purpose from the very start. Because of that it is not fast. On my 95 Mb sized MFT it took about 10 minutes finish completely. Having all this data in a csv is therefore nice for easy further analysis. What also should make it appealing is the easyness of understanding the script and the ability for easy customization of it. 
+This AutoIt script is parsing, decoding and logging information from the Master File Table ($MFT) to a csv. It is logging a large amount of data and that has been the main purpose from the very start. Having all this data in a csv is therefore nice for easy further analysis. What also should make it appealing is the easyness of understanding the script and the ability for easy customization of it. 
 
 = Details =
+
+Input can be any of the following:
+  * Raw/dd image of disk (MBR and GPT supported)
+  * Raw/dd image of partition
+  * $MFT extracted file
+  * Reading of $MFT directly from a live system
+
+There is an option to choose which UTC region to decode for. For instance you have a disk image and the target system had a timezone configuration of UTC -9.30, then you can configure it like that and get the timestamps directly into UTC 0.00. Default is UTC 0.00, and if running on a live system, there is no need to do anything as timestamps are automatically set to UTC 0.00. 
 
 The focus have been on the attributes $STANDARD_INFORMATION, $FILE_NAME, $DATA and $VOLUME_ID as well as the file record headers themselves. More attributes will be added for sure.  Here is the listing of data that is currently covered (more descriptive names may be chosen in the future);
   * RecordOffset
@@ -145,10 +153,10 @@ They should be quite self explanatory by their name, but anyways here's e few hi
   * Prefix of FN means $FILE_NAME.
   * Prefix of SI means $STANDARD_INFORMATION
   * Prefix of HEADER means the record header.
-  * CTime means Create Time.
-  * ATime means Access Time.
-  * MTime means Modified Time.
-  * RTime means Read Time.
+  * CTime means File Create Time.
+  * ATime means File Modified Time.
+  * MTime means MFT Entry modified Time.
+  * RTime means File Last Access Time.
   * USN stands for Update Sequence Number.
   * LSN stands for $LogFile Sequence Number.
   * RecordOffset refers to the hex offset inside the $MFT itself, and not on the physical disk. Only meant as a helper when quickly looking up abnormalities found in the csv.
@@ -167,9 +175,11 @@ The timestamps are now at the precision of nanoseconds. Prior to processing, the
 
 = Latest Version =
 
-v1.0.0.10
+v2.0.0.0
 
 = Changelog =
+
+v2.0.0.0. Fixed bug that caused csv to be messed up when there where commas in filename. New features include support disk and partition images, live system analysis, logfile writer, nicer gui, paths resolved, option to choose any UTC region.
 
 v1.0.0.10. Fixed old NT style records to reflect the text "NT style" in place of MFT reference.
 
@@ -204,7 +214,6 @@ v1.1. Fixed a mixup of ContinueLoop with ContinueCase in the main record process
 = ToDo =
 
   * Move attribute header analysis out as a separate part.
-  * Solve full path of file with B+ trees.
   * Security attribute.
   * Group the data in a more sensible way.
   * Improve the speed.
