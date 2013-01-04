@@ -171,7 +171,11 @@ These streams can be identified in the second $DATA attribute. That is under tho
 
 = Timestamps =
 
-The timestamps are now at the precision of nanoseconds. Prior to processing, there is also an option to set how timestamps will be presented in the csv. That is whether in UTC 00:00 or in local time. The configured setting is visible in the csv header. The current format of the timestamp is April 19, 2009 03:45:57:140:2244. I recently created a new format like YYYY-MM-DD HH:MM:SS:MSMSMS:NSNSNSNS, which is more filter friendly in Excel. Options for more formats is also on the todo list, and I'm open for suggestions. Just beware that with the current timestamp generation the timezone configuration on the system where mft2csv is run will affect the output. So if timezone configuration differ, then timestamps will be wrong by the difference of the timezone configurations (that's regardless of if you chose UTC or local time). If settings are identical, then everthing is correct with identical timestamps. This is actually important to remember. A simple test can be done by decoding one $MFT with this tool on 2 different systems that have different timezone configurations.
+The timestamps are now at the precision of nanoseconds. Prior to processing, there is also an option to set how timestamps will be presented in the csv. That is in which UTC region the target system had. The configured setting is visible in the csv header, as well as in the logfile. The current format of the timestamp is April 19, 2009 03:45:57:140:2244. I recently created a new format like YYYY-MM-DD HH:MM:SS:MSMSMS:NSNSNSNS, which is more filter friendly in Excel. Options for more formats is also on the todo list, and I'm open for suggestions. The timestamps generated are corrected for any time bias on the investigating machine, which means the timezone configuration on the machine where mft2csv is run, should not affect output. There's also an option to directly adjust timestamps for any known timezone bias for images or $MFT taken from a different system. That means with a disk image from a system confgured at UTC -9.30 for instance, can be directly adjusted, so that timestamps are displayed in UTC 0.00.
+
+= Note =
+
+Resolved paths may not be correct for deleted files/folders. That is because its parent ref (or parents parents ref, etc) may have been overwritten with a new entry.
 
 = Latest Version =
 
