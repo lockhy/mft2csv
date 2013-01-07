@@ -3,7 +3,7 @@
 #AutoIt3Wrapper_UseX64=y
 #AutoIt3Wrapper_Res_Comment=Decode $MFT and write to CSV
 #AutoIt3Wrapper_Res_Description=Decode $MFT and write to CSV
-#AutoIt3Wrapper_Res_Fileversion=2.0.0.0
+#AutoIt3Wrapper_Res_Fileversion=2.0.0.1
 #AutoIt3Wrapper_Res_requestedExecutionLevel=asInvoker
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
 #include <array.au3>
@@ -14,7 +14,7 @@
 ; by Joakim Schicht & Ddan
 ; parts by trancexxx, Ascend4nt & others
 
-Global $_COMMON_KERNEL32DLL=DllOpen("kernel32.dll")
+Global $_COMMON_KERNEL32DLL=DllOpen("kernel32.dll"), $separator=",", $DTPrecision, $dol2t=False, $DoDefaultAll=False, $DoBodyfile=False
 Global $csv, $csvfile, $RecordOffset, $Signature, $Alternate_Data_Stream, $FN_FileNamePath, $UTCconfig
 Global $HEADER_LSN, $HEADER_SequenceNo, $HEADER_Flags, $HEADER_RecordRealSize, $HEADER_RecordAllocSize, $HEADER_BaseRecord, $HEADER_NextAttribID, $HEADER_MFTREcordNumber, $Header_HardLinkCount, $HEADER_BaseRecSeqNo
 Global $SI_CTime, $SI_ATime, $SI_MTime, $SI_RTime, $SI_FilePermission, $SI_USN, $Errors, $DATA_AllocatedSize, $DATA_RealSize, $DATA_InitializedStreamSize, $RecordSlackSpace
@@ -75,7 +75,7 @@ Global Const $FILE_RECORD_FLAG_DIRECTORY = 0x0003
 Global Const $FILE_RECORD_FLAG_DIRECTORY_DELETE = 0x0002
 Global Const $FILE_RECORD_FLAG_UNKNOWN1 = 0x0004
 Global Const $FILE_RECORD_FLAG_UNKNOWN2 = 0x0008
-Global $DateTimeFormat = 6 ; YYYY-MM-DD HH:MM:SS:MSMSMS:NSNSNSNS = 2007-08-18 08:15:37:733:1234
+Global $DateTimeFormat; = 6 ; YYYY-MM-DD HH:MM:SS:MSMSMS:NSNSNSNS = 2007-08-18 08:15:37:733:1234
 Global $tDelta = _WinTime_GetUTCToLocalFileTimeDelta() ; in offline mode we must read the values off the registry..
 
 Global Const $GUI_EVENT_CLOSE = -3
@@ -111,10 +111,17 @@ $buttonMftFile = GUICtrlCreateButton("Choose $MFT", 440, 80, 100, 20)
 GUICtrlSetOnEvent($buttonMftFile, "_HandleEvent")
 $buttonOutput = GUICtrlCreateButton("Choose CSV", 440, 110, 100, 20)
 GUICtrlSetOnEvent($buttonOutput, "_HandleEvent")
-$buttonStart = GUICtrlCreateButton("Start Processing", 300, 80, 120, 40)
+$buttonStart = GUICtrlCreateButton("Start Processing", 290, 90, 120, 40)
 GUICtrlSetOnEvent($buttonStart, "_HandleEvent")
-$Label1 = GUICtrlCreateLabel("Adjust timestamps to specific region:",20,90,180,20)
-$Combo2 = GUICtrlCreateCombo("", 200, 90, 90, 25)
+$Label1 = GUICtrlCreateLabel("Adjust timestamps to specific region:",20,50,180,20)
+$Combo2 = GUICtrlCreateCombo("", 230, 50, 90, 25)
+GUICtrlCreateLabel("Set output format:",20,70,100,20)
+$checkl2t = GUICtrlCreateCheckbox("log2timeline", 120, 70, 130, 20)
+GUICtrlSetState($checkl2t, $GUI_UNCHECKED)
+$checkbodyfile = GUICtrlCreateCheckbox("bodyfile", 120, 90, 130, 20)
+GUICtrlSetState($checkbodyfile, $GUI_UNCHECKED)
+$checkdefaultall = GUICtrlCreateCheckbox("dump everything", 120, 110, 130, 20)
+GUICtrlSetState($checkdefaultall, $GUI_CHECKED)
 $myctredit = GUICtrlCreateEdit("Extracting files from NTFS formatted volume" & @CRLF, 0, 135, 560, 115, $ES_AUTOVSCROLL + $WS_VSCROLL)
 _GetPhysicalDriveInfo()
 _InjectTimeZoneInfo()
@@ -197,6 +204,26 @@ EndFunc
 Func _ExtractSystemfile()
 	Local $nBytes
 	Global $DataQ[1], $RUN_VCN[1], $RUN_Clusters[1]
+	If Int(GUICtrlRead($checkl2t) + GUICtrlRead($checkbodyfile) + GUICtrlRead($checkdefaultall)) <> 9 Then
+		_DebugOut("Error: Output format can only be one of the options (not more than 1).")
+		Return
+	EndIf
+	If GUICtrlRead($checkl2t) = 1 Then
+		$Dol2t = True
+		$DateTimeFormat = 2
+		$DTPrecision = 1
+		_DebugOut("Using output format: log2timeline")
+	ElseIf GUICtrlRead($checkbodyfile) = 1 Then
+		$DoBodyfile = True
+		$DateTimeFormat = 2
+		$DTPrecision = 1
+		_DebugOut("Using output format: bodyfile")
+	ElseIf GUICtrlRead($checkdefaultall) = 1 Then
+		$DoDefaultAll = True
+		$DateTimeFormat = 6
+		$DTPrecision = 2
+		_DebugOut("Using output format: all")
+	EndIf
 	_WriteCSVHeader()
 	If (Not $IsImage and Not $IsMftFile) Then
 		If DriveGetFileSystem($TargetDrive) <> "NTFS" Then		;read boot sector and extract $MFT data
@@ -260,14 +287,22 @@ Func _ExtractSystemfile()
 			_ClearVar()
 			$Signature = "ZERO"
 			$RecordOffset = "0x" & Hex($RecordOffsetDec)
-			_WriteCSV()
+			If $DoDefaultAll Then
+				_WriteCSV()
+			Else
+				_WriteCSV2()
+			EndIf
 			$Signature = ""
 			ContinueLoop
 		Else
 			_ClearVar()
 			$Signature = "UNKNOWN"
 			$RecordOffset = "0x" & Hex($RecordOffsetDec)
-			_WriteCSV()
+			If $DoDefaultAll Then
+				_WriteCSV()
+			Else
+				_WriteCSV2()
+			EndIf
 			$Signature = ""
 			ContinueLoop
 		EndIf
@@ -276,14 +311,18 @@ Func _ExtractSystemfile()
 		If $DATA_Number > 0 Then $Alternate_Data_Stream = $DATA_Number - 1
 		$RecordOffset = "0x" & Hex($RecordOffsetDec)
 		$CTimeTest = _Test_SI2FN_CTime($SI_CTime, $FN_CTime)
-		_WriteCSV()
+		If $DoDefaultAll Then
+			_WriteCSV()
+		Else
+			_WriteCSV2()
+		EndIf
 		$Signature = ""
 	Next
 	_WinAPI_CloseHandle($hDisk)
 	AdlibUnRegister()
 	GUIDelete($Progress)
-	_DisplayInfo("Finished extraction of files." & @crlf & @crlf)
-	_DebugOut("Finished extraction of files.")
+	_DisplayInfo("Finished processing " & $Total & " records" & @crlf)
+	_DebugOut("Finished processing " & $Total & " records.")
 EndFunc
 
 Func _DoFileTree()
@@ -954,7 +993,7 @@ Func _ParserCodeOldVersion($MFTEntry)
 			Case $AttributeType = $OBJECT_ID
 				$AttributeKnown = 1
 				$OBJECT_ID_ON = "TRUE"
-				_Get_ObjectID($MFTEntry, $NextAttributeOffset, $AttributeSize)
+				If $DoDefaultAll Then _Get_ObjectID($MFTEntry, $NextAttributeOffset, $AttributeSize)
 
 			Case $AttributeType = $SECURITY_DESCRIPTOR
 				$AttributeKnown = 1
@@ -964,12 +1003,12 @@ Func _ParserCodeOldVersion($MFTEntry)
 			Case $AttributeType = $VOLUME_NAME
 				$AttributeKnown = 1
 				$VOLUME_NAME_ON = "TRUE"
-				_Get_VolumeName($MFTEntry, $NextAttributeOffset, $AttributeSize)
+				If $DoDefaultAll Then _Get_VolumeName($MFTEntry, $NextAttributeOffset, $AttributeSize)
 
 			Case $AttributeType = $VOLUME_INFORMATION
 				$AttributeKnown = 1
 				$VOLUME_INFORMATION_ON = "TRUE"
-				_Get_VolumeInformation($MFTEntry, $NextAttributeOffset, $AttributeSize)
+				If $DoDefaultAll Then _Get_VolumeInformation($MFTEntry, $NextAttributeOffset, $AttributeSize)
 
 			Case $AttributeType = $DATA
 				$AttributeKnown = 1
@@ -1108,6 +1147,7 @@ Func _Get_StandardInformation($MFTEntry, $SI_Offset, $SI_Size)
 	$SI_RTime = _WinTime_UTCFileTimeFormat(_HexToDec($SI_RTime) - $tDelta, $DateTimeFormat, 2)
 	$SI_RTime = $SI_RTime & ":" & _FillZero(StringRight($SI_RTime_tmp, 4))
 	;
+	If Not $DoDefaultAll Then Return
 	$SI_FilePermission = StringMid($MFTEntry, $SI_Offset + 112, 8)
 	$SI_FilePermission = StringMid($SI_FilePermission, 7, 2) & StringMid($SI_FilePermission, 5, 2) & StringMid($SI_FilePermission, 3, 2) & StringMid($SI_FilePermission, 1, 2)
 	$SI_FilePermission = _File_Permissions("0x" & $SI_FilePermission)
@@ -1241,6 +1281,7 @@ Func _Get_FileName($MFTEntry, $FN_Offset, $FN_Size, $FN_Number)
 		$FN_FileName_2 = _UnicodeHexToStr($FN_FileName_2)
 		If StringLen($FN_FileName_2) <> $FN_NameLength_2 Then $INVALID_FILENAME_2 = 1
 	EndIf
+	If Not $DoDefaultAll Then Return
 	If $FN_Number = 3 Then
 		$FN_ParentReferenceNo_3 = StringMid($MFTEntry, $FN_Offset + 48, 12)
 		$FN_ParentReferenceNo_3 = StringMid($FN_ParentReferenceNo_3, 11, 2) & StringMid($FN_ParentReferenceNo_3, 9, 2) & StringMid($FN_ParentReferenceNo_3, 7, 2) & StringMid($FN_ParentReferenceNo_3, 5, 2) & StringMid($FN_ParentReferenceNo_3, 3, 2) & StringMid($FN_ParentReferenceNo_3, 1, 2)
@@ -1807,6 +1848,33 @@ Func _FillZero($inp)
 	Return $out
 EndFunc   ;==>_FillZero
 
+Func _WriteCSV2()
+	If $dol2t Then
+;		If $SI_CTime <> "" Then
+			FileWriteLine($csv, '"' & StringLeft($SI_CTime,10) & '","' & StringMid($SI_CTime,12,8) & '","' & $UTCconfig & '","' & "C" & '","' & "MFT" & '","' & $HEADER_Flags & '","' & "File Create" & '","' & "" & '","' & "" & '","' & "SI" & '","' & $FN_FileNamePath & '","' & "" & '","' & $FN_FileName & '","' & $HEADER_MFTREcordNumber & '","' & $RecordActive & '","' & "" & '","' & "" & '"' & @CRLF)
+			FileWriteLine($csv, '"' & StringLeft($SI_ATime,10) & '","' & StringMid($SI_ATime,12,8) & '","' & $UTCconfig & '","' & "M" & '","' & "MFT" & '","' & $HEADER_Flags & '","' & "File Modified" & '","' & "" & '","' & "" & '","' & "SI" & '","' & $FN_FileNamePath & '","' & "" & '","' & $FN_FileName & '","' & $HEADER_MFTREcordNumber & '","' & $RecordActive & '","' & "" & '","' & "" & '"' & @CRLF)
+			FileWriteLine($csv, '"' & StringLeft($SI_MTime,10) & '","' & StringMid($SI_MTime,12,8) & '","' & $UTCconfig & '","' & "B" & '","' & "MFT" & '","' & $HEADER_Flags & '","' & "MFT Entry" & '","' & "" & '","' & "" & '","' & "SI" & '","' & $FN_FileNamePath & '","' & "" & '","' & $FN_FileName & '","' & $HEADER_MFTREcordNumber & '","' & $RecordActive & '","' & "" & '","' & "" & '"' & @CRLF)
+			FileWriteLine($csv, '"' & StringLeft($SI_RTime,10) & '","' & StringMid($SI_RTime,12,8) & '","' & $UTCconfig & '","' & "A" & '","' & "MFT" & '","' & $HEADER_Flags & '","' & "File Last Access" & '","' & "" & '","' & "" & '","' & "SI" & '","' & $FN_FileNamePath & '","' & "" & '","' & $FN_FileName & '","' & $HEADER_MFTREcordNumber & '","' & $RecordActive & '","' & "" & '","' & "" & '"' & @CRLF)
+;		EndIf
+		If $FN_CTime <> "" Then
+			FileWriteLine($csv, '"' & StringLeft($FN_CTime,10) & '","' & StringMid($FN_CTime,12,8) & '","' & $UTCconfig & '","' & "C" & '","' & "MFT" & '","' & $HEADER_Flags & '","' & "File Create" & '","' & "" & '","' & "" & '","' & "FN1" & '","' & $FN_FileNamePath & '","' & "" & '","' & $FN_FileName & '","' & $HEADER_MFTREcordNumber & '","' & $RecordActive & '","' & "" & '","' & "" & '"' & @CRLF)
+			FileWriteLine($csv, '"' & StringLeft($FN_ATime,10) & '","' & StringMid($FN_ATime,12,8) & '","' & $UTCconfig & '","' & "M" & '","' & "MFT" & '","' & $HEADER_Flags & '","' & "File Modified" & '","' & "" & '","' & "" & '","' & "FN1" & '","' & $FN_FileNamePath & '","' & "" & '","' & $FN_FileName & '","' & $HEADER_MFTREcordNumber & '","' & $RecordActive & '","' & "" & '","' & "" & '"' & @CRLF)
+			FileWriteLine($csv, '"' & StringLeft($FN_MTime,10) & '","' & StringMid($FN_MTime,12,8) & '","' & $UTCconfig & '","' & "B" & '","' & "MFT" & '","' & $HEADER_Flags & '","' & "MFT Entry" & '","' & "" & '","' & "" & '","' & "FN1" & '","' & $FN_FileNamePath & '","' & "" & '","' & $FN_FileName & '","' & $HEADER_MFTREcordNumber & '","' & $RecordActive & '","' & "" & '","' & "" & '"' & @CRLF)
+			FileWriteLine($csv, '"' & StringLeft($FN_RTime,10) & '","' & StringMid($FN_RTime,12,8) & '","' & $UTCconfig & '","' & "A" & '","' & "MFT" & '","' & $HEADER_Flags & '","' & "File Last Access" & '","' & "" & '","' & "" & '","' & "FN1" & '","' & $FN_FileNamePath & '","' & "" & '","' & $FN_FileName & '","' & $HEADER_MFTREcordNumber & '","' & $RecordActive & '","' & "" & '","' & "" & '"' & @CRLF)
+		EndIf
+		If $FN_CTime_2 <> "" Then
+			FileWriteLine($csv, '"' & StringLeft($FN_CTime_2,10) & '","' & StringMid($FN_CTime_2,12,8) & '","' & $UTCconfig & '","' & "C" & '","' & "MFT" & '","' & $HEADER_Flags & '","' & "File Create" & '","' & "" & '","' & "" & '","' & "FN2" & '","' & $FN_FileNamePath & '","' & "" & '","' & $FN_FileName_2 & '","' & $HEADER_MFTREcordNumber & '","' & $RecordActive & '","' & "" & '","' & "" & '"' & @CRLF)
+			FileWriteLine($csv, '"' & StringLeft($FN_ATime_2,10) & '","' & StringMid($FN_ATime_2,12,8) & '","' & $UTCconfig & '","' & "M" & '","' & "MFT" & '","' & $HEADER_Flags & '","' & "File Modified" & '","' & "" & '","' & "" & '","' & "FN2" & '","' & $FN_FileNamePath & '","' & "" & '","' & $FN_FileName_2 & '","' & $HEADER_MFTREcordNumber & '","' & $RecordActive & '","' & "" & '","' & "" & '"' & @CRLF)
+			FileWriteLine($csv, '"' & StringLeft($FN_MTime_2,10) & '","' & StringMid($FN_MTime_2,12,8) & '","' & $UTCconfig & '","' & "B" & '","' & "MFT" & '","' & $HEADER_Flags & '","' & "MFT Entry" & '","' & "" & '","' & "" & '","' & "FN2" & '","' & $FN_FileNamePath & '","' & "" & '","' & $FN_FileName_2 & '","' & $HEADER_MFTREcordNumber & '","' & $RecordActive & '","' & "" & '","' & "" & '"' & @CRLF)
+			FileWriteLine($csv, '"' & StringLeft($FN_RTime_2,10) & '","' & StringMid($FN_RTime_2,12,8) & '","' & $UTCconfig & '","' & "A" & '","' & "MFT" & '","' & $HEADER_Flags & '","' & "File Last Access" & '","' & "" & '","' & "" & '","' & "FN2" & '","' & $FN_FileNamePath & '","' & "" & '","' & $FN_FileName_2 & '","' & $HEADER_MFTREcordNumber & '","' & $RecordActive & '","' & "" & '","' & "" & '"' & @CRLF)
+		EndIf
+	ElseIf $DoBodyfile Then
+;		If $SI_CTime <> "" Then
+			FileWriteLine($csv, '"' & "" & '"|"' & $FN_FileName & '"|"' & $HEADER_MFTREcordNumber & '"|"' & "" & '"|"' & "" & '"|"' & "" & '"|"' & $FileSizeBytes & '"|"' & StringLeft($SI_ATime,19) & '"|"' & StringLeft($SI_MTime,19) & '"|"' & StringLeft($SI_CTime,19) & '"|"' & StringLeft($SI_RTime,19) & '"' & @CRLF)
+;		EndIf
+	EndIf
+EndFunc
+
 Func _WriteCSV()
 	FileWriteLine($csv, '"' & $RecordOffset & '","' & $Signature & '","' & $IntegrityCheck & '","' & $HEADER_MFTREcordNumber & '","' & $HEADER_SequenceNo & '","' & $Header_HardLinkCount & '","' & $FN_ParentReferenceNo & '","' & $FN_ParentSequenceNo & '","' & $FN_FileName & '","' & $FN_FileNamePath & '","' & $HEADER_Flags & '","' & $RecordActive & '","' & $FileSizeBytes & '","' & $INVALID_FILENAME & '","' & $SI_FilePermission & '","' & $FN_Flags & '","' & $FN_NameType & '","' & $Alternate_Data_Stream & '","' & $SI_CTime & '","' & $SI_ATime & '","' & $SI_MTime & '","' & $SI_RTime & '","' & _
 			$MSecTest & '","' & $FN_CTime & '","' & $FN_ATime & '","' & $FN_MTime & '","' & $FN_RTime & '","' & $CTimeTest & '","' & $FN_AllocSize & '","' & $FN_RealSize & '","' & $SI_USN & '","' & $DATA_Name & '","' & $DATA_Flags & '","' & $DATA_LengthOfAttribute & '","' & $DATA_IndexedFlag & '","' & $DATA_VCNs & '","' & $DATA_NonResidentFlag & '","' & $DATA_CompressionUnitSize & '","' & $HEADER_LSN & '","' & _
@@ -1827,13 +1895,18 @@ EndFunc
 
 Func _WriteCSVHeader()
 FileWriteLine($csv, "#	Timestamps presented in UTC " & $UTCconfig & @CRLF)
-$csv_header = 'RecordOffset,Signature,IntegrityCheck,HEADER_MFTREcordNumber,HEADER_SequenceNo,Header_HardLinkCount,FN_ParentReferenceNo,FN_ParentSequenceNo,FN_FileName,FilePath,HEADER_Flags,RecordActive,FileSizeBytes,INVALID_FILENAME,SI_FilePermission,FN_Flags,FN_NameType,ADS,SI_CTime,SI_ATime,SI_MTime,SI_RTime,MSecTest,'
-$csv_header &= 'FN_CTime,FN_ATime,FN_MTime,FN_RTime,CTimeTest,FN_AllocSize,FN_RealSize,SI_USN,DATA_Name,DATA_Flags,DATA_LengthOfAttribute,DATA_IndexedFlag,DATA_VCNs,DATA_NonResidentFlag,DATA_CompressionUnitSize,HEADER_LSN,HEADER_RecordRealSize,'
-$csv_header &= 'HEADER_RecordAllocSize,HEADER_BaseRecord,HEADER_BaseRecSeqNo,HEADER_NextAttribID,DATA_AllocatedSize,DATA_RealSize,DATA_InitializedStreamSize,SI_HEADER_Flags,SI_MaxVersions,SI_VersionNumber,SI_ClassID,SI_OwnerID,SI_SecurityID,FN_CTime_2,FN_ATime_2,FN_MTime_2,'
-$csv_header &= 'FN_RTime_2,FN_AllocSize_2,FN_RealSize_2,FN_Flags_2,FN_NameLength_2,FN_NameType_2,FN_FileName_2,INVALID_FILENAME_2,GUID_ObjectID,GUID_BirthVolumeID,GUID_BirthObjectID,GUID_BirthDomainID,VOLUME_NAME_NAME,VOL_INFO_NTFS_VERSION,VOL_INFO_FLAGS,FN_CTime_3,FN_ATime_3,FN_MTime_3,FN_RTime_3,FN_AllocSize_3,FN_RealSize_3,FN_Flags_3,FN_NameLength_3,FN_NameType_3,FN_FileName_3,INVALID_FILENAME_3,FN_CTime_4,'
-$csv_header &= 'FN_ATime_4,FN_MTime_4,FN_RTime_4,FN_AllocSize_4,FN_RealSize_4,FN_Flags_4,FN_NameLength_4,FN_NameType_4,FN_FileName_4,DATA_Name_2,DATA_NonResidentFlag_2,DATA_Flags_2,DATA_LengthOfAttribute_2,DATA_IndexedFlag_2,DATA_StartVCN_2,DATA_LastVCN_2,'
-$csv_header &= 'DATA_VCNs_2,DATA_CompressionUnitSize_2,DATA_AllocatedSize_2,DATA_RealSize_2,DATA_InitializedStreamSize_2,DATA_Name_3,DATA_NonResidentFlag_3,DATA_Flags_3,DATA_LengthOfAttribute_3,DATA_IndexedFlag_3,DATA_StartVCN_3,DATA_LastVCN_3,DATA_VCNs_3,'
-$csv_header &= 'DATA_CompressionUnitSize_3,DATA_AllocatedSize_3,DATA_RealSize_3,DATA_InitializedStreamSize_3,STANDARD_INFORMATION_ON,ATTRIBUTE_LIST_ON,FILE_NAME_ON,OBJECT_ID_ON,SECURITY_DESCRIPTOR_ON,VOLUME_NAME_ON,VOLUME_INFORMATION_ON,DATA_ON,INDEX_ROOT_ON,INDEX_ALLOCATION_ON,BITMAP_ON,REPARSE_POINT_ON,EA_INFORMATION_ON,EA_ON,PROPERTY_SET_ON,LOGGED_UTILITY_STREAM_ON'
+If $DoDefaultAll Then
+	$csv_header = 'RecordOffset,Signature,IntegrityCheck,HEADER_MFTREcordNumber,HEADER_SequenceNo,Header_HardLinkCount,FN_ParentReferenceNo,FN_ParentSequenceNo,FN_FileName,FilePath,HEADER_Flags,RecordActive,FileSizeBytes,INVALID_FILENAME,SI_FilePermission,FN_Flags,FN_NameType,ADS,SI_CTime,SI_ATime,SI_MTime,SI_RTime,MSecTest,'
+	$csv_header &= 'FN_CTime,FN_ATime,FN_MTime,FN_RTime,CTimeTest,FN_AllocSize,FN_RealSize,SI_USN,DATA_Name,DATA_Flags,DATA_LengthOfAttribute,DATA_IndexedFlag,DATA_VCNs,DATA_NonResidentFlag,DATA_CompressionUnitSize,HEADER_LSN,HEADER_RecordRealSize,'
+	$csv_header &= 'HEADER_RecordAllocSize,HEADER_BaseRecord,HEADER_BaseRecSeqNo,HEADER_NextAttribID,DATA_AllocatedSize,DATA_RealSize,DATA_InitializedStreamSize,SI_HEADER_Flags,SI_MaxVersions,SI_VersionNumber,SI_ClassID,SI_OwnerID,SI_SecurityID,FN_CTime_2,FN_ATime_2,FN_MTime_2,'
+	$csv_header &= 'FN_RTime_2,FN_AllocSize_2,FN_RealSize_2,FN_Flags_2,FN_NameLength_2,FN_NameType_2,FN_FileName_2,INVALID_FILENAME_2,GUID_ObjectID,GUID_BirthVolumeID,GUID_BirthObjectID,GUID_BirthDomainID,VOLUME_NAME_NAME,VOL_INFO_NTFS_VERSION,VOL_INFO_FLAGS,FN_CTime_3,FN_ATime_3,FN_MTime_3,FN_RTime_3,FN_AllocSize_3,FN_RealSize_3,FN_Flags_3,FN_NameLength_3,FN_NameType_3,FN_FileName_3,INVALID_FILENAME_3,FN_CTime_4,'
+	$csv_header &= 'FN_ATime_4,FN_MTime_4,FN_RTime_4,FN_AllocSize_4,FN_RealSize_4,FN_Flags_4,FN_NameLength_4,FN_NameType_4,FN_FileName_4,DATA_Name_2,DATA_NonResidentFlag_2,DATA_Flags_2,DATA_LengthOfAttribute_2,DATA_IndexedFlag_2,DATA_StartVCN_2,DATA_LastVCN_2,'
+	$csv_header &= 'DATA_VCNs_2,DATA_CompressionUnitSize_2,DATA_AllocatedSize_2,DATA_RealSize_2,DATA_InitializedStreamSize_2,DATA_Name_3,DATA_NonResidentFlag_3,DATA_Flags_3,DATA_LengthOfAttribute_3,DATA_IndexedFlag_3,DATA_StartVCN_3,DATA_LastVCN_3,DATA_VCNs_3,'
+ElseIf $dol2t Then
+	$csv_header = 'Date,Time,Timezone,MACB,Source,SourceType,Type,User,Host,Short,Desc,Version,Filename,Inode,Notes,Format,Extra'
+ElseIf $DoBodyfile Then
+	$csv_header = 'MD5|name|inode|mode_as_string|UID|GID|size|atime|mtime|ctime|crtime'
+EndIf
 FileWriteLine($csv, $csv_header & @CRLF)
 EndFunc
 
