@@ -14,7 +14,7 @@ Input can be any of the following:
 
 There is an option to choose which UTC region to decode for. For instance you have a disk image and the target system had a timezone configuration of UTC -9.30, then you can configure it like that and get the timestamps directly into UTC 0.00. Default is UTC 0.00, and if running on a live system, there is no need to do anything as timestamps are automatically set to UTC 0.00. 
 
-The format of output can be chosen. Currently it is possible to from:
+The format of output can be chosen. Currently it is possible to choose from:
   * All (will write to csv everything it can). Default set.
   * log2timeline: http://code.google.com/p/log2timeline/wiki/l2t_csv
   * bodyfile (v3.x): http://wiki.sleuthkit.org/index.php?title=Body_file
