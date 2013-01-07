@@ -14,6 +14,11 @@ Input can be any of the following:
 
 There is an option to choose which UTC region to decode for. For instance you have a disk image and the target system had a timezone configuration of UTC -9.30, then you can configure it like that and get the timestamps directly into UTC 0.00. Default is UTC 0.00, and if running on a live system, there is no need to do anything as timestamps are automatically set to UTC 0.00. 
 
+The format of output can be chosen. Currently it is possible to from:
+  * All (will write to csv everything it can). Default set.
+  * log2timeline: http://code.google.com/p/log2timeline/wiki/l2t_csv
+  * bodyfile (v3.x): http://wiki.sleuthkit.org/index.php?title=Body_file
+
 The focus have been on the attributes $STANDARD_INFORMATION, $FILE_NAME, $DATA and $VOLUME_ID as well as the file record headers themselves. More attributes will be added for sure.  Here is the listing of data that is currently covered (more descriptive names may be chosen in the future);
   * RecordOffset
   * Signature
@@ -179,9 +184,11 @@ Resolved paths may not be correct for deleted files/folders. That is because its
 
 = Latest Version =
 
-v2.0.0.0
+v2.0.0.1
 
 = Changelog =
+
+v2.0.0.1. Added support for choosing output format (all/default, log2timeline, bodyfile)
 
 v2.0.0.0. Fixed bug that caused csv to be messed up when there where commas in filename. New features include support disk and partition images, live system analysis, logfile writer, nicer gui, paths resolved, option to choose any UTC region.
 
