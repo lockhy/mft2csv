@@ -184,9 +184,11 @@ Resolved paths may not be correct for deleted files/folders. That is because its
 
 = Latest Version =
 
-v2.0.0.1
+v2.0.0.2
 
 = Changelog =
+
+v2.0.0.2. Speed improvement by 30 %. Fixed bug where some columns was missing in csv with the All format.
 
 v2.0.0.1. Added support for choosing output format (all/default, log2timeline, bodyfile)
 
