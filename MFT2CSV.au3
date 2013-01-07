@@ -3,9 +3,10 @@
 #AutoIt3Wrapper_UseX64=y
 #AutoIt3Wrapper_Res_Comment=Decode $MFT and write to CSV
 #AutoIt3Wrapper_Res_Description=Decode $MFT and write to CSV
-#AutoIt3Wrapper_Res_Fileversion=2.0.0.1
+#AutoIt3Wrapper_Res_Fileversion=2.0.0.2
 #AutoIt3Wrapper_Res_requestedExecutionLevel=asInvoker
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
+
 #include <array.au3>
 #Include <WinAPIEx.au3> ; http://www.autoitscript.com/forum/topic/98712-winapiex-udf/
 #include <String.au3>
@@ -901,9 +902,11 @@ Func _ParserCodeOldVersion($MFTEntry)
 	$UpdSeqArrOffset = ""
 	$UpdSeqArrSize = ""
 	$UpdSeqArrOffset = StringMid($MFTEntry, 11, 4)
-	$UpdSeqArrOffset = Dec(StringMid($UpdSeqArrOffset, 3, 2) & StringMid($UpdSeqArrOffset, 1, 2))
+	$UpdSeqArrOffset = Dec(_SwapEndian($UpdSeqArrOffset),2)
+;	$UpdSeqArrOffset = Dec(StringMid($UpdSeqArrOffset, 3, 2) & StringMid($UpdSeqArrOffset, 1, 2))
 	$UpdSeqArrSize = StringMid($MFTEntry, 15, 4)
-	$UpdSeqArrSize = Dec(StringMid($UpdSeqArrSize, 3, 2) & StringMid($UpdSeqArrSize, 1, 2))
+	$UpdSeqArrSize = Dec(_SwapEndian($UpdSeqArrSize),2)
+;	$UpdSeqArrSize = Dec(StringMid($UpdSeqArrSize, 3, 2) & StringMid($UpdSeqArrSize, 1, 2))
 	$UpdSeqArr = StringMid($MFTEntry, 3 + ($UpdSeqArrOffset * 2), $UpdSeqArrSize * 2 * 2)
 	$UpdSeqArrPart0 = StringMid($UpdSeqArr, 1, 4)
 	$UpdSeqArrPart1 = StringMid($UpdSeqArr, 5, 4)
@@ -917,11 +920,11 @@ Func _ParserCodeOldVersion($MFTEntry)
 	EndIf
 	$MFTEntry = StringMid($MFTEntry, 1, 1022) & $UpdSeqArrPart1 & StringMid($MFTEntry, 1027, 1020) & $UpdSeqArrPart2 ; Stupid fixup to not corrupt decoding of attributes that are located past 0x1fd within record
 	$HEADER_LSN = StringMid($MFTEntry, 19, 16)
-	$HEADER_LSN = Dec(StringMid($HEADER_LSN, 15, 2) & StringMid($HEADER_LSN, 13, 2) & StringMid($HEADER_LSN, 11, 2) & StringMid($HEADER_LSN, 9, 2) & StringMid($HEADER_LSN, 7, 2) & StringMid($HEADER_LSN, 5, 2) & StringMid($HEADER_LSN, 3, 2) & StringMid($HEADER_LSN, 1, 2))
+	$HEADER_LSN = Dec(_SwapEndian($HEADER_LSN),2)
 	$HEADER_SequenceNo = StringMid($MFTEntry, 35, 4)
-	$HEADER_SequenceNo = Dec(StringMid($HEADER_SequenceNo, 3, 2) & StringMid($HEADER_SequenceNo, 1, 2))
+	$HEADER_SequenceNo = Dec(_SwapEndian($HEADER_SequenceNo),2)
 	$Header_HardLinkCount = StringMid($MFTEntry,39,4)
-	$Header_HardLinkCount = Dec(StringMid($Header_HardLinkCount,3,2) & StringMid($Header_HardLinkCount,1,2))
+	$Header_HardLinkCount = Dec(_SwapEndian($Header_HardLinkCount),2)
 	$HEADER_Flags = StringMid($MFTEntry, 47, 4);00=deleted file,01=file,02=deleted folder,03=folder
 	Select
 		Case $HEADER_Flags = '0000'
@@ -947,31 +950,31 @@ Func _ParserCodeOldVersion($MFTEntry)
 			$RecordActive = 'UNKNOWN'
 	EndSelect
 	$HEADER_RecordRealSize = StringMid($MFTEntry, 51, 8)
-	$HEADER_RecordRealSize = Dec(StringMid($HEADER_RecordRealSize, 7, 2) & StringMid($HEADER_RecordRealSize, 5, 2) & StringMid($HEADER_RecordRealSize, 3, 2) & StringMid($HEADER_RecordRealSize, 1, 2))
+	$HEADER_RecordRealSize = Dec(_SwapEndian($HEADER_RecordRealSize),2)
 	$HEADER_RecordAllocSize = StringMid($MFTEntry, 59, 8)
-	$HEADER_RecordAllocSize = Dec(StringMid($HEADER_RecordAllocSize, 7, 2) & StringMid($HEADER_RecordAllocSize, 5, 2) & StringMid($HEADER_RecordAllocSize, 3, 2) & StringMid($HEADER_RecordAllocSize, 1, 2))
+	$HEADER_RecordAllocSize = Dec(_SwapEndian($HEADER_RecordAllocSize),2)
 	$HEADER_BaseRecord = StringMid($MFTEntry, 67, 12)
-	$HEADER_BaseRecord = Dec(StringMid($HEADER_BaseRecord, 7, 2) & StringMid($HEADER_BaseRecord, 5, 2) & StringMid($HEADER_BaseRecord, 3, 2) & StringMid($HEADER_BaseRecord, 1, 2))
+	$HEADER_BaseRecord = Dec(_SwapEndian($HEADER_BaseRecord),2)
 	$HEADER_BaseRecSeqNo = StringMid($MFTEntry, 79, 4)
-	$HEADER_BaseRecSeqNo = Dec(StringMid($HEADER_BaseRecSeqNo, 3, 2) & StringMid($HEADER_BaseRecSeqNo, 1, 2))
+	$HEADER_BaseRecSeqNo = Dec(_SwapEndian($HEADER_BaseRecSeqNo),2)
 	$HEADER_NextAttribID = StringMid($MFTEntry, 83, 4)
-	$HEADER_NextAttribID = "0x"&StringMid($HEADER_NextAttribID, 3, 2) & StringMid($HEADER_NextAttribID, 1, 2)
+	$HEADER_NextAttribID = "0x"&_SwapEndian($HEADER_NextAttribID)
 	If $UpdSeqArrOffset = 48 Then
 		$HEADER_MFTREcordNumber = StringMid($MFTEntry, 91, 8)
-		$HEADER_MFTREcordNumber = Dec(StringMid($HEADER_MFTREcordNumber, 7, 2) & StringMid($HEADER_MFTREcordNumber, 5, 2) & StringMid($HEADER_MFTREcordNumber, 3, 2) & StringMid($HEADER_MFTREcordNumber, 1, 2))
+		$HEADER_MFTREcordNumber = Dec(_SwapEndian($HEADER_MFTREcordNumber),2)
 	Else
 		$HEADER_MFTREcordNumber = "NT style"
 	EndIf
 	$NextAttributeOffset = (Dec(StringMid($MFTEntry, 43, 2)) * 2) + 3
 	$AttributeType = StringMid($MFTEntry, $NextAttributeOffset, 8)
 	$AttributeSize = StringMid($MFTEntry, $NextAttributeOffset + 8, 8)
-	$AttributeSize = Dec(StringMid($AttributeSize, 7, 2) & StringMid($AttributeSize, 5, 2) & StringMid($AttributeSize, 3, 2) & StringMid($AttributeSize, 1, 2))
+	$AttributeSize = Dec(_SwapEndian($AttributeSize),2)
 	$AttributeKnown = 1
 	While $AttributeKnown = 1
 		$NextAttributeType = StringMid($MFTEntry, $NextAttributeOffset, 8)
 		$AttributeType = $NextAttributeType
 		$AttributeSize = StringMid($MFTEntry, $NextAttributeOffset + 8, 8)
-		$AttributeSize = Dec(StringMid($AttributeSize, 7, 2) & StringMid($AttributeSize, 5, 2) & StringMid($AttributeSize, 3, 2) & StringMid($AttributeSize, 1, 2))
+		$AttributeSize = Dec(_SwapEndian($AttributeSize),2)
 		Select
 			Case $AttributeType = $STANDARD_INFORMATION
 				$AttributeKnown = 1
@@ -1070,7 +1073,7 @@ Func _ParserCodeOldVersion($MFTEntry)
 		$NextAttributeOffset = $NextAttributeOffset + ($AttributeSize * 2)
 	WEnd
 EndFunc
-
+#cs
 ; start: by jennico (jennicoattminusonlinedotde) ---------------------------
 Func _HexToDec($hx_hex)
 	If StringLeft($hx_hex, 2) = "0x" Then $hx_hex = StringMid($hx_hex, 3)
@@ -1116,53 +1119,53 @@ Func _DecToHex($hx_dec, $hx_length = 21)
 	Return $Ret
 EndFunc   ;==>_DecToHex
 ; end: by jennico (jennicoattminusonlinedotde) ------------------------------------
-
+#ce
 Func _Get_StandardInformation($MFTEntry, $SI_Offset, $SI_Size)
 	$SI_HEADER_Flags = StringMid($MFTEntry, $SI_Offset + 24, 4)
-	$SI_HEADER_Flags = StringMid($SI_HEADER_Flags, 3, 2) & StringMid($SI_HEADER_Flags, 1, 2)
+	$SI_HEADER_Flags = _SwapEndian($SI_HEADER_Flags)
 	$SI_HEADER_Flags = _AttribHeaderFlags("0x" & $SI_HEADER_Flags)
 	;
 	$SI_CTime = StringMid($MFTEntry, $SI_Offset + 48, 16)
-	$SI_CTime = StringMid($SI_CTime, 15, 2) & StringMid($SI_CTime, 13, 2) & StringMid($SI_CTime, 11, 2) & StringMid($SI_CTime, 9, 2) & StringMid($SI_CTime, 7, 2) & StringMid($SI_CTime, 5, 2) & StringMid($SI_CTime, 3, 2) & StringMid($SI_CTime, 1, 2)
+	$SI_CTime = _SwapEndian($SI_CTime)
 	$SI_CTime_tmp = _WinTime_UTCFileTimeToLocalFileTime("0x" & $SI_CTime)
-	$SI_CTime = _WinTime_UTCFileTimeFormat(_HexToDec($SI_CTime) - $tDelta, $DateTimeFormat, 2)
+	$SI_CTime = _WinTime_UTCFileTimeFormat(Dec($SI_CTime,2) - $tDelta, $DateTimeFormat, 2)
 	$SI_CTime = $SI_CTime & ":" & _FillZero(StringRight($SI_CTime_tmp, 4))
 	$MSecTest = _Test_MilliSec($SI_CTime)
 	;
 	$SI_ATime = StringMid($MFTEntry, $SI_Offset + 64, 16)
-	$SI_ATime = StringMid($SI_ATime, 15, 2) & StringMid($SI_ATime, 13, 2) & StringMid($SI_ATime, 11, 2) & StringMid($SI_ATime, 9, 2) & StringMid($SI_ATime, 7, 2) & StringMid($SI_ATime, 5, 2) & StringMid($SI_ATime, 3, 2) & StringMid($SI_ATime, 1, 2)
+	$SI_ATime = _SwapEndian($SI_ATime)
 	$SI_ATime_tmp = _WinTime_UTCFileTimeToLocalFileTime("0x" & $SI_ATime)
-	$SI_ATime = _WinTime_UTCFileTimeFormat(_HexToDec($SI_ATime) - $tDelta, $DateTimeFormat, 2)
+	$SI_ATime = _WinTime_UTCFileTimeFormat(Dec($SI_ATime,2) - $tDelta, $DateTimeFormat, 2)
 	$SI_ATime = $SI_ATime & ":" & _FillZero(StringRight($SI_ATime_tmp, 4))
 	;
 	$SI_MTime = StringMid($MFTEntry, $SI_Offset + 80, 16)
-	$SI_MTime = StringMid($SI_MTime, 15, 2) & StringMid($SI_MTime, 13, 2) & StringMid($SI_MTime, 11, 2) & StringMid($SI_MTime, 9, 2) & StringMid($SI_MTime, 7, 2) & StringMid($SI_MTime, 5, 2) & StringMid($SI_MTime, 3, 2) & StringMid($SI_MTime, 1, 2)
+	$SI_MTime = _SwapEndian($SI_MTime)
 	$SI_MTime_tmp = _WinTime_UTCFileTimeToLocalFileTime("0x" & $SI_MTime)
-	$SI_MTime = _WinTime_UTCFileTimeFormat(_HexToDec($SI_MTime) - $tDelta, $DateTimeFormat, 2)
+	$SI_MTime = _WinTime_UTCFileTimeFormat(Dec($SI_MTime,2) - $tDelta, $DateTimeFormat, 2)
 	$SI_MTime = $SI_MTime & ":" & _FillZero(StringRight($SI_MTime_tmp, 4))
 	;
 	$SI_RTime = StringMid($MFTEntry, $SI_Offset + 96, 16)
-	$SI_RTime = StringMid($SI_RTime, 15, 2) & StringMid($SI_RTime, 13, 2) & StringMid($SI_RTime, 11, 2) & StringMid($SI_RTime, 9, 2) & StringMid($SI_RTime, 7, 2) & StringMid($SI_RTime, 5, 2) & StringMid($SI_RTime, 3, 2) & StringMid($SI_RTime, 1, 2)
+	$SI_RTime = _SwapEndian($SI_RTime)
 	$SI_RTime_tmp = _WinTime_UTCFileTimeToLocalFileTime("0x" & $SI_RTime)
-	$SI_RTime = _WinTime_UTCFileTimeFormat(_HexToDec($SI_RTime) - $tDelta, $DateTimeFormat, 2)
+	$SI_RTime = _WinTime_UTCFileTimeFormat(Dec($SI_RTime,2) - $tDelta, $DateTimeFormat, 2)
 	$SI_RTime = $SI_RTime & ":" & _FillZero(StringRight($SI_RTime_tmp, 4))
 	;
 	If Not $DoDefaultAll Then Return
 	$SI_FilePermission = StringMid($MFTEntry, $SI_Offset + 112, 8)
-	$SI_FilePermission = StringMid($SI_FilePermission, 7, 2) & StringMid($SI_FilePermission, 5, 2) & StringMid($SI_FilePermission, 3, 2) & StringMid($SI_FilePermission, 1, 2)
+	$SI_FilePermission = _SwapEndian($SI_FilePermission)
 	$SI_FilePermission = _File_Permissions("0x" & $SI_FilePermission)
 	$SI_MaxVersions = StringMid($MFTEntry, $SI_Offset + 120, 8)
-	$SI_MaxVersions = Dec(StringMid($SI_MaxVersions, 7, 2) & StringMid($SI_MaxVersions, 5, 2) & StringMid($SI_MaxVersions, 3, 2) & StringMid($SI_MaxVersions, 1, 2))
+	$SI_MaxVersions = Dec(_SwapEndian($SI_MaxVersions),2)
 	$SI_VersionNumber = StringMid($MFTEntry, $SI_Offset + 128, 8)
-	$SI_VersionNumber = Dec(StringMid($SI_VersionNumber, 7, 2) & StringMid($SI_VersionNumber, 5, 2) & StringMid($SI_VersionNumber, 3, 2) & StringMid($SI_VersionNumber, 1, 2))
+	$SI_VersionNumber = Dec(_SwapEndian($SI_VersionNumber),2)
 	$SI_ClassID = StringMid($MFTEntry, $SI_Offset + 136, 8)
-	$SI_ClassID = Dec(StringMid($SI_ClassID, 7, 2) & StringMid($SI_ClassID, 5, 2) & StringMid($SI_ClassID, 3, 2) & StringMid($SI_ClassID, 1, 2))
+	$SI_ClassID = Dec(_SwapEndian($SI_ClassID),2)
 	$SI_OwnerID = StringMid($MFTEntry, $SI_Offset + 144, 8)
-	$SI_OwnerID = Dec(StringMid($SI_OwnerID, 7, 2) & StringMid($SI_OwnerID, 5, 2) & StringMid($SI_OwnerID, 3, 2) & StringMid($SI_OwnerID, 1, 2))
+	$SI_OwnerID = Dec(_SwapEndian($SI_OwnerID),2)
 	$SI_SecurityID = StringMid($MFTEntry, $SI_Offset + 152, 8)
-	$SI_SecurityID = Dec(StringMid($SI_SecurityID, 7, 2) & StringMid($SI_SecurityID, 5, 2) & StringMid($SI_SecurityID, 3, 2) & StringMid($SI_SecurityID, 1, 2))
+	$SI_SecurityID = Dec(_SwapEndian($SI_SecurityID),2)
 	$SI_USN = StringMid($MFTEntry, $SI_Offset + 176, 16)
-	$SI_USN = Dec(StringMid($SI_USN, 15, 2) & StringMid($SI_USN, 13, 2) & StringMid($SI_USN, 11, 2) & StringMid($SI_USN, 9, 2) & StringMid($SI_USN, 7, 2) & StringMid($SI_USN, 5, 2) & StringMid($SI_USN, 3, 2) & StringMid($SI_USN, 1, 2),2)
+	$SI_USN = Dec(_SwapEndian($SI_USN),2)
 EndFunc   ;==>_Get_StandardInformation
 
 Func _Get_AttributeList()
@@ -1173,40 +1176,40 @@ EndFunc   ;==>_Get_AttributeList
 Func _Get_FileName($MFTEntry, $FN_Offset, $FN_Size, $FN_Number)
 	If $FN_Number = 1 Then
 		$FN_ParentReferenceNo = StringMid($MFTEntry, $FN_Offset + 48, 12)
-		$FN_ParentReferenceNo = _HexToDec(StringMid($FN_ParentReferenceNo, 11, 2) & StringMid($FN_ParentReferenceNo, 9, 2) & StringMid($FN_ParentReferenceNo, 7, 2) & StringMid($FN_ParentReferenceNo, 5, 2) & StringMid($FN_ParentReferenceNo, 3, 2) & StringMid($FN_ParentReferenceNo, 1, 2))
+		$FN_ParentReferenceNo = Dec(_SwapEndian($FN_ParentReferenceNo),2)
 		$FN_ParentSequenceNo = StringMid($MFTEntry, $FN_Offset + 60, 4)
-		$FN_ParentSequenceNo = Dec(StringMid($FN_ParentSequenceNo, 3, 2) & StringMid($FN_ParentSequenceNo, 1, 2))
+		$FN_ParentSequenceNo = Dec(_SwapEndian($FN_ParentSequenceNo),2)
 		;
 		$FN_CTime = StringMid($MFTEntry, $FN_Offset + 64, 16)
-		$FN_CTime = StringMid($FN_CTime, 15, 2) & StringMid($FN_CTime, 13, 2) & StringMid($FN_CTime, 11, 2) & StringMid($FN_CTime, 9, 2) & StringMid($FN_CTime, 7, 2) & StringMid($FN_CTime, 5, 2) & StringMid($FN_CTime, 3, 2) & StringMid($FN_CTime, 1, 2)
+		$FN_CTime = _SwapEndian($FN_CTime)
 		$FN_CTime_tmp = _WinTime_UTCFileTimeToLocalFileTime("0x" & $FN_CTime)
-		$FN_CTime = _WinTime_UTCFileTimeFormat(_HexToDec($FN_CTime) - $tDelta, $DateTimeFormat, 2)
+		$FN_CTime = _WinTime_UTCFileTimeFormat(Dec($FN_CTime,2) - $tDelta, $DateTimeFormat, 2)
 		$FN_CTime = $FN_CTime & ":" & _FillZero(StringRight($FN_CTime_tmp, 4))
 		;
 		$FN_ATime = StringMid($MFTEntry, $FN_Offset + 80, 16)
-		$FN_ATime = StringMid($FN_ATime, 15, 2) & StringMid($FN_ATime, 13, 2) & StringMid($FN_ATime, 11, 2) & StringMid($FN_ATime, 9, 2) & StringMid($FN_ATime, 7, 2) & StringMid($FN_ATime, 5, 2) & StringMid($FN_ATime, 3, 2) & StringMid($FN_ATime, 1, 2)
+		$FN_ATime = _SwapEndian($FN_ATime)
 		$FN_ATime_tmp = _WinTime_UTCFileTimeToLocalFileTime("0x" & $FN_ATime)
-		$FN_ATime = _WinTime_UTCFileTimeFormat(_HexToDec($FN_ATime) - $tDelta, $DateTimeFormat, 2)
+		$FN_ATime = _WinTime_UTCFileTimeFormat(Dec($FN_ATime,2) - $tDelta, $DateTimeFormat, 2)
 		$FN_ATime = $FN_ATime & ":" & _FillZero(StringRight($FN_ATime_tmp, 4))
 		;
 		$FN_MTime = StringMid($MFTEntry, $FN_Offset + 96, 16)
-		$FN_MTime = StringMid($FN_MTime, 15, 2) & StringMid($FN_MTime, 13, 2) & StringMid($FN_MTime, 11, 2) & StringMid($FN_MTime, 9, 2) & StringMid($FN_MTime, 7, 2) & StringMid($FN_MTime, 5, 2) & StringMid($FN_MTime, 3, 2) & StringMid($FN_MTime, 1, 2)
+		$FN_MTime = _SwapEndian($FN_MTime)
 		$FN_MTime_tmp = _WinTime_UTCFileTimeToLocalFileTime("0x" & $FN_MTime)
-		$FN_MTime = _WinTime_UTCFileTimeFormat(_HexToDec($FN_MTime) - $tDelta, $DateTimeFormat, 2)
+		$FN_MTime = _WinTime_UTCFileTimeFormat(Dec($FN_MTime,2) - $tDelta, $DateTimeFormat, 2)
 		$FN_MTime = $FN_MTime & ":" & _FillZero(StringRight($FN_MTime_tmp, 4))
 		;
 		$FN_RTime = StringMid($MFTEntry, $FN_Offset + 112, 16)
-		$FN_RTime = StringMid($FN_RTime, 15, 2) & StringMid($FN_RTime, 13, 2) & StringMid($FN_RTime, 11, 2) & StringMid($FN_RTime, 9, 2) & StringMid($FN_RTime, 7, 2) & StringMid($FN_RTime, 5, 2) & StringMid($FN_RTime, 3, 2) & StringMid($FN_RTime, 1, 2)
+		$FN_RTime = _SwapEndian($FN_RTime)
 		$FN_RTime_tmp = _WinTime_UTCFileTimeToLocalFileTime("0x" & $FN_RTime)
-		$FN_RTime = _WinTime_UTCFileTimeFormat(_HexToDec($FN_RTime) - $tDelta, $DateTimeFormat, 2)
+		$FN_RTime = _WinTime_UTCFileTimeFormat(Dec($FN_RTime,2) - $tDelta, $DateTimeFormat, 2)
 		$FN_RTime = $FN_RTime & ":" & _FillZero(StringRight($FN_RTime_tmp, 4))
 		;
 		$FN_AllocSize = StringMid($MFTEntry, $FN_Offset + 128, 16)
-		$FN_AllocSize = _HexToDec(StringMid($FN_AllocSize, 15, 2) & StringMid($FN_AllocSize, 13, 2) & StringMid($FN_AllocSize, 11, 2) & StringMid($FN_AllocSize, 9, 2) & StringMid($FN_AllocSize, 7, 2) & StringMid($FN_AllocSize, 5, 2) & StringMid($FN_AllocSize, 3, 2) & StringMid($FN_AllocSize, 1, 2))
+		$FN_AllocSize = Dec(_SwapEndian($FN_AllocSize),2)
 		$FN_RealSize = StringMid($MFTEntry, $FN_Offset + 144, 16)
-		$FN_RealSize = _HexToDec(StringMid($FN_RealSize, 15, 2) & StringMid($FN_RealSize, 13, 2) & StringMid($FN_RealSize, 11, 2) & StringMid($FN_RealSize, 9, 2) & StringMid($FN_RealSize, 7, 2) & StringMid($FN_RealSize, 5, 2) & StringMid($FN_RealSize, 3, 2) & StringMid($FN_RealSize, 1, 2))
+		$FN_RealSize = Dec(_SwapEndian($FN_RealSize),2)
 		$FN_Flags = StringMid($MFTEntry, $FN_Offset + 160, 8)
-		$FN_Flags = StringMid($FN_Flags, 7, 2) & StringMid($FN_Flags, 5, 2) & StringMid($FN_Flags, 3, 2) & StringMid($FN_Flags, 1, 2)
+		$FN_Flags = _SwapEndian($FN_Flags)
 		$FN_Flags = _File_Permissions("0x" & $FN_Flags)
 		$FN_NameLength = StringMid($MFTEntry, $FN_Offset + 176, 2)
 		$FN_NameLength = Dec($FN_NameLength)
@@ -1230,37 +1233,37 @@ Func _Get_FileName($MFTEntry, $FN_Offset, $FN_Size, $FN_Number)
 	EndIf
 	If $FN_Number = 2 Then
 		$FN_ParentReferenceNo_2 = StringMid($MFTEntry, $FN_Offset + 48, 12)
-		$FN_ParentReferenceNo_2 = _HexToDec(StringMid($FN_ParentReferenceNo_2, 11, 2) & StringMid($FN_ParentReferenceNo_2, 9, 2) & StringMid($FN_ParentReferenceNo_2, 7, 2) & StringMid($FN_ParentReferenceNo_2, 5, 2) & StringMid($FN_ParentReferenceNo_2, 3, 2) & StringMid($FN_ParentReferenceNo_2, 1, 2))
+		$FN_ParentReferenceNo_2 = Dec(_SwapEndian($FN_ParentReferenceNo_2),2)
 		$FN_ParentSequenceNo_2 = StringMid($MFTEntry, $FN_Offset + 60, 4)
-		$FN_ParentSequenceNo_2 = Dec(StringMid($FN_ParentSequenceNo_2, 3, 2) & StringMid($FN_ParentSequenceNo_2, 1, 2))
+		$FN_ParentSequenceNo_2 = Dec(_SwapEndian($FN_ParentSequenceNo_2),2)
 		$FN_CTime_2 = StringMid($MFTEntry, $FN_Offset + 64, 16)
-		$FN_CTime_2 = StringMid($FN_CTime_2, 15, 2) & StringMid($FN_CTime_2, 13, 2) & StringMid($FN_CTime_2, 11, 2) & StringMid($FN_CTime_2, 9, 2) & StringMid($FN_CTime_2, 7, 2) & StringMid($FN_CTime_2, 5, 2) & StringMid($FN_CTime_2, 3, 2) & StringMid($FN_CTime_2, 1, 2)
+		$FN_CTime_2 = _SwapEndian($FN_CTime_2)
 		$FN_CTime_2_tmp = _WinTime_UTCFileTimeToLocalFileTime("0x" & $FN_CTime_2)
-		$FN_CTime_2 = _WinTime_UTCFileTimeFormat(_HexToDec($FN_CTime_2) - $tDelta, $DateTimeFormat, 2)
+		$FN_CTime_2 = _WinTime_UTCFileTimeFormat(Dec($FN_CTime_2,2) - $tDelta, $DateTimeFormat, 2)
 		$FN_CTime_2 = $FN_CTime_2 & ":" & _FillZero(StringRight($FN_CTime_2_tmp, 4))
 		;
 		$FN_ATime_2 = StringMid($MFTEntry, $FN_Offset + 80, 16)
-		$FN_ATime_2 = StringMid($FN_ATime_2, 15, 2) & StringMid($FN_ATime_2, 13, 2) & StringMid($FN_ATime_2, 11, 2) & StringMid($FN_ATime_2, 9, 2) & StringMid($FN_ATime_2, 7, 2) & StringMid($FN_ATime_2, 5, 2) & StringMid($FN_ATime_2, 3, 2) & StringMid($FN_ATime_2, 1, 2)
+		$FN_ATime_2 = _SwapEndian($FN_ATime_2)
 		$FN_ATime_2_tmp = _WinTime_UTCFileTimeToLocalFileTime("0x" & $FN_ATime_2)
-		$FN_ATime_2 = _WinTime_UTCFileTimeFormat(_HexToDec($FN_ATime_2) - $tDelta, $DateTimeFormat, 2)
+		$FN_ATime_2 = _WinTime_UTCFileTimeFormat(Dec($FN_ATime_2,2) - $tDelta, $DateTimeFormat, 2)
 		$FN_ATime_2 = $FN_ATime_2 & ":" & _FillZero(StringRight($FN_ATime_2_tmp, 4))
 		;
 		$FN_MTime_2 = StringMid($MFTEntry, $FN_Offset + 96, 16)
-		$FN_MTime_2 = StringMid($FN_MTime_2, 15, 2) & StringMid($FN_MTime_2, 13, 2) & StringMid($FN_MTime_2, 11, 2) & StringMid($FN_MTime_2, 9, 2) & StringMid($FN_MTime_2, 7, 2) & StringMid($FN_MTime_2, 5, 2) & StringMid($FN_MTime_2, 3, 2) & StringMid($FN_MTime_2, 1, 2)
+		$FN_MTime_2 = _SwapEndian($FN_MTime_2)
 		$FN_MTime_2_tmp = _WinTime_UTCFileTimeToLocalFileTime("0x" & $FN_MTime_2)
-		$FN_MTime_2 = _WinTime_UTCFileTimeFormat(_HexToDec($FN_MTime_2) - $tDelta, $DateTimeFormat, 2)
+		$FN_MTime_2 = _WinTime_UTCFileTimeFormat(Dec($FN_MTime_2,2) - $tDelta, $DateTimeFormat, 2)
 		$FN_MTime_2 = $FN_MTime_2 & ":" & _FillZero(StringRight($FN_MTime_2_tmp, 4))
 		;
 		$FN_RTime_2 = StringMid($MFTEntry, $FN_Offset + 112, 16)
-		$FN_RTime_2 = StringMid($FN_RTime_2, 15, 2) & StringMid($FN_RTime_2, 13, 2) & StringMid($FN_RTime_2, 11, 2) & StringMid($FN_RTime_2, 9, 2) & StringMid($FN_RTime_2, 7, 2) & StringMid($FN_RTime_2, 5, 2) & StringMid($FN_RTime_2, 3, 2) & StringMid($FN_RTime_2, 1, 2)
+		$FN_RTime_2 = _SwapEndian($FN_RTime_2)
 		$FN_RTime_2_tmp = _WinTime_UTCFileTimeToLocalFileTime("0x" & $FN_RTime_2)
-		$FN_RTime_2 = _WinTime_UTCFileTimeFormat(_HexToDec($FN_RTime_2) - $tDelta, $DateTimeFormat, 2)
+		$FN_RTime_2 = _WinTime_UTCFileTimeFormat(Dec($FN_RTime_2,2) - $tDelta, $DateTimeFormat, 2)
 		$FN_RTime_2 = $FN_RTime_2 & ":" & _FillZero(StringRight($FN_RTime_2_tmp, 4))
 		;
 		$FN_AllocSize_2 = StringMid($MFTEntry, $FN_Offset + 128, 16)
-		$FN_AllocSize_2 = _HexToDec(StringMid($FN_AllocSize_2, 15, 2) & StringMid($FN_AllocSize_2, 13, 2) & StringMid($FN_AllocSize_2, 11, 2) & StringMid($FN_AllocSize_2, 9, 2) & StringMid($FN_AllocSize_2, 7, 2) & StringMid($FN_AllocSize_2, 5, 2) & StringMid($FN_AllocSize_2, 3, 2) & StringMid($FN_AllocSize_2, 1, 2))
+		$FN_AllocSize_2 = Dec(_SwapEndian($FN_AllocSize_2),2)
 		$FN_RealSize_2 = StringMid($MFTEntry, $FN_Offset + 144, 16)
-		$FN_RealSize_2 = _HexToDec(StringMid($FN_RealSize_2, 15, 2) & StringMid($FN_RealSize_2, 13, 2) & StringMid($FN_RealSize_2, 11, 2) & StringMid($FN_RealSize_2, 9, 2) & StringMid($FN_RealSize_2, 7, 2) & StringMid($FN_RealSize_2, 5, 2) & StringMid($FN_RealSize_2, 3, 2) & StringMid($FN_RealSize_2, 1, 2))
+		$FN_RealSize_2 = Dec(_SwapEndian($FN_RealSize_2),2)
 		$FN_Flags_2 = StringMid($MFTEntry, $FN_Offset + 160, 8)
 		$FN_Flags_2 = _File_Permissions("0x" & $FN_Flags_2)
 		$FN_NameLength_2 = StringMid($MFTEntry, $FN_Offset + 176, 2)
@@ -1284,36 +1287,41 @@ Func _Get_FileName($MFTEntry, $FN_Offset, $FN_Size, $FN_Number)
 	If Not $DoDefaultAll Then Return
 	If $FN_Number = 3 Then
 		$FN_ParentReferenceNo_3 = StringMid($MFTEntry, $FN_Offset + 48, 12)
-		$FN_ParentReferenceNo_3 = StringMid($FN_ParentReferenceNo_3, 11, 2) & StringMid($FN_ParentReferenceNo_3, 9, 2) & StringMid($FN_ParentReferenceNo_3, 7, 2) & StringMid($FN_ParentReferenceNo_3, 5, 2) & StringMid($FN_ParentReferenceNo_3, 3, 2) & StringMid($FN_ParentReferenceNo_3, 1, 2)
-		$FN_ParentReferenceNo_3 = _HexToDec($FN_ParentReferenceNo_3)
+		$FN_ParentReferenceNo_3 = Dec(_SwapEndian($FN_ParentReferenceNo_3),2)
 		$FN_ParentSequenceNo_3 = StringMid($MFTEntry, $FN_Offset + 60, 4)
-		$FN_ParentSequenceNo_3 = StringMid($FN_ParentSequenceNo_3, 3, 2) & StringMid($FN_ParentSequenceNo_3, 1, 2)
-		$FN_ParentSequenceNo_3 = Dec($FN_ParentSequenceNo_3)
+		$FN_ParentSequenceNo_3 = Dec(_SwapEndian($FN_ParentSequenceNo_3),2)
 		$FN_CTime_3 = StringMid($MFTEntry, $FN_Offset + 64, 16)
-		$FN_CTime_3 = StringMid($FN_CTime_3, 15, 2) & StringMid($FN_CTime_3, 13, 2) & StringMid($FN_CTime_3, 11, 2) & StringMid($FN_CTime_3, 9, 2) & StringMid($FN_CTime_3, 7, 2) & StringMid($FN_CTime_3, 5, 2) & StringMid($FN_CTime_3, 3, 2) & StringMid($FN_CTime_3, 1, 2)
-		$FN_CTime_3 = _HexToDec($FN_CTime_3)
-		$FN_CTime_3 = _WinTime_UTCFileTimeFormat($FN_CTime_3 - $tDelta, $DateTimeFormat, 2)
+		$FN_CTime_3 = _SwapEndian($FN_CTime_3)
+		$FN_CTime_3_tmp = _WinTime_UTCFileTimeToLocalFileTime("0x" & $FN_CTime_3)
+		$FN_CTime_3 = _WinTime_UTCFileTimeFormat(Dec($FN_CTime_3,2) - $tDelta, $DateTimeFormat, 2)
+		$FN_CTime_3 = $FN_CTime_3 & ":" & _FillZero(StringRight($FN_CTime_3_tmp, 4))
+		;
 		$FN_ATime_3 = StringMid($MFTEntry, $FN_Offset + 80, 16)
-		$FN_ATime_3 = StringMid($FN_ATime_3, 15, 2) & StringMid($FN_ATime_3, 13, 2) & StringMid($FN_ATime_3, 11, 2) & StringMid($FN_ATime_3, 9, 2) & StringMid($FN_ATime_3, 7, 2) & StringMid($FN_ATime_3, 5, 2) & StringMid($FN_ATime_3, 3, 2) & StringMid($FN_ATime_3, 1, 2)
-		$FN_ATime_3 = _HexToDec($FN_ATime_3)
-		$FN_ATime_3 = _WinTime_UTCFileTimeFormat($FN_ATime_3 - $tDelta, $DateTimeFormat, 2)
+		$FN_ATime_3 = _SwapEndian($FN_ATime_3)
+		$FN_ATime_3_tmp = _WinTime_UTCFileTimeToLocalFileTime("0x" & $FN_ATime_3)
+		$FN_ATime_3 = _WinTime_UTCFileTimeFormat(Dec($FN_ATime_3,2) - $tDelta, $DateTimeFormat, 2)
+		$FN_ATime_3 = $FN_ATime_3 & ":" & _FillZero(StringRight($FN_ATime_3_tmp, 4))
+		;
 		$FN_MTime_3 = StringMid($MFTEntry, $FN_Offset + 96, 16)
-		$FN_MTime_3 = StringMid($FN_MTime_3, 15, 2) & StringMid($FN_MTime_3, 13, 2) & StringMid($FN_MTime_3, 11, 2) & StringMid($FN_MTime_3, 9, 2) & StringMid($FN_MTime_3, 7, 2) & StringMid($FN_MTime_3, 5, 2) & StringMid($FN_MTime_3, 3, 2) & StringMid($FN_MTime_3, 1, 2)
-		$FN_MTime_3 = _HexToDec($FN_MTime_3)
-		$FN_MTime_3 = _WinTime_UTCFileTimeFormat($FN_MTime_3 - $tDelta, $DateTimeFormat, 2)
+		$FN_MTime_3 = _SwapEndian($FN_MTime_3)
+		$FN_MTime_3_tmp = _WinTime_UTCFileTimeToLocalFileTime("0x" & $FN_MTime_3)
+		$FN_MTime_3 = _WinTime_UTCFileTimeFormat(Dec($FN_MTime_3,2) - $tDelta, $DateTimeFormat, 2)
+		$FN_MTime_3 = $FN_MTime_3 & ":" & _FillZero(StringRight($FN_MTime_3_tmp, 4))
+		;
 		$FN_RTime_3 = StringMid($MFTEntry, $FN_Offset + 112, 16)
-		$FN_RTime_3 = StringMid($FN_RTime_3, 15, 2) & StringMid($FN_RTime_3, 13, 2) & StringMid($FN_RTime_3, 11, 2) & StringMid($FN_RTime_3, 9, 2) & StringMid($FN_RTime_3, 7, 2) & StringMid($FN_RTime_3, 5, 2) & StringMid($FN_RTime_3, 3, 2) & StringMid($FN_RTime_3, 1, 2)
-		$FN_RTime_3 = _HexToDec($FN_RTime_3)
-		$FN_RTime_3 = _WinTime_UTCFileTimeFormat($FN_RTime_3 - $tDelta, $DateTimeFormat, 2)
+		$FN_RTime_3 = _SwapEndian($FN_RTime_3)
+		$FN_RTime_3_tmp = _WinTime_UTCFileTimeToLocalFileTime("0x" & $FN_RTime_3)
+		$FN_RTime_3 = _WinTime_UTCFileTimeFormat(Dec($FN_RTime_3,2) - $tDelta, $DateTimeFormat, 2)
+		$FN_RTime_3 = $FN_RTime_3 & ":" & _FillZero(StringRight($FN_RTime_3_tmp, 4))
+		;
 		$FN_AllocSize_3 = StringMid($MFTEntry, $FN_Offset + 128, 16)
-		$FN_AllocSize_3 = StringMid($FN_AllocSize_3, 15, 2) & StringMid($FN_AllocSize_3, 13, 2) & StringMid($FN_AllocSize_3, 11, 2) & StringMid($FN_AllocSize_3, 9, 2) & StringMid($FN_AllocSize_3, 7, 2) & StringMid($FN_AllocSize_3, 5, 2) & StringMid($FN_AllocSize_3, 3, 2) & StringMid($FN_AllocSize_3, 1, 2)
-		$FN_AllocSize_3 = _HexToDec($FN_AllocSize_3)
+		$FN_AllocSize_3 = Dec(_SwapEndian($FN_AllocSize_3),2)
 		$FN_RealSize_3 = StringMid($MFTEntry, $FN_Offset + 144, 16)
-		$FN_RealSize_3 = StringMid($FN_RealSize_3, 15, 2) & StringMid($FN_RealSize_3, 13, 2) & StringMid($FN_RealSize_3, 11, 2) & StringMid($FN_RealSize_3, 9, 2) & StringMid($FN_RealSize_3, 7, 2) & StringMid($FN_RealSize_3, 5, 2) & StringMid($FN_RealSize_3, 3, 2) & StringMid($FN_RealSize_3, 1, 2)
-		$FN_RealSize_3 = _HexToDec($FN_RealSize_3)
+		$FN_RealSize_3 = Dec(_SwapEndian($FN_RealSize_3),2)
 		$FN_Flags_3 = StringMid($MFTEntry, $FN_Offset + 160, 8)
 		$FN_Flags_3 = _File_Permissions("0x" & $FN_Flags_3)
-		$FN_NameLength_3 = Dec(StringMid($MFTEntry, $FN_Offset + 176, 2))
+		$FN_NameLength_3 = StringMid($MFTEntry, $FN_Offset + 176, 2)
+		$FN_NameLength_3 = Dec($FN_NameLength_3)
 		$FN_NameType_3 = StringMid($MFTEntry, $FN_Offset + 178, 2)
 		Select
 			Case $FN_NameType_3 = '01'
@@ -1332,35 +1340,41 @@ Func _Get_FileName($MFTEntry, $FN_Offset, $FN_Size, $FN_Number)
 	EndIf
 	If $FN_Number = 4 Then
 		$FN_ParentReferenceNo_4 = StringMid($MFTEntry, $FN_Offset + 48, 12)
-		$FN_ParentReferenceNo_4 = StringMid($FN_ParentReferenceNo_4, 11, 2) & StringMid($FN_ParentReferenceNo_4, 9, 2) & StringMid($FN_ParentReferenceNo_4, 7, 2) & StringMid($FN_ParentReferenceNo_4, 5, 2) & StringMid($FN_ParentReferenceNo_4, 3, 2) & StringMid($FN_ParentReferenceNo_4, 1, 2)
-		$FN_ParentReferenceNo_4 = _HexToDec($FN_ParentReferenceNo_4)
+		$FN_ParentReferenceNo_4 = Dec(_SwapEndian($FN_ParentReferenceNo_4),2)
 		$FN_ParentSequenceNo_4 = StringMid($MFTEntry, $FN_Offset + 60, 4)
-		$FN_ParentSequenceNo_4 = Dec(StringMid($FN_ParentSequenceNo_4, 3, 2) & StringMid($FN_ParentSequenceNo_4, 1, 2))
+		$FN_ParentSequenceNo_4 = Dec(_SwapEndian($FN_ParentSequenceNo_4),2)
 		$FN_CTime_4 = StringMid($MFTEntry, $FN_Offset + 64, 16)
-		$FN_CTime_4 = StringMid($FN_CTime_4, 15, 2) & StringMid($FN_CTime_4, 13, 2) & StringMid($FN_CTime_4, 11, 2) & StringMid($FN_CTime_4, 9, 2) & StringMid($FN_CTime_4, 7, 2) & StringMid($FN_CTime_4, 5, 2) & StringMid($FN_CTime_4, 3, 2) & StringMid($FN_CTime_4, 1, 2)
-		$FN_CTime_4 = _HexToDec($FN_CTime_4)
-		$FN_CTime_4 = _WinTime_UTCFileTimeFormat($FN_CTime_4 - $tDelta, $DateTimeFormat, 2)
+		$FN_CTime_4 = _SwapEndian($FN_CTime_4)
+		$FN_CTime_4_tmp = _WinTime_UTCFileTimeToLocalFileTime("0x" & $FN_CTime_4)
+		$FN_CTime_4 = _WinTime_UTCFileTimeFormat(Dec($FN_CTime_4,2) - $tDelta, $DateTimeFormat, 2)
+		$FN_CTime_4 = $FN_CTime_4 & ":" & _FillZero(StringRight($FN_CTime_4_tmp, 4))
+		;
 		$FN_ATime_4 = StringMid($MFTEntry, $FN_Offset + 80, 16)
-		$FN_ATime_4 = StringMid($FN_ATime_4, 15, 2) & StringMid($FN_ATime_4, 13, 2) & StringMid($FN_ATime_4, 11, 2) & StringMid($FN_ATime_4, 9, 2) & StringMid($FN_ATime_4, 7, 2) & StringMid($FN_ATime_4, 5, 2) & StringMid($FN_ATime_4, 3, 2) & StringMid($FN_ATime_4, 1, 2)
-		$FN_ATime_4 = _HexToDec($FN_ATime_4)
-		$FN_ATime_4 = _WinTime_UTCFileTimeFormat($FN_ATime_4 - $tDelta, $DateTimeFormat, 2)
+		$FN_ATime_4 = _SwapEndian($FN_ATime_4)
+		$FN_ATime_4_tmp = _WinTime_UTCFileTimeToLocalFileTime("0x" & $FN_ATime_4)
+		$FN_ATime_4 = _WinTime_UTCFileTimeFormat(Dec($FN_ATime_4,2) - $tDelta, $DateTimeFormat, 2)
+		$FN_ATime_4 = $FN_ATime_4 & ":" & _FillZero(StringRight($FN_ATime_4_tmp, 4))
+		;
 		$FN_MTime_4 = StringMid($MFTEntry, $FN_Offset + 96, 16)
-		$FN_MTime_4 = StringMid($FN_MTime_4, 15, 2) & StringMid($FN_MTime_4, 13, 2) & StringMid($FN_MTime_4, 11, 2) & StringMid($FN_MTime_4, 9, 2) & StringMid($FN_MTime_4, 7, 2) & StringMid($FN_MTime_4, 5, 2) & StringMid($FN_MTime_4, 3, 2) & StringMid($FN_MTime_4, 1, 2)
-		$FN_MTime_4 = _HexToDec($FN_MTime_4)
-		$FN_MTime_4 = _WinTime_UTCFileTimeFormat($FN_MTime_4 - $tDelta, $DateTimeFormat, 2)
+		$FN_MTime_4 = _SwapEndian($FN_MTime_4)
+		$FN_MTime_4_tmp = _WinTime_UTCFileTimeToLocalFileTime("0x" & $FN_MTime_4)
+		$FN_MTime_4 = _WinTime_UTCFileTimeFormat(Dec($FN_MTime_4,2) - $tDelta, $DateTimeFormat, 2)
+		$FN_MTime_4 = $FN_MTime_4 & ":" & _FillZero(StringRight($FN_MTime_4_tmp, 4))
+		;
 		$FN_RTime_4 = StringMid($MFTEntry, $FN_Offset + 112, 16)
-		$FN_RTime_4 = StringMid($FN_RTime_4, 15, 2) & StringMid($FN_RTime_4, 13, 2) & StringMid($FN_RTime_4, 11, 2) & StringMid($FN_RTime_4, 9, 2) & StringMid($FN_RTime_4, 7, 2) & StringMid($FN_RTime_4, 5, 2) & StringMid($FN_RTime_4, 3, 2) & StringMid($FN_RTime_4, 1, 2)
-		$FN_RTime_4 = _HexToDec($FN_RTime_4)
-		$FN_RTime_4 = _WinTime_UTCFileTimeFormat($FN_RTime_4 - $tDelta, $DateTimeFormat, 2)
+		$FN_RTime_4 = _SwapEndian($FN_RTime_4)
+		$FN_RTime_4_tmp = _WinTime_UTCFileTimeToLocalFileTime("0x" & $FN_RTime_4)
+		$FN_RTime_4 = _WinTime_UTCFileTimeFormat(Dec($FN_RTime_4,2) - $tDelta, $DateTimeFormat, 2)
+		$FN_RTime_4 = $FN_RTime_4 & ":" & _FillZero(StringRight($FN_RTime_4_tmp, 4))
+		;
 		$FN_AllocSize_4 = StringMid($MFTEntry, $FN_Offset + 128, 16)
-		$FN_AllocSize_4 = StringMid($FN_AllocSize_4, 15, 2) & StringMid($FN_AllocSize_4, 13, 2) & StringMid($FN_AllocSize_4, 11, 2) & StringMid($FN_AllocSize_4, 9, 2) & StringMid($FN_AllocSize_4, 7, 2) & StringMid($FN_AllocSize_4, 5, 2) & StringMid($FN_AllocSize_4, 3, 2) & StringMid($FN_AllocSize_4, 1, 2)
-		$FN_AllocSize_4 = _HexToDec($FN_AllocSize_4)
+		$FN_AllocSize_4 = Dec(_SwapEndian($FN_AllocSize_4),2)
 		$FN_RealSize_4 = StringMid($MFTEntry, $FN_Offset + 144, 16)
-		$FN_RealSize_4 = StringMid($FN_RealSize_4, 15, 2) & StringMid($FN_RealSize_4, 13, 2) & StringMid($FN_RealSize_4, 11, 2) & StringMid($FN_RealSize_4, 9, 2) & StringMid($FN_RealSize_4, 7, 2) & StringMid($FN_RealSize_4, 5, 2) & StringMid($FN_RealSize_4, 3, 2) & StringMid($FN_RealSize_4, 1, 2)
-		$FN_RealSize_4 = _HexToDec($FN_RealSize_4)
+		$FN_RealSize_4 = Dec(_SwapEndian($FN_RealSize_4),2)
 		$FN_Flags_4 = StringMid($MFTEntry, $FN_Offset + 160, 8)
 		$FN_Flags_4 = _File_Permissions("0x" & $FN_Flags_4)
-		$FN_NameLength_4 = Dec(StringMid($MFTEntry, $FN_Offset + 176, 2))
+		$FN_NameLength_4 = StringMid($MFTEntry, $FN_Offset + 176, 2)
+		$FN_NameLength_4 = Dec($FN_NameLength_4)
 		$FN_NameType_4 = StringMid($MFTEntry, $FN_Offset + 178, 2)
 		Select
 			Case $FN_NameType_4 = '01'
@@ -1375,6 +1389,7 @@ Func _Get_FileName($MFTEntry, $FN_Offset, $FN_Size, $FN_Number)
 		$FN_NameSpace_4 = $FN_NameLength_4 - 1 ;Not really
 		$FN_FileName_4 = StringMid($MFTEntry, $FN_Offset + 180, ($FN_NameLength_4 + $FN_NameSpace_4) * 2)
 		$FN_FileName_4 = _UnicodeHexToStr($FN_FileName_4)
+		If StringLen($FN_FileName_4) <> $FN_NameLength_4 Then $INVALID_FILENAME_4 = 1
 	EndIf
 	Return
 EndFunc   ;==>_Get_FileName
@@ -1430,7 +1445,7 @@ EndFunc   ;==>_Get_VolumeName
 Func _Get_VolumeInformation($MFTEntry, $VOLUME_INFO_Offset, $VOLUME_INFO_Size)
 	$VOL_INFO_NTFS_VERSION = Dec(StringMid($MFTEntry, $VOLUME_INFO_Offset + 64, 2)) & "," & Dec(StringMid($MFTEntry, $VOLUME_INFO_Offset + 66, 2))
 	$VOL_INFO_FLAGS = StringMid($MFTEntry, $VOLUME_INFO_Offset + 68, 4)
-	$VOL_INFO_FLAGS = StringMid($VOL_INFO_FLAGS, 3, 2) & StringMid($VOL_INFO_FLAGS, 1, 2)
+	$VOL_INFO_FLAGS = _SwapEndian($VOL_INFO_FLAGS)
 	$VOL_INFO_FLAGS = _VolInfoFlag("0x" & $VOL_INFO_FLAGS)
 	Return
 EndFunc   ;==>_Get_VolumeInformation
@@ -1440,9 +1455,9 @@ Func _Get_Data($MFTEntry, $DATA_Offset, $DATA_Size, $DATA_Number)
 		$DATA_NonResidentFlag = StringMid($MFTEntry, $DATA_Offset + 16, 2)
 		$DATA_NameLength = Dec(StringMid($MFTEntry, $DATA_Offset + 18, 2))
 		$DATA_NameRelativeOffset = StringMid($MFTEntry, $DATA_Offset + 20, 4)
-		$DATA_NameRelativeOffset = Dec(StringMid($DATA_NameRelativeOffset, 3, 2) & StringMid($DATA_NameRelativeOffset, 1, 2))
+		$DATA_NameRelativeOffset = Dec(_SwapEndian($DATA_NameRelativeOffset),2)
 		$DATA_Flags = StringMid($MFTEntry, $DATA_Offset + 24, 4)
-		$DATA_Flags = StringMid($DATA_Flags, 3, 2) & StringMid($DATA_Flags, 1, 2)
+		$DATA_Flags = _SwapEndian($DATA_Flags)
 		$DATA_Flags = _AttribHeaderFlags("0x" & $DATA_Flags)
 		If $DATA_NameLength > 0 Then
 			$DATA_NameSpace = $DATA_NameLength - 1
@@ -1451,25 +1466,25 @@ Func _Get_Data($MFTEntry, $DATA_Offset, $DATA_Size, $DATA_Number)
 		EndIf
 		If $DATA_NonResidentFlag = '01' Then
 			$DATA_StartVCN = StringMid($MFTEntry, $DATA_Offset + 32, 16)
-			$DATA_StartVCN = _HexToDec(StringMid($DATA_StartVCN, 15, 2) & StringMid($DATA_StartVCN, 13, 2) & StringMid($DATA_StartVCN, 11, 2) & StringMid($DATA_StartVCN, 9, 2) & StringMid($DATA_StartVCN, 7, 2) & StringMid($DATA_StartVCN, 5, 2) & StringMid($DATA_StartVCN, 3, 2) & StringMid($DATA_StartVCN, 1, 2))
+			$DATA_StartVCN = Dec(_SwapEndian($DATA_StartVCN),2)
 			$DATA_LastVCN = StringMid($MFTEntry, $DATA_Offset + 48, 16)
-			$DATA_LastVCN = _HexToDec(StringMid($DATA_LastVCN, 15, 2) & StringMid($DATA_LastVCN, 13, 2) & StringMid($DATA_LastVCN, 11, 2) & StringMid($DATA_LastVCN, 9, 2) & StringMid($DATA_LastVCN, 7, 2) & StringMid($DATA_LastVCN, 5, 2) & StringMid($DATA_LastVCN, 3, 2) & StringMid($DATA_LastVCN, 1, 2))
+			$DATA_LastVCN = Dec(_SwapEndian($DATA_LastVCN),2)
 			$DATA_VCNs = $DATA_LastVCN - $DATA_StartVCN
 			$DATA_CompressionUnitSize = StringMid($MFTEntry, $DATA_Offset + 68, 4)
-			$DATA_CompressionUnitSize = Dec(StringMid($DATA_CompressionUnitSize, 3, 2) & StringMid($DATA_CompressionUnitSize, 1, 2))
+			$DATA_CompressionUnitSize = Dec(_SwapEndian($DATA_CompressionUnitSize),2)
 			$DATA_AllocatedSize = StringMid($MFTEntry, $DATA_Offset + 80, 16)
-			$DATA_AllocatedSize = _HexToDec(StringMid($DATA_AllocatedSize, 15, 2) & StringMid($DATA_AllocatedSize, 13, 2) & StringMid($DATA_AllocatedSize, 11, 2) & StringMid($DATA_AllocatedSize, 9, 2) & StringMid($DATA_AllocatedSize, 7, 2) & StringMid($DATA_AllocatedSize, 5, 2) & StringMid($DATA_AllocatedSize, 3, 2) & StringMid($DATA_AllocatedSize, 1, 2))
+			$DATA_AllocatedSize = Dec(_SwapEndian($DATA_AllocatedSize),2)
 			$DATA_RealSize = StringMid($MFTEntry, $DATA_Offset + 96, 16)
-			$DATA_RealSize = _HexToDec(StringMid($DATA_RealSize, 15, 2) & StringMid($DATA_RealSize, 13, 2) & StringMid($DATA_RealSize, 11, 2) & StringMid($DATA_RealSize, 9, 2) & StringMid($DATA_RealSize, 7, 2) & StringMid($DATA_RealSize, 5, 2) & StringMid($DATA_RealSize, 3, 2) & StringMid($DATA_RealSize, 1, 2))
+			$DATA_RealSize = Dec(_SwapEndian($DATA_RealSize),2)
 			$FileSizeBytes = $DATA_RealSize
 			$DATA_InitializedStreamSize = StringMid($MFTEntry, $DATA_Offset + 112, 16)
-			$DATA_InitializedStreamSize = _HexToDec(StringMid($DATA_InitializedStreamSize, 15, 2) & StringMid($DATA_InitializedStreamSize, 13, 2) & StringMid($DATA_InitializedStreamSize, 11, 2) & StringMid($DATA_InitializedStreamSize, 9, 2) & StringMid($DATA_InitializedStreamSize, 7, 2) & StringMid($DATA_InitializedStreamSize, 5, 2) & StringMid($DATA_InitializedStreamSize, 3, 2) & StringMid($DATA_InitializedStreamSize, 1, 2))
+			$DATA_InitializedStreamSize = Dec(_SwapEndian($DATA_InitializedStreamSize),2)
 		ElseIf $DATA_NonResidentFlag = '00' Then
 			$DATA_LengthOfAttribute = StringMid($MFTEntry, $DATA_Offset + 32, 8)
-			$DATA_LengthOfAttribute = Dec(StringMid($DATA_LengthOfAttribute, 7, 2) & StringMid($DATA_LengthOfAttribute, 5, 2) & StringMid($DATA_LengthOfAttribute, 3, 2) & StringMid($DATA_LengthOfAttribute, 1, 2))
+			$DATA_LengthOfAttribute = Dec(_SwapEndian($DATA_LengthOfAttribute),2)
 			$FileSizeBytes = $DATA_LengthOfAttribute
 			$DATA_OffsetToAttribute = StringMid($MFTEntry, $DATA_Offset + 40, 4)
-			$DATA_OffsetToAttribute = Dec(StringMid($DATA_OffsetToAttribute, 3, 2) & StringMid($DATA_OffsetToAttribute, 1, 2))
+			$DATA_OffsetToAttribute = Dec(_SwapEndian($DATA_OffsetToAttribute),2)
 			$DATA_IndexedFlag = Dec(StringMid($MFTEntry, $DATA_Offset + 44, 2))
 		EndIf
 	EndIf
@@ -1477,9 +1492,9 @@ Func _Get_Data($MFTEntry, $DATA_Offset, $DATA_Size, $DATA_Number)
 		$DATA_NonResidentFlag_2 = StringMid($MFTEntry, $DATA_Offset + 16, 2)
 		$DATA_NameLength_2 = Dec(StringMid($MFTEntry, $DATA_Offset + 18, 2))
 		$DATA_NameRelativeOffset_2 = StringMid($MFTEntry, $DATA_Offset + 20, 4)
-		$DATA_NameRelativeOffset_2 = Dec(StringMid($DATA_NameRelativeOffset_2, 3, 2) & StringMid($DATA_NameRelativeOffset_2, 1, 2))
+		$DATA_NameRelativeOffset_2 = Dec(_SwapEndian($DATA_NameRelativeOffset_2),2)
 		$DATA_Flags_2 = StringMid($MFTEntry, $DATA_Offset + 24, 4)
-		$DATA_Flags_2 = StringMid($DATA_Flags_2, 3, 2) & StringMid($DATA_Flags_2, 1, 2)
+		$DATA_Flags_2 = _SwapEndian($DATA_Flags_2)
 		$DATA_Flags_2 = _AttribHeaderFlags("0x" & $DATA_Flags_2)
 		If $DATA_NameLength_2 > 0 Then
 			$DATA_NameSpace_2 = $DATA_NameLength_2 - 1
@@ -1488,29 +1503,23 @@ Func _Get_Data($MFTEntry, $DATA_Offset, $DATA_Size, $DATA_Number)
 		EndIf
 		If $DATA_NonResidentFlag_2 = '01' Then
 			$DATA_StartVCN_2 = StringMid($MFTEntry, $DATA_Offset + 32, 16)
-			$DATA_StartVCN_2 = StringMid($DATA_StartVCN_2, 15, 2) & StringMid($DATA_StartVCN_2, 13, 2) & StringMid($DATA_StartVCN_2, 11, 2) & StringMid($DATA_StartVCN_2, 9, 2) & StringMid($DATA_StartVCN_2, 7, 2) & StringMid($DATA_StartVCN_2, 5, 2) & StringMid($DATA_StartVCN_2, 3, 2) & StringMid($DATA_StartVCN_2, 1, 2)
-			$DATA_StartVCN_2 = _HexToDec($DATA_StartVCN_2)
+			$DATA_StartVCN_2 = Dec(_SwapEndian($DATA_StartVCN_2),2)
 			$DATA_LastVCN_2 = StringMid($MFTEntry, $DATA_Offset + 48, 16)
-			$DATA_LastVCN_2 = StringMid($DATA_LastVCN_2, 15, 2) & StringMid($DATA_LastVCN_2, 13, 2) & StringMid($DATA_LastVCN_2, 11, 2) & StringMid($DATA_LastVCN_2, 9, 2) & StringMid($DATA_LastVCN_2, 7, 2) & StringMid($DATA_LastVCN_2, 5, 2) & StringMid($DATA_LastVCN_2, 3, 2) & StringMid($DATA_LastVCN_2, 1, 2)
-			$DATA_LastVCN_2 = _HexToDec($DATA_LastVCN_2)
+			$DATA_LastVCN_2 = Dec(_SwapEndian($DATA_LastVCN_2),2)
 			$DATA_VCNs_2 = $DATA_LastVCN_2 - $DATA_StartVCN_2
 			$DATA_CompressionUnitSize_2 = StringMid($MFTEntry, $DATA_Offset + 68, 4)
-			$DATA_CompressionUnitSize_2 = StringMid($DATA_CompressionUnitSize_2, 3, 2) & StringMid($DATA_CompressionUnitSize_2, 1, 2)
-			$DATA_CompressionUnitSize_2 = Dec($DATA_CompressionUnitSize_2)
+			$DATA_CompressionUnitSize_2 = Dec(_SwapEndian($DATA_CompressionUnitSize_2),2)
 			$DATA_AllocatedSize_2 = StringMid($MFTEntry, $DATA_Offset + 80, 16)
-			$DATA_AllocatedSize_2 = StringMid($DATA_AllocatedSize_2, 15, 2) & StringMid($DATA_AllocatedSize_2, 13, 2) & StringMid($DATA_AllocatedSize_2, 11, 2) & StringMid($DATA_AllocatedSize_2, 9, 2) & StringMid($DATA_AllocatedSize_2, 7, 2) & StringMid($DATA_AllocatedSize_2, 5, 2) & StringMid($DATA_AllocatedSize_2, 3, 2) & StringMid($DATA_AllocatedSize_2, 1, 2)
-			$DATA_AllocatedSize_2 = _HexToDec($DATA_AllocatedSize_2)
+			$DATA_AllocatedSize_2 = Dec(_SwapEndian($DATA_AllocatedSize_2),2)
 			$DATA_RealSize_2 = StringMid($MFTEntry, $DATA_Offset + 96, 16)
-			$DATA_RealSize_2 = StringMid($DATA_RealSize_2, 15, 2) & StringMid($DATA_RealSize_2, 13, 2) & StringMid($DATA_RealSize_2, 11, 2) & StringMid($DATA_RealSize_2, 9, 2) & StringMid($DATA_RealSize_2, 7, 2) & StringMid($DATA_RealSize_2, 5, 2) & StringMid($DATA_RealSize_2, 3, 2) & StringMid($DATA_RealSize_2, 1, 2)
-			$DATA_RealSize_2 = _HexToDec($DATA_RealSize_2)
+			$DATA_RealSize_2 = Dec(_SwapEndian($DATA_RealSize_2),2)
 			$DATA_InitializedStreamSize_2 = StringMid($MFTEntry, $DATA_Offset + 112, 16)
-			$DATA_InitializedStreamSize_2 = StringMid($DATA_InitializedStreamSize_2, 15, 2) & StringMid($DATA_InitializedStreamSize_2, 13, 2) & StringMid($DATA_InitializedStreamSize_2, 11, 2) & StringMid($DATA_InitializedStreamSize_2, 9, 2) & StringMid($DATA_InitializedStreamSize_2, 7, 2) & StringMid($DATA_InitializedStreamSize_2, 5, 2) & StringMid($DATA_InitializedStreamSize_2, 3, 2) & StringMid($DATA_InitializedStreamSize_2, 1, 2)
-			$DATA_InitializedStreamSize_2 = _HexToDec($DATA_InitializedStreamSize_2)
+			$DATA_InitializedStreamSize_2 = Dec(_SwapEndian($DATA_InitializedStreamSize_2),2)
 		ElseIf $DATA_NonResidentFlag_2 = '00' Then
 			$DATA_LengthOfAttribute_2 = StringMid($MFTEntry, $DATA_Offset + 32, 8)
-			$DATA_LengthOfAttribute_2 = Dec(StringMid($DATA_LengthOfAttribute_2, 7, 2) & StringMid($DATA_LengthOfAttribute_2, 5, 2) & StringMid($DATA_LengthOfAttribute_2, 3, 2) & StringMid($DATA_LengthOfAttribute_2, 1, 2))
+			$DATA_LengthOfAttribute_2 = Dec(_SwapEndian($DATA_LengthOfAttribute_2),2)
 			$DATA_OffsetToAttribute_2 = StringMid($MFTEntry, $DATA_Offset + 40, 4)
-			$DATA_OffsetToAttribute_2 = Dec(StringMid($DATA_OffsetToAttribute_2, 3, 2) & StringMid($DATA_OffsetToAttribute_2, 1, 2))
+			$DATA_OffsetToAttribute_2 = Dec(_SwapEndian($DATA_OffsetToAttribute_2),2)
 			$DATA_IndexedFlag_2 = Dec(StringMid($MFTEntry, $DATA_Offset + 44, 2))
 		EndIf
 	EndIf
@@ -1518,9 +1527,9 @@ Func _Get_Data($MFTEntry, $DATA_Offset, $DATA_Size, $DATA_Number)
 		$DATA_NonResidentFlag_3 = StringMid($MFTEntry, $DATA_Offset + 16, 2)
 		$DATA_NameLength_3 = Dec(StringMid($MFTEntry, $DATA_Offset + 18, 2))
 		$DATA_NameRelativeOffset_3 = StringMid($MFTEntry, $DATA_Offset + 20, 4)
-		$DATA_NameRelativeOffset_3 = Dec(StringMid($DATA_NameRelativeOffset_3, 3, 2) & StringMid($DATA_NameRelativeOffset_3, 1, 2))
+		$DATA_NameRelativeOffset_3 = Dec(_SwapEndian($DATA_NameRelativeOffset_3),2)
 		$DATA_Flags_3 = StringMid($MFTEntry, $DATA_Offset + 24, 4)
-		$DATA_Flags_3 = StringMid($DATA_Flags_3, 3, 2) & StringMid($DATA_Flags_3, 1, 2)
+		$DATA_Flags_3 = _SwapEndian($DATA_Flags_3)
 		$DATA_Flags_3 = _AttribHeaderFlags("0x" & $DATA_Flags_3)
 		If $DATA_NameLength_3 > 0 Then
 			$DATA_NameSpace_3 = $DATA_NameLength_3 - 1
@@ -1529,29 +1538,23 @@ Func _Get_Data($MFTEntry, $DATA_Offset, $DATA_Size, $DATA_Number)
 		EndIf
 		If $DATA_NonResidentFlag_3 = '01' Then
 			$DATA_StartVCN_3 = StringMid($MFTEntry, $DATA_Offset + 32, 16)
-			$DATA_StartVCN_3 = StringMid($DATA_StartVCN_3, 15, 2) & StringMid($DATA_StartVCN_3, 13, 2) & StringMid($DATA_StartVCN_3, 11, 2) & StringMid($DATA_StartVCN_3, 9, 2) & StringMid($DATA_StartVCN_3, 7, 2) & StringMid($DATA_StartVCN_3, 5, 2) & StringMid($DATA_StartVCN_3, 3, 2) & StringMid($DATA_StartVCN_3, 1, 2)
-			$DATA_StartVCN_3 = _HexToDec($DATA_StartVCN_3)
+			$DATA_StartVCN_3 = Dec(_SwapEndian($DATA_StartVCN_3),2)
 			$DATA_LastVCN_3 = StringMid($MFTEntry, $DATA_Offset + 48, 16)
-			$DATA_LastVCN_3 = StringMid($DATA_LastVCN_3, 15, 2) & StringMid($DATA_LastVCN_3, 13, 2) & StringMid($DATA_LastVCN_3, 11, 2) & StringMid($DATA_LastVCN_3, 9, 2) & StringMid($DATA_LastVCN_3, 7, 2) & StringMid($DATA_LastVCN_3, 5, 2) & StringMid($DATA_LastVCN_3, 3, 2) & StringMid($DATA_LastVCN_3, 1, 2)
-			$DATA_LastVCN_3 = _HexToDec($DATA_LastVCN_3)
+			$DATA_LastVCN_3 = Dec(_SwapEndian($DATA_LastVCN_3),2)
 			$DATA_VCNs_3 = $DATA_LastVCN_3 - $DATA_StartVCN_3
 			$DATA_CompressionUnitSize_3 = StringMid($MFTEntry, $DATA_Offset + 68, 4)
-			$DATA_CompressionUnitSize_3 = StringMid($DATA_CompressionUnitSize_3, 3, 2) & StringMid($DATA_CompressionUnitSize_3, 1, 2)
-			$DATA_CompressionUnitSize_3 = Dec($DATA_CompressionUnitSize_3)
+			$DATA_CompressionUnitSize_3 = Dec(_SwapEndian($DATA_CompressionUnitSize_3),2)
 			$DATA_AllocatedSize_3 = StringMid($MFTEntry, $DATA_Offset + 80, 16)
-			$DATA_AllocatedSize_3 = StringMid($DATA_AllocatedSize_3, 15, 2) & StringMid($DATA_AllocatedSize_3, 13, 2) & StringMid($DATA_AllocatedSize_3, 11, 2) & StringMid($DATA_AllocatedSize_3, 9, 2) & StringMid($DATA_AllocatedSize_3, 7, 2) & StringMid($DATA_AllocatedSize_3, 5, 2) & StringMid($DATA_AllocatedSize_3, 3, 2) & StringMid($DATA_AllocatedSize_3, 1, 2)
-			$DATA_AllocatedSize_3 = _HexToDec($DATA_AllocatedSize_3)
+			$DATA_AllocatedSize_3 = Dec(_SwapEndian($DATA_AllocatedSize_3),2)
 			$DATA_RealSize_3 = StringMid($MFTEntry, $DATA_Offset + 96, 16)
-			$DATA_RealSize_3 = StringMid($DATA_RealSize_3, 15, 2) & StringMid($DATA_RealSize_3, 13, 2) & StringMid($DATA_RealSize_3, 11, 2) & StringMid($DATA_RealSize_3, 9, 2) & StringMid($DATA_RealSize_3, 7, 2) & StringMid($DATA_RealSize_3, 5, 2) & StringMid($DATA_RealSize_3, 3, 2) & StringMid($DATA_RealSize_3, 1, 2)
-			$DATA_RealSize_3 = _HexToDec($DATA_RealSize_3)
+			$DATA_RealSize_3 = Dec(_SwapEndian($DATA_RealSize_3),2)
 			$DATA_InitializedStreamSize_3 = StringMid($MFTEntry, $DATA_Offset + 112, 16)
-			$DATA_InitializedStreamSize_3 = StringMid($DATA_InitializedStreamSize_3, 15, 2) & StringMid($DATA_InitializedStreamSize_3, 13, 2) & StringMid($DATA_InitializedStreamSize_3, 11, 2) & StringMid($DATA_InitializedStreamSize_3, 9, 2) & StringMid($DATA_InitializedStreamSize_3, 7, 2) & StringMid($DATA_InitializedStreamSize_3, 5, 2) & StringMid($DATA_InitializedStreamSize_3, 3, 2) & StringMid($DATA_InitializedStreamSize_3, 1, 2)
-			$DATA_InitializedStreamSize_3 = _HexToDec($DATA_InitializedStreamSize_3)
+			$DATA_InitializedStreamSize_3 = Dec(_SwapEndian($DATA_InitializedStreamSize_3),2)
 		ElseIf $DATA_NonResidentFlag_3 = '00' Then
 			$DATA_LengthOfAttribute_3 = StringMid($MFTEntry, $DATA_Offset + 32, 8)
-			$DATA_LengthOfAttribute_3 = Dec(StringMid($DATA_LengthOfAttribute_3, 7, 2) & StringMid($DATA_LengthOfAttribute_3, 5, 2) & StringMid($DATA_LengthOfAttribute_3, 3, 2) & StringMid($DATA_LengthOfAttribute_3, 1, 2))
+			$DATA_LengthOfAttribute_3 = Dec(_SwapEndian($DATA_LengthOfAttribute_3),2)
 			$DATA_OffsetToAttribute_3 = StringMid($MFTEntry, $DATA_Offset + 40, 4)
-			$DATA_OffsetToAttribute_3 = Dec(StringMid($DATA_OffsetToAttribute_3, 3, 2) & StringMid($DATA_OffsetToAttribute_3, 1, 2))
+			$DATA_OffsetToAttribute_3 = Dec(_SwapEndian($DATA_OffsetToAttribute_3),2)
 			$DATA_IndexedFlag_3 = Dec(StringMid($MFTEntry, $DATA_Offset + 44, 2))
 		EndIf
 	EndIf
@@ -1902,6 +1905,7 @@ If $DoDefaultAll Then
 	$csv_header &= 'FN_RTime_2,FN_AllocSize_2,FN_RealSize_2,FN_Flags_2,FN_NameLength_2,FN_NameType_2,FN_FileName_2,INVALID_FILENAME_2,GUID_ObjectID,GUID_BirthVolumeID,GUID_BirthObjectID,GUID_BirthDomainID,VOLUME_NAME_NAME,VOL_INFO_NTFS_VERSION,VOL_INFO_FLAGS,FN_CTime_3,FN_ATime_3,FN_MTime_3,FN_RTime_3,FN_AllocSize_3,FN_RealSize_3,FN_Flags_3,FN_NameLength_3,FN_NameType_3,FN_FileName_3,INVALID_FILENAME_3,FN_CTime_4,'
 	$csv_header &= 'FN_ATime_4,FN_MTime_4,FN_RTime_4,FN_AllocSize_4,FN_RealSize_4,FN_Flags_4,FN_NameLength_4,FN_NameType_4,FN_FileName_4,DATA_Name_2,DATA_NonResidentFlag_2,DATA_Flags_2,DATA_LengthOfAttribute_2,DATA_IndexedFlag_2,DATA_StartVCN_2,DATA_LastVCN_2,'
 	$csv_header &= 'DATA_VCNs_2,DATA_CompressionUnitSize_2,DATA_AllocatedSize_2,DATA_RealSize_2,DATA_InitializedStreamSize_2,DATA_Name_3,DATA_NonResidentFlag_3,DATA_Flags_3,DATA_LengthOfAttribute_3,DATA_IndexedFlag_3,DATA_StartVCN_3,DATA_LastVCN_3,DATA_VCNs_3,'
+	$csv_header &= 'DATA_CompressionUnitSize_3,DATA_AllocatedSize_3,DATA_RealSize_3,DATA_InitializedStreamSize_3,STANDARD_INFORMATION_ON,ATTRIBUTE_LIST_ON,FILE_NAME_ON,OBJECT_ID_ON,SECURITY_DESCRIPTOR_ON,VOLUME_NAME_ON,VOLUME_INFORMATION_ON,DATA_ON,INDEX_ROOT_ON,INDEX_ALLOCATION_ON,BITMAP_ON,REPARSE_POINT_ON,EA_INFORMATION_ON,EA_ON,PROPERTY_SET_ON,LOGGED_UTILITY_STREAM_ON'
 ElseIf $dol2t Then
 	$csv_header = 'Date,Time,Timezone,MACB,Source,SourceType,Type,User,Host,Short,Desc,Version,Filename,Inode,Notes,Format,Extra'
 ElseIf $DoBodyfile Then
