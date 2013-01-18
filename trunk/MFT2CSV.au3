@@ -3,7 +3,7 @@
 #AutoIt3Wrapper_UseX64=y
 #AutoIt3Wrapper_Res_Comment=Decode $MFT and write to CSV
 #AutoIt3Wrapper_Res_Description=Decode $MFT and write to CSV
-#AutoIt3Wrapper_Res_Fileversion=2.0.0.2
+#AutoIt3Wrapper_Res_Fileversion=2.0.0.3
 #AutoIt3Wrapper_Res_requestedExecutionLevel=asInvoker
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
 
@@ -16,22 +16,21 @@
 ; parts by trancexxx, Ascend4nt & others
 
 Global $_COMMON_KERNEL32DLL=DllOpen("kernel32.dll"), $separator=",", $DTPrecision, $dol2t=False, $DoDefaultAll=False, $DoBodyfile=False
-Global $csv, $csvfile, $RecordOffset, $Signature, $Alternate_Data_Stream, $FN_FileNamePath, $UTCconfig
-Global $HEADER_LSN, $HEADER_SequenceNo, $HEADER_Flags, $HEADER_RecordRealSize, $HEADER_RecordAllocSize, $HEADER_BaseRecord, $HEADER_NextAttribID, $HEADER_MFTREcordNumber, $Header_HardLinkCount, $HEADER_BaseRecSeqNo
-Global $SI_CTime, $SI_ATime, $SI_MTime, $SI_RTime, $SI_FilePermission, $SI_USN, $Errors, $DATA_AllocatedSize, $DATA_RealSize, $DATA_InitializedStreamSize, $RecordSlackSpace
-Global $FN_CTime, $FN_ATime, $FN_MTime, $FN_RTime, $FN_AllocSize, $FN_RealSize, $FN_Flags, $FN_FileName, $DATA_VCNs, $DATA_NonResidentFlag, $FN_NameType
-Global $FN_CTime_2, $FN_ATime_2, $FN_MTime_2, $FN_RTime_2, $FN_AllocSize_2, $FN_RealSize_2, $FN_Flags_2, $FN_NameLength_2, $FN_NameSpace_2, $FN_FileName_2, $FN_NameType_2
-Global $FN_CTime_3, $FN_ATime_3, $FN_MTime_3, $FN_RTime_3, $FN_AllocSize_3, $FN_RealSize_3, $FN_Flags_3, $FN_NameLength_3, $FN_NameSpace_3, $FN_FileName_3, $FN_NameType_3
-Global $FN_CTime_4, $FN_ATime_4, $FN_MTime_4, $FN_RTime_4, $FN_AllocSize_4, $FN_RealSize_4, $FN_Flags_4, $FN_NameLength_4, $FN_NameSpace_4, $FN_FileName_4, $FN_NameType_4
-Global $DATA_NameLength, $DATA_NameRelativeOffset, $DATA_Flags, $DATA_NameSpace, $DATA_Name, $RecordActive, $DATA_CompressionUnitSize, $DATA_CompressionUnitSize_2, $DATA_CompressionUnitSize_3
-Global $DATA_NonResidentFlag_2, $DATA_NameLength_2, $DATA_NameRelativeOffset_2, $DATA_Flags_2, $DATA_NameSpace_2, $DATA_Name_2, $DATA_StartVCN_2, $DATA_LastVCN_2, $DATA_VCNs_2, $DATA_AllocatedSize_2, $DATA_RealSize_2, $DATA_InitializedStreamSize_2
-Global $DATA_NonResidentFlag_3, $DATA_NameLength_3, $DATA_NameRelativeOffset_3, $DATA_Flags_3, $DATA_NameSpace_3, $DATA_Name_3, $DATA_StartVCN_3, $DATA_LastVCN_3, $DATA_VCNs_3, $DATA_AllocatedSize_3, $DATA_RealSize_3, $DATA_InitializedStreamSize_3
-Global $FN_ParentReferenceNo, $FN_ParentSequenceNo, $FN_ParentReferenceNo_2, $FN_ParentSequenceNo_2, $FN_ParentReferenceNo_3, $FN_ParentSequenceNo_3, $FN_ParentReferenceNo_4, $FN_ParentSequenceNo_4, $RecordHealth
-Global $DATA_LengthOfAttribute, $DATA_OffsetToAttribute, $DATA_IndexedFlag, $DATA_LengthOfAttribute_2, $DATA_OffsetToAttribute_2, $DATA_IndexedFlag_2, $DATA_LengthOfAttribute_3, $DATA_OffsetToAttribute_3, $DATA_IndexedFlag_3
-Global $hFile, $nBytes, $MSecTest, $CTimeTest, $SI_MaxVersions, $SI_VersionNumber, $SI_ClassID, $SI_OwnerID, $SI_SecurityID, $SI_HEADER_Flags, $STANDARD_INFORMATION_ON, $ATTRIBUTE_LIST_ON, $FILE_NAME_ON, $OBJECT_ID_ON, $SECURITY_DESCRIPTOR_ON, $VOLUME_NAME_ON, $VOLUME_INFORMATION_ON, $DATA_ON, $INDEX_ROOT_ON, $INDEX_ALLOCATION_ON, $BITMAP_ON, $REPARSE_POINT_ON, $EA_INFORMATION_ON, $EA_ON, $PROPERTY_SET_ON, $LOGGED_UTILITY_STREAM_ON
-Global $GUID_ObjectID, $GUID_BirthVolumeID, $GUID_BirthObjectID, $GUID_BirthDomainID, $VOLUME_NAME_NAME, $VOL_INFO_NTFS_VERSION, $VOL_INFO_FLAGS, $INVALID_FILENAME, $INVALID_FILENAME_2, $INVALID_FILENAME_3, $DATA_Number
+Global $csv, $csvfile, $RecordOffset, $Signature, $ADS, $FN_NamePath, $UTCconfig, $de=","
+Global $HDR_LSN, $HDR_SequenceNo, $HDR_Flags, $HDR_RecRealSize, $HDR_RecAllocSize, $HDR_BaseRecord, $HDR_NextAttribID, $HDR_MFTREcordNumber, $HDR_HardLinkCount, $HDR_BaseRecSeqNo
+Global $SI_CTime, $SI_ATime, $SI_MTime, $SI_RTime, $SI_FilePermission, $SI_USN, $Errors, $DT_AllocSize, $DT_RealSize, $DT_InitStreamSize, $RecordSlackSpace
+Global $FN_CTime, $FN_ATime, $FN_MTime, $FN_RTime, $FN_AllocSize, $FN_RealSize, $FN_Flags, $FN_Name, $DT_VCNs, $DT_NonResidentFlag, $FN_NameType
+Global $FN_CTime_2, $FN_ATime_2, $FN_MTime_2, $FN_RTime_2, $FN_AllocSize_2, $FN_RealSize_2, $FN_Flags_2, $FN_NameLen_2, $FN_NameSpace_2, $FN_Name_2, $FN_NameType_2
+Global $FN_CTime_3, $FN_ATime_3, $FN_MTime_3, $FN_RTime_3, $FN_AllocSize_3, $FN_RealSize_3, $FN_Flags_3, $FN_NameLen_3, $FN_NameSpace_3, $FN_Name_3, $FN_NameType_3
+Global $FN_CTime_4, $FN_ATime_4, $FN_MTime_4, $FN_RTime_4, $FN_AllocSize_4, $FN_RealSize_4, $FN_Flags_4, $FN_NameLen_4, $FN_NameSpace_4, $FN_Name_4, $FN_NameType_4
+Global $DT_NameLength, $DT_NameRelativeOffset, $DT_Flags, $DT_NameSpace, $DT_Name, $RecordActive, $DT_ComprUnitSize, $DT_ComprUnitSize_2, $DT_ComprUnitSize_3
+Global $DT_NonResidentFlag_2, $DT_NameLength_2, $DT_NameRelativeOffset_2, $DT_Flags_2, $DT_NameSpace_2, $DT_Name_2, $DT_StartVCN_2, $DT_LastVCN_2, $DT_VCNs_2, $DT_AllocSize_2, $DT_RealSize_2, $DT_InitStreamSize_2
+Global $DT_NonResidentFlag_3, $DT_NameLength_3, $DT_NameRelativeOffset_3, $DT_Flags_3, $DT_NameSpace_3, $DT_Name_3, $DT_StartVCN_3, $DT_LastVCN_3, $DT_VCNs_3, $DT_AllocSize_3, $DT_RealSize_3, $DT_InitStreamSize_3
+Global $FN_ParentRefNo, $FN_ParentSeqNo, $FN_ParentRefNo_2, $FN_ParentSeqNo_2, $FN_ParentRefNo_3, $FN_ParentSeqNo_3, $FN_ParentRefNo_4, $FN_ParentSeqNo_4, $RecordHealth
+Global $DT_LengthOfAttribute, $DT_OffsetToAttribute, $DT_IndexedFlag, $DT_LengthOfAttribute_2, $DT_OffsetToAttribute_2, $DT_IndexedFlag_2, $DT_LengthOfAttribute_3, $DT_OffsetToAttribute_3, $DT_IndexedFlag_3
+Global $hFile, $nBytes, $MSecTest, $CTimeTest, $SI_MaxVersions, $SI_VersionNumber, $SI_ClassID, $SI_OwnerID, $SI_SecurityID, $SI_HEADER_Flags, $SI_ON, $AL_ON, $FN_ON, $OI_ON, $SD_ON, $VN_ON, $VI_ON, $DT_ON, $IR_ON, $IA_ON, $BITMAP_ON, $RP_ON, $EAI_ON, $EA_ON, $PS_ON, $LUS_ON
+Global $GUID_ObjectID, $GUID_BirthVolumeID, $GUID_BirthObjectID, $GUID_BirthDomainID, $VOLUME_NAME_NAME, $VOL_INFO_NTFS_VERSION, $VOL_INFO_FLAGS, $INV_FNAME, $INV_FNAME_2, $INV_FNAME_3, $DT_Number
 Global $FileSizeBytes, $IntegrityCheck
-Global Const $HX_REF = "0123456789ABCDEF"
 Global Const $RecordSignatureBad = '42414144' ; BAAD signature
 Global Const $STANDARD_INFORMATION = '10000000'; Standard Information
 Global Const $ATTRIBUTE_LIST = '20000000'
@@ -85,11 +84,12 @@ Global Const $GUI_UNCHECKED = 4
 Global Const $ES_AUTOVSCROLL = 64
 Global Const $WS_VSCROLL = 0x00200000
 Global Const $DT_END_ELLIPSIS = 0x8000
+Global Const $GUI_DISABLE = 128
 
 Global $TargetDrive = "", $MFT_Record_Size, $BytesPerCluster, $MFT_Offset, $MFT_Size
 Global $FileTree[1], $hDisk, $rBuffer, $NonResidentFlag, $zPath, $sBuffer, $Total, $MFTTree[1]
-Global $FN_FileName, $ADS_Name, $Reparse = ""
-Global $DATA_LengthOfAttribute, $DATA_Clusters, $DATA_RealSize, $DATA_InitSize, $DataRun
+Global $FN_Name, $ADS_Name, $Reparse = ""
+Global $DT_LengthOfAttribute, $DT_Clusters, $DT_RealSize, $DT_InitSize, $DataRun
 Global $IsCompressed, $IsSparse, $subset, $logfile = 0, $subst, $active = False
 Global $RUN_VCN[1], $RUN_Clusters[1], $MFT_RUN_Clusters[1], $MFT_RUN_VCN[1], $DataQ[1], $AttrQ[1]
 Global $TargetImageFile, $Entries, $IsImage = False, $ImageOffset=0, $IsMftFile=False, $TargetMftFile
@@ -112,7 +112,7 @@ $buttonMftFile = GUICtrlCreateButton("Choose $MFT", 440, 80, 100, 20)
 GUICtrlSetOnEvent($buttonMftFile, "_HandleEvent")
 $buttonOutput = GUICtrlCreateButton("Choose CSV", 440, 110, 100, 20)
 GUICtrlSetOnEvent($buttonOutput, "_HandleEvent")
-$buttonStart = GUICtrlCreateButton("Start Processing", 290, 90, 120, 40)
+$buttonStart = GUICtrlCreateButton("Start Processing", 290, 120, 120, 40)
 GUICtrlSetOnEvent($buttonStart, "_HandleEvent")
 $Label1 = GUICtrlCreateLabel("Adjust timestamps to specific region:",20,50,180,20)
 $Combo2 = GUICtrlCreateCombo("", 230, 50, 90, 25)
@@ -123,7 +123,13 @@ $checkbodyfile = GUICtrlCreateCheckbox("bodyfile", 120, 90, 130, 20)
 GUICtrlSetState($checkbodyfile, $GUI_UNCHECKED)
 $checkdefaultall = GUICtrlCreateCheckbox("dump everything", 120, 110, 130, 20)
 GUICtrlSetState($checkdefaultall, $GUI_CHECKED)
-$myctredit = GUICtrlCreateEdit("Extracting files from NTFS formatted volume" & @CRLF, 0, 135, 560, 115, $ES_AUTOVSCROLL + $WS_VSCROLL)
+$LabelSeparator = GUICtrlCreateLabel("Set separator:",20,135,70,20)
+$SaparatorInput = GUICtrlCreateInput(",",90,135,20,20)
+$SaparatorInput2 = GUICtrlCreateInput(",",120,135,30,20)
+GUICtrlSetState($SaparatorInput2, $GUI_DISABLE)
+$checkquotes = GUICtrlCreateCheckbox("Quotation mark", 170, 135, 100, 20)
+GUICtrlSetState($checkquotes, $GUI_CHECKED)
+$myctredit = GUICtrlCreateEdit("Extracting files from NTFS formatted volume" & @CRLF, 0, 165, 560, 115, $ES_AUTOVSCROLL + $WS_VSCROLL)
 _GetPhysicalDriveInfo()
 _InjectTimeZoneInfo()
 
@@ -132,6 +138,7 @@ GUISetState(@SW_SHOW, $Form)
 
 While Not $active
    Sleep(1000)	;Wait for event
+   _TranslateSeparator()
 WEnd
 
 $tDelta = _GetUTCRegion()-$tDelta
@@ -181,9 +188,11 @@ Func _HandleEvent()
 			Case $buttonImage
 				_ProcessImage()
 				$IsImage = True
+				$IsMftFile = False
 			Case $buttonMftFile
 				_SelectMftFile()
 				$IsMftFile = True
+				$IsImage = False
 			Case $buttonOutput
 				_SelectCsv()
 			Case $buttonStart
@@ -225,6 +234,19 @@ Func _ExtractSystemfile()
 		$DTPrecision = 2
 		_DebugOut("Using output format: all")
 	EndIf
+	If StringLen(GUICtrlRead($SaparatorInput)) <> 1 Then
+		_DisplayInfo("Error: Separator not set properly" & @crlf)
+		_DebugOut("Error: Separator not set properly: " & GUICtrlRead($SaparatorInput))
+		Return
+	Else
+		$de = GUICtrlRead($SaparatorInput)
+		_DebugOut("Using separator: " & $de)
+	EndIf
+	If GUICtrlRead($checkquotes) = 1 Then
+		_DebugOut("Writing variables surrounded with qoutes")
+	Else
+		_DebugOut("Writing variables without surrounding qoutes")
+	EndIf
 	_WriteCSVHeader()
 	If (Not $IsImage and Not $IsMftFile) Then
 		If DriveGetFileSystem($TargetDrive) <> "NTFS" Then		;read boot sector and extract $MFT data
@@ -248,19 +270,19 @@ Func _ExtractSystemfile()
 	If $MFT = "" Then Return
 
 	_DecodeDataQEntry($DataQ[1])         ;produces datarun for $MFT
-	$MFT_Size = $Data_RealSize
+	$MFT_Size = $DT_RealSize
 	_ExtractDataRuns()                   ;converts datarun to RUN_VCN[] and RUN_Clusters[]
 	$MFT_RUN_VCN = $RUN_VCN
 	$MFT_RUN_Clusters = $RUN_Clusters	;preserve values for $MFT
-	$Progress = GUICtrlCreateLabel("Decoding $MFT info and writing to csv", 10, 250,540,20)
+	$Progress = GUICtrlCreateLabel("Decoding $MFT info and writing to csv", 10, 280,540,20)
 	GUICtrlSetFont($Progress, 12)
-	$ProgressStatus = GUICtrlCreateLabel("", 10, 280, 540, 20)
-	$ElapsedTime = GUICtrlCreateLabel("", 10, 295, 540, 20)
-	$OverallProgress = GUICtrlCreateProgress(10, 320, 540, 30)
+	$ProgressStatus = GUICtrlCreateLabel("", 10, 310, 540, 20)
+	$ElapsedTime = GUICtrlCreateLabel("", 10, 325, 540, 20)
+	$OverallProgress = GUICtrlCreateProgress(10, 350, 540, 30)
 
 	_DoFileTree()                        ;creates folder structure
-	$ProgressFileName = GUICtrlCreateLabel("", 10,  360, 540, 20, $DT_END_ELLIPSIS)
-	$FileProgress = GUICtrlCreateProgress(10, 385, 540, 30)
+	$ProgressFileName = GUICtrlCreateLabel("", 10,  390, 540, 20, $DT_END_ELLIPSIS)
+	$FileProgress = GUICtrlCreateProgress(10, 415, 540, 30)
 	AdlibRegister("_ExtractionProgress", 500)
 	$begin = TimerInit()
 
@@ -278,7 +300,7 @@ Func _ExtractSystemfile()
 			$RecordOffsetDec = Int($MFTTree[$i])
 		EndIf
 		_WinAPI_ReadFile($hDisk, DllStructGetPtr($rBuffer), $MFT_Record_Size, $nBytes)
-		$FN_FileNamePath = StringMid($Files, 1,StringInStr($Files, "?") - 1)
+		$FN_NamePath = StringMid($Files, 1,StringInStr($Files, "?") - 1)
 		$MFTEntry = DllStructGetData($rBuffer, 1)
 		If (StringMid($MFTEntry, 3, 8) = '46494C45') Then
 			$Signature = "GOOD"
@@ -289,9 +311,17 @@ Func _ExtractSystemfile()
 			$Signature = "ZERO"
 			$RecordOffset = "0x" & Hex($RecordOffsetDec)
 			If $DoDefaultAll Then
-				_WriteCSV()
+				If GUICtrlRead($checkquotes) = 1 Then
+					_WriteCSVwithQuotes()
+				Else
+					_WriteCSV()
+				Endif
 			Else
-				_WriteCSV2()
+				If GUICtrlRead($checkquotes) = 1 Then
+					_WriteCSV2withQuotes()
+				Else
+					_WriteCSV2()
+				EndIf
 			EndIf
 			$Signature = ""
 			ContinueLoop
@@ -300,22 +330,38 @@ Func _ExtractSystemfile()
 			$Signature = "UNKNOWN"
 			$RecordOffset = "0x" & Hex($RecordOffsetDec)
 			If $DoDefaultAll Then
-				_WriteCSV()
+				If GUICtrlRead($checkquotes) = 1 Then
+					_WriteCSVwithQuotes()
+				Else
+					_WriteCSV()
+				Endif
 			Else
-				_WriteCSV2()
+				If GUICtrlRead($checkquotes) = 1 Then
+					_WriteCSV2withQuotes()
+				Else
+					_WriteCSV2()
+				EndIf
 			EndIf
 			$Signature = ""
 			ContinueLoop
 		EndIf
 		_ClearVar()
 		_ParserCodeOldVersion($MFTEntry)
-		If $DATA_Number > 0 Then $Alternate_Data_Stream = $DATA_Number - 1
+		If $DT_Number > 0 Then $ADS = $DT_Number - 1
 		$RecordOffset = "0x" & Hex($RecordOffsetDec)
 		$CTimeTest = _Test_SI2FN_CTime($SI_CTime, $FN_CTime)
 		If $DoDefaultAll Then
-			_WriteCSV()
+			If GUICtrlRead($checkquotes) = 1 Then
+				_WriteCSVwithQuotes()
+			Else
+				_WriteCSV()
+			Endif
 		Else
-			_WriteCSV2()
+			If GUICtrlRead($checkquotes) = 1 Then
+				_WriteCSV2withQuotes()
+			Else
+				_WriteCSV2()
+			EndIf
 		EndIf
 		$Signature = ""
 	Next
@@ -347,12 +393,12 @@ Func _DoFileTree()
 		 $CurrentProgress = $ref
 		 _WinAPI_ReadFile($hDisk, DllStructGetPtr($rBuffer), $MFT_Record_Size, $nBytes)
          $record = DllStructGetData($rBuffer, 1)
-		 $CurrentMFTOffset = DllCall('kernel32.dll', 'int', 'SetFilePointerEx', 'ptr', $hDisk, 'int64', 0, 'int64*', 0, 'dword', 1)
-		 $MFTTree[$ref] = $CurrentMFTOffset[3]-$MFT_Record_Size
          If StringMid($record,3,8) <> $RecordSignature Then
 			_DebugOut($ref & " The record signature is bad", StringMid($record, 1, 34))
 			ContinueLoop
-		 EndIf
+		EndIf
+		 $CurrentMFTOffset = DllCall('kernel32.dll', 'int', 'SetFilePointerEx', 'ptr', $hDisk, 'int64', 0, 'int64*', 0, 'dword', 1)
+		 $MFTTree[$ref] = $CurrentMFTOffset[3]-$MFT_Record_Size
 		 $Flags = Dec(StringMid($record,47,4))
          $record = _DoFixup($record, $ref)
          If $record = "" then ContinueLoop   ;corrupt, failed fixup
@@ -521,23 +567,23 @@ Func _DecodeDataQEntry($attr)		;processes data attribute
    $NameOffset = Dec(_SwapEndian(StringMid($attr,21,4)))
    If $NameLength > 0 Then		;must be ADS
 	  $ADS_Name = _UnicodeHexToStr(StringMid($attr,$NameOffset*2 + 1,$NameLength*4))
-	  $ADS_Name = $FN_FileName & "[ADS_" & $ADS_Name & "]"
+	  $ADS_Name = $FN_Name & "[ADS_" & $ADS_Name & "]"
    Else
-	  $ADS_Name = $FN_FileName		;need to preserve $FN_FileName
+	  $ADS_Name = $FN_Name		;need to preserve $FN_Name
    EndIf
    $Flags = StringMid($attr,25,4)
    If BitAND($Flags,"0100") Then $IsCompressed = 1
    If BitAND($Flags,"0080") Then $IsSparse = 1
    If $NonResidentFlag = '01' Then
-	  $DATA_Clusters = Dec(_SwapEndian(StringMid($attr,49,16)),2) - Dec(_SwapEndian(StringMid($attr,33,16)),2) + 1
-	  $DATA_RealSize = Dec(_SwapEndian(StringMid($attr,97,16)),2)
-	  $DATA_InitSize = Dec(_SwapEndian(StringMid($attr,113,16)),2)
+	  $DT_Clusters = Dec(_SwapEndian(StringMid($attr,49,16)),2) - Dec(_SwapEndian(StringMid($attr,33,16)),2) + 1
+	  $DT_RealSize = Dec(_SwapEndian(StringMid($attr,97,16)),2)
+	  $DT_InitSize = Dec(_SwapEndian(StringMid($attr,113,16)),2)
 	  $Offset = Dec(_SwapEndian(StringMid($attr,65,4)))
 	  $DataRun = StringMid($attr,$Offset*2+1,(StringLen($attr)-$Offset)*2)
    ElseIf $NonResidentFlag = '00' Then
-	  $DATA_LengthOfAttribute = Dec(_SwapEndian(StringMid($attr,33,8)),2)
+	  $DT_LengthOfAttribute = Dec(_SwapEndian(StringMid($attr,33,8)),2)
 	  $Offset = Dec(_SwapEndian(StringMid($attr,41,4)))
-	  $DataRun = StringMid($attr,$Offset*2+1,$DATA_LengthOfAttribute*2)
+	  $DataRun = StringMid($attr,$Offset*2+1,$DT_LengthOfAttribute*2)
    EndIf
 EndFunc
 
@@ -771,8 +817,8 @@ Func _ExtractionProgress()
 	GUICtrlSetData($ProgressStatus, "Decoding record " & $CurrentProgress & " of " & $Total & " (step 3 of 3)")
 	GUICtrlSetData($ElapsedTime, "Elapsed time = " & _WinAPI_StrFromTimeInterval(TimerDiff($begin)))
     GUICtrlSetData($OverallProgress, 100 * $CurrentProgress / $Total)
-	GUICtrlSetData($ProgressFileName, $FN_FileName)
-	GUICtrlSetData($FileProgress, 100 * ($DATA_RealSize - $ProgressSize) / $DATA_RealSize)
+	GUICtrlSetData($ProgressFileName, $FN_Name)
+	GUICtrlSetData($FileProgress, 100 * ($DT_RealSize - $ProgressSize) / $DT_RealSize)
 EndFunc
 
 Func _ProcessImage()
@@ -889,7 +935,7 @@ Func _GenComboDescription($StartSector,$SectorNumber)
 EndFunc   ;==>_GenComboDescription
 
 Func _SelectMftFile()
-	$TargetMftFile = FileOpenDialog("Select image file",@ScriptDir,"All (*.*)")
+	$TargetMftFile = FileOpenDialog("Select $MFT file",@ScriptDir,"All (*.*)")
 	If @error then Return
 	_DisplayInfo("Selected $MFT file: " & $TargetMftFile & @CRLF)
 	GUICtrlSetData($Combo,"","")
@@ -898,15 +944,13 @@ EndFunc   ;==>_SelectMftFile
 
 Func _ParserCodeOldVersion($MFTEntry)
 	$FN_Number = 0
-	$DATA_Number = 0
+	$DT_Number = 0
 	$UpdSeqArrOffset = ""
 	$UpdSeqArrSize = ""
 	$UpdSeqArrOffset = StringMid($MFTEntry, 11, 4)
 	$UpdSeqArrOffset = Dec(_SwapEndian($UpdSeqArrOffset),2)
-;	$UpdSeqArrOffset = Dec(StringMid($UpdSeqArrOffset, 3, 2) & StringMid($UpdSeqArrOffset, 1, 2))
 	$UpdSeqArrSize = StringMid($MFTEntry, 15, 4)
 	$UpdSeqArrSize = Dec(_SwapEndian($UpdSeqArrSize),2)
-;	$UpdSeqArrSize = Dec(StringMid($UpdSeqArrSize, 3, 2) & StringMid($UpdSeqArrSize, 1, 2))
 	$UpdSeqArr = StringMid($MFTEntry, 3 + ($UpdSeqArrOffset * 2), $UpdSeqArrSize * 2 * 2)
 	$UpdSeqArrPart0 = StringMid($UpdSeqArr, 1, 4)
 	$UpdSeqArrPart1 = StringMid($UpdSeqArr, 5, 4)
@@ -919,51 +963,51 @@ Func _ParserCodeOldVersion($MFTEntry)
 		$IntegrityCheck = "OK"
 	EndIf
 	$MFTEntry = StringMid($MFTEntry, 1, 1022) & $UpdSeqArrPart1 & StringMid($MFTEntry, 1027, 1020) & $UpdSeqArrPart2 ; Stupid fixup to not corrupt decoding of attributes that are located past 0x1fd within record
-	$HEADER_LSN = StringMid($MFTEntry, 19, 16)
-	$HEADER_LSN = Dec(_SwapEndian($HEADER_LSN),2)
-	$HEADER_SequenceNo = StringMid($MFTEntry, 35, 4)
-	$HEADER_SequenceNo = Dec(_SwapEndian($HEADER_SequenceNo),2)
-	$Header_HardLinkCount = StringMid($MFTEntry,39,4)
-	$Header_HardLinkCount = Dec(_SwapEndian($Header_HardLinkCount),2)
-	$HEADER_Flags = StringMid($MFTEntry, 47, 4);00=deleted file,01=file,02=deleted folder,03=folder
+	$HDR_LSN = StringMid($MFTEntry, 19, 16)
+	$HDR_LSN = Dec(_SwapEndian($HDR_LSN),2)
+	$HDR_SequenceNo = StringMid($MFTEntry, 35, 4)
+	$HDR_SequenceNo = Dec(_SwapEndian($HDR_SequenceNo),2)
+	$HDR_HardLinkCount = StringMid($MFTEntry,39,4)
+	$HDR_HardLinkCount = Dec(_SwapEndian($HDR_HardLinkCount),2)
+	$HDR_Flags = StringMid($MFTEntry, 47, 4);00=deleted file,01=file,02=deleted folder,03=folder
 	Select
-		Case $HEADER_Flags = '0000'
-			$HEADER_Flags = 'FILE'
+		Case $HDR_Flags = '0000'
+			$HDR_Flags = 'FILE'
 			$RecordActive = 'DELETED'
-		Case $HEADER_Flags = '0100'
-			$HEADER_Flags = 'FILE'
+		Case $HDR_Flags = '0100'
+			$HDR_Flags = 'FILE'
 			$RecordActive = 'ALLOCATED'
-		Case $HEADER_Flags = '0200'
-			$HEADER_Flags = 'FOLDER'
+		Case $HDR_Flags = '0200'
+			$HDR_Flags = 'FOLDER'
 			$RecordActive = 'DELETED'
-		Case $HEADER_Flags = '0300'
-			$HEADER_Flags = 'FOLDER'
+		Case $HDR_Flags = '0300'
+			$HDR_Flags = 'FOLDER'
 			$RecordActive = 'ALLOCATED'
-		Case $HEADER_Flags = '0900'
-			$HEADER_Flags = 'FILE+INDEX_SECURITY'
+		Case $HDR_Flags = '0900'
+			$HDR_Flags = 'FILE+INDEX_SECURITY'
 			$RecordActive = 'ALLOCATED'
-		Case $HEADER_Flags = '0D00'
-			$HEADER_Flags = 'FILE+INDEX_OTHER'
+		Case $HDR_Flags = '0D00'
+			$HDR_Flags = 'FILE+INDEX_OTHER'
 			$RecordActive = 'ALLOCATED'
 		Case Else
-			$HEADER_Flags = 'UNKNOWN'
+			$HDR_Flags = 'UNKNOWN'
 			$RecordActive = 'UNKNOWN'
 	EndSelect
-	$HEADER_RecordRealSize = StringMid($MFTEntry, 51, 8)
-	$HEADER_RecordRealSize = Dec(_SwapEndian($HEADER_RecordRealSize),2)
-	$HEADER_RecordAllocSize = StringMid($MFTEntry, 59, 8)
-	$HEADER_RecordAllocSize = Dec(_SwapEndian($HEADER_RecordAllocSize),2)
-	$HEADER_BaseRecord = StringMid($MFTEntry, 67, 12)
-	$HEADER_BaseRecord = Dec(_SwapEndian($HEADER_BaseRecord),2)
-	$HEADER_BaseRecSeqNo = StringMid($MFTEntry, 79, 4)
-	$HEADER_BaseRecSeqNo = Dec(_SwapEndian($HEADER_BaseRecSeqNo),2)
-	$HEADER_NextAttribID = StringMid($MFTEntry, 83, 4)
-	$HEADER_NextAttribID = "0x"&_SwapEndian($HEADER_NextAttribID)
+	$HDR_RecRealSize = StringMid($MFTEntry, 51, 8)
+	$HDR_RecRealSize = Dec(_SwapEndian($HDR_RecRealSize),2)
+	$HDR_RecAllocSize = StringMid($MFTEntry, 59, 8)
+	$HDR_RecAllocSize = Dec(_SwapEndian($HDR_RecAllocSize),2)
+	$HDR_BaseRecord = StringMid($MFTEntry, 67, 12)
+	$HDR_BaseRecord = Dec(_SwapEndian($HDR_BaseRecord),2)
+	$HDR_BaseRecSeqNo = StringMid($MFTEntry, 79, 4)
+	$HDR_BaseRecSeqNo = Dec(_SwapEndian($HDR_BaseRecSeqNo),2)
+	$HDR_NextAttribID = StringMid($MFTEntry, 83, 4)
+	$HDR_NextAttribID = "0x"&_SwapEndian($HDR_NextAttribID)
 	If $UpdSeqArrOffset = 48 Then
-		$HEADER_MFTREcordNumber = StringMid($MFTEntry, 91, 8)
-		$HEADER_MFTREcordNumber = Dec(_SwapEndian($HEADER_MFTREcordNumber),2)
+		$HDR_MFTREcordNumber = StringMid($MFTEntry, 91, 8)
+		$HDR_MFTREcordNumber = Dec(_SwapEndian($HDR_MFTREcordNumber),2)
 	Else
-		$HEADER_MFTREcordNumber = "NT style"
+		$HDR_MFTREcordNumber = "NT style"
 	EndIf
 	$NextAttributeOffset = (Dec(StringMid($MFTEntry, 43, 2)) * 2) + 3
 	$AttributeType = StringMid($MFTEntry, $NextAttributeOffset, 8)
@@ -978,56 +1022,56 @@ Func _ParserCodeOldVersion($MFTEntry)
 		Select
 			Case $AttributeType = $STANDARD_INFORMATION
 				$AttributeKnown = 1
-				$STANDARD_INFORMATION_ON = "TRUE"
+				$SI_ON = "TRUE"
 				_Get_StandardInformation($MFTEntry, $NextAttributeOffset, $AttributeSize)
 
 			Case $AttributeType = $ATTRIBUTE_LIST
 				$AttributeKnown = 1
-				$ATTRIBUTE_LIST_ON = "TRUE"
+				$AL_ON = "TRUE"
 				;			_Get_AttributeList()
 
 			Case $AttributeType = $FILE_NAME
 				$AttributeKnown = 1
-				$FILE_NAME_ON = "TRUE"
+				$FN_ON = "TRUE"
 				$FN_Number += 1 ; Need to come up with something smarter than this
 				If $FN_Number > 4 Then ContinueCase
 				_Get_FileName($MFTEntry, $NextAttributeOffset, $AttributeSize, $FN_Number)
 
 			Case $AttributeType = $OBJECT_ID
 				$AttributeKnown = 1
-				$OBJECT_ID_ON = "TRUE"
+				$OI_ON = "TRUE"
 				If $DoDefaultAll Then _Get_ObjectID($MFTEntry, $NextAttributeOffset, $AttributeSize)
 
 			Case $AttributeType = $SECURITY_DESCRIPTOR
 				$AttributeKnown = 1
-				$SECURITY_DESCRIPTOR_ON = "TRUE"
+				$SD_ON = "TRUE"
 				;			_Get_SecurityDescriptor()
 
 			Case $AttributeType = $VOLUME_NAME
 				$AttributeKnown = 1
-				$VOLUME_NAME_ON = "TRUE"
+				$VN_ON = "TRUE"
 				If $DoDefaultAll Then _Get_VolumeName($MFTEntry, $NextAttributeOffset, $AttributeSize)
 
 			Case $AttributeType = $VOLUME_INFORMATION
 				$AttributeKnown = 1
-				$VOLUME_INFORMATION_ON = "TRUE"
+				$VI_ON = "TRUE"
 				If $DoDefaultAll Then _Get_VolumeInformation($MFTEntry, $NextAttributeOffset, $AttributeSize)
 
 			Case $AttributeType = $DATA
 				$AttributeKnown = 1
-				$DATA_ON = "TRUE"
-				$DATA_Number += 1
-				If $DATA_Number > 3 Then ContinueCase
-				_Get_Data($MFTEntry, $NextAttributeOffset, $AttributeSize, $DATA_Number)
+				$DT_ON = "TRUE"
+				$DT_Number += 1
+				If $DT_Number > 3 Then ContinueCase
+				_Get_Data($MFTEntry, $NextAttributeOffset, $AttributeSize, $DT_Number)
 
 			Case $AttributeType = $INDEX_ROOT
 				$AttributeKnown = 1
-				$INDEX_ROOT_ON = "TRUE"
+				$IR_ON = "TRUE"
 				;			_Get_IndexRoot()
 
 			Case $AttributeType = $INDEX_ALLOCATION
 				$AttributeKnown = 1
-				$INDEX_ALLOCATION_ON = "TRUE"
+				$IA_ON = "TRUE"
 				;			_Get_IndexAllocation()
 
 			Case $AttributeType = $BITMAP
@@ -1037,12 +1081,12 @@ Func _ParserCodeOldVersion($MFTEntry)
 
 			Case $AttributeType = $REPARSE_POINT
 				$AttributeKnown = 1
-				$REPARSE_POINT_ON = "TRUE"
+				$RP_ON = "TRUE"
 				;			_Get_ReparsePoint()
 
 			Case $AttributeType = $EA_INFORMATION
 				$AttributeKnown = 1
-				$EA_INFORMATION_ON = "TRUE"
+				$EAI_ON = "TRUE"
 				;			_Get_EaInformation()
 
 			Case $AttributeType = $EA
@@ -1052,12 +1096,12 @@ Func _ParserCodeOldVersion($MFTEntry)
 
 			Case $AttributeType = $PROPERTY_SET
 				$AttributeKnown = 1
-				$PROPERTY_SET_ON = "TRUE"
+				$PS_ON = "TRUE"
 				;			_Get_PropertySet()
 
 			Case $AttributeType = $LOGGED_UTILITY_STREAM
 				$AttributeKnown = 1
-				$LOGGED_UTILITY_STREAM_ON = "TRUE"
+				$LUS_ON = "TRUE"
 				;			_Get_LoggedUtilityStream()
 
 			Case $AttributeType = $ATTRIBUTE_END_MARKER
@@ -1073,53 +1117,7 @@ Func _ParserCodeOldVersion($MFTEntry)
 		$NextAttributeOffset = $NextAttributeOffset + ($AttributeSize * 2)
 	WEnd
 EndFunc
-#cs
-; start: by jennico (jennicoattminusonlinedotde) ---------------------------
-Func _HexToDec($hx_hex)
-	If StringLeft($hx_hex, 2) = "0x" Then $hx_hex = StringMid($hx_hex, 3)
-	If StringIsXDigit($hx_hex) = 0 Then
-		SetError(1)
-		Return ""
-	EndIf
-	Local $Ret = "", $hx_count = 0, $hx_array = StringSplit($hx_hex, ""), $Ii, $hx_tmp
-	For $Ii = $hx_array[0] To 1 Step -1
-		$hx_tmp = StringInStr($HX_REF, $hx_array[$Ii]) - 1
-		$Ret += $hx_tmp * 16 ^ $hx_count
-		$hx_count += 1
-	Next
-	Return $Ret
-EndFunc   ;==>_HexToDec
 
-Func _DecToHex($hx_dec, $hx_length = 21)
-	If IsInt($hx_dec) = 0 Then
-		SetError(1)
-		Return ""
-	EndIf
-	Local $Ret = "", $Ii, $hx_tmp, $hx_max
-	If $hx_dec < 4294967296 Then
-		If $hx_length < 9 Then Return Hex($hx_dec, $hx_length)
-		If $hx_length = 21 Then
-			$Ret = Hex($hx_dec)
-			While StringLeft($Ret, 1) = "0"
-				$Ret = StringMid($Ret, 2)
-			WEnd
-			Return $Ret
-		EndIf
-	EndIf
-	For $Ii = $hx_length - 1 To 0 Step -1
-		$hx_max = 16 ^ $Ii - 1
-		If $Ret = "" And $hx_length = 21 And $hx_max > $hx_dec Then ContinueLoop
-		$hx_tmp = Int($hx_dec / ($hx_max + 1))
-		If $Ret = "" And $hx_length = 21 And $Ii > 0 And $hx_tmp = 0 Then ContinueLoop
-		$Ret &= StringMid($HX_REF, $hx_tmp + 1, 1)
-		$hx_dec -= $hx_tmp * ($hx_max + 1)
-	Next
-	$Ret = String($Ret)
-	If $hx_length < 21 And StringLen($Ret) < $hx_length Then SetError(1)
-	Return $Ret
-EndFunc   ;==>_DecToHex
-; end: by jennico (jennicoattminusonlinedotde) ------------------------------------
-#ce
 Func _Get_StandardInformation($MFTEntry, $SI_Offset, $SI_Size)
 	$SI_HEADER_Flags = StringMid($MFTEntry, $SI_Offset + 24, 4)
 	$SI_HEADER_Flags = _SwapEndian($SI_HEADER_Flags)
@@ -1175,10 +1173,10 @@ EndFunc   ;==>_Get_AttributeList
 
 Func _Get_FileName($MFTEntry, $FN_Offset, $FN_Size, $FN_Number)
 	If $FN_Number = 1 Then
-		$FN_ParentReferenceNo = StringMid($MFTEntry, $FN_Offset + 48, 12)
-		$FN_ParentReferenceNo = Dec(_SwapEndian($FN_ParentReferenceNo),2)
-		$FN_ParentSequenceNo = StringMid($MFTEntry, $FN_Offset + 60, 4)
-		$FN_ParentSequenceNo = Dec(_SwapEndian($FN_ParentSequenceNo),2)
+		$FN_ParentRefNo = StringMid($MFTEntry, $FN_Offset + 48, 12)
+		$FN_ParentRefNo = Dec(_SwapEndian($FN_ParentRefNo),2)
+		$FN_ParentSeqNo = StringMid($MFTEntry, $FN_Offset + 60, 4)
+		$FN_ParentSeqNo = Dec(_SwapEndian($FN_ParentSeqNo),2)
 		;
 		$FN_CTime = StringMid($MFTEntry, $FN_Offset + 64, 16)
 		$FN_CTime = _SwapEndian($FN_CTime)
@@ -1211,8 +1209,8 @@ Func _Get_FileName($MFTEntry, $FN_Offset, $FN_Size, $FN_Number)
 		$FN_Flags = StringMid($MFTEntry, $FN_Offset + 160, 8)
 		$FN_Flags = _SwapEndian($FN_Flags)
 		$FN_Flags = _File_Permissions("0x" & $FN_Flags)
-		$FN_NameLength = StringMid($MFTEntry, $FN_Offset + 176, 2)
-		$FN_NameLength = Dec($FN_NameLength)
+		$FN_NameLen = StringMid($MFTEntry, $FN_Offset + 176, 2)
+		$FN_NameLen = Dec($FN_NameLen)
 		$FN_NameType = StringMid($MFTEntry, $FN_Offset + 178, 2)
 		Select
 			Case $FN_NameType = '00'
@@ -1226,16 +1224,15 @@ Func _Get_FileName($MFTEntry, $FN_Offset, $FN_Size, $FN_Number)
 			Case $FN_NameType <> '00' And $FN_NameType <> '01' And $FN_NameType <> '02' And $FN_NameType <> '03'
 				$FN_NameType = 'UNKNOWN'
 		EndSelect
-		$FN_NameSpace = $FN_NameLength - 1 ;Not really
-		$FN_FileName = StringMid($MFTEntry, $FN_Offset + 180, ($FN_NameLength + $FN_NameSpace) * 2)
-		$FN_FileName = _UnicodeHexToStr($FN_FileName)
-		If StringLen($FN_FileName) <> $FN_NameLength Then $INVALID_FILENAME = 1
+		$FN_NameSpace = $FN_NameLen - 1 ;Not really
+		$FN_Name = StringMid($MFTEntry, $FN_Offset + 180, ($FN_NameLen + $FN_NameSpace) * 2)
+		$FN_Name = _UnicodeHexToStr($FN_Name)
 	EndIf
 	If $FN_Number = 2 Then
-		$FN_ParentReferenceNo_2 = StringMid($MFTEntry, $FN_Offset + 48, 12)
-		$FN_ParentReferenceNo_2 = Dec(_SwapEndian($FN_ParentReferenceNo_2),2)
-		$FN_ParentSequenceNo_2 = StringMid($MFTEntry, $FN_Offset + 60, 4)
-		$FN_ParentSequenceNo_2 = Dec(_SwapEndian($FN_ParentSequenceNo_2),2)
+		$FN_ParentRefNo_2 = StringMid($MFTEntry, $FN_Offset + 48, 12)
+		$FN_ParentRefNo_2 = Dec(_SwapEndian($FN_ParentRefNo_2),2)
+		$FN_ParentSeqNo_2 = StringMid($MFTEntry, $FN_Offset + 60, 4)
+		$FN_ParentSeqNo_2 = Dec(_SwapEndian($FN_ParentSeqNo_2),2)
 		$FN_CTime_2 = StringMid($MFTEntry, $FN_Offset + 64, 16)
 		$FN_CTime_2 = _SwapEndian($FN_CTime_2)
 		$FN_CTime_2_tmp = _WinTime_UTCFileTimeToLocalFileTime("0x" & $FN_CTime_2)
@@ -1266,8 +1263,8 @@ Func _Get_FileName($MFTEntry, $FN_Offset, $FN_Size, $FN_Number)
 		$FN_RealSize_2 = Dec(_SwapEndian($FN_RealSize_2),2)
 		$FN_Flags_2 = StringMid($MFTEntry, $FN_Offset + 160, 8)
 		$FN_Flags_2 = _File_Permissions("0x" & $FN_Flags_2)
-		$FN_NameLength_2 = StringMid($MFTEntry, $FN_Offset + 176, 2)
-		$FN_NameLength_2 = Dec($FN_NameLength_2)
+		$FN_NameLen_2 = StringMid($MFTEntry, $FN_Offset + 176, 2)
+		$FN_NameLen_2 = Dec($FN_NameLen_2)
 		$FN_NameType_2 = StringMid($MFTEntry, $FN_Offset + 178, 2)
 		Select
 			Case $FN_NameType_2 = '01'
@@ -1279,17 +1276,16 @@ Func _Get_FileName($MFTEntry, $FN_Offset, $FN_Size, $FN_Number)
 			Case $FN_NameType_2 <> '01' And $FN_NameType_2 <> '02' And $FN_NameType_2 <> '03'
 				$FN_NameType_2 = 'UNKNOWN'
 		EndSelect
-		$FN_NameSpace_2 = $FN_NameLength_2 - 1 ;Not really
-		$FN_FileName_2 = StringMid($MFTEntry, $FN_Offset + 180, ($FN_NameLength_2 + $FN_NameSpace_2) * 2)
-		$FN_FileName_2 = _UnicodeHexToStr($FN_FileName_2)
-		If StringLen($FN_FileName_2) <> $FN_NameLength_2 Then $INVALID_FILENAME_2 = 1
+		$FN_NameSpace_2 = $FN_NameLen_2 - 1 ;Not really
+		$FN_Name_2 = StringMid($MFTEntry, $FN_Offset + 180, ($FN_NameLen_2 + $FN_NameSpace_2) * 2)
+		$FN_Name_2 = _UnicodeHexToStr($FN_Name_2)
 	EndIf
 	If Not $DoDefaultAll Then Return
 	If $FN_Number = 3 Then
-		$FN_ParentReferenceNo_3 = StringMid($MFTEntry, $FN_Offset + 48, 12)
-		$FN_ParentReferenceNo_3 = Dec(_SwapEndian($FN_ParentReferenceNo_3),2)
-		$FN_ParentSequenceNo_3 = StringMid($MFTEntry, $FN_Offset + 60, 4)
-		$FN_ParentSequenceNo_3 = Dec(_SwapEndian($FN_ParentSequenceNo_3),2)
+		$FN_ParentRefNo_3 = StringMid($MFTEntry, $FN_Offset + 48, 12)
+		$FN_ParentRefNo_3 = Dec(_SwapEndian($FN_ParentRefNo_3),2)
+		$FN_ParentSeqNo_3 = StringMid($MFTEntry, $FN_Offset + 60, 4)
+		$FN_ParentSeqNo_3 = Dec(_SwapEndian($FN_ParentSeqNo_3),2)
 		$FN_CTime_3 = StringMid($MFTEntry, $FN_Offset + 64, 16)
 		$FN_CTime_3 = _SwapEndian($FN_CTime_3)
 		$FN_CTime_3_tmp = _WinTime_UTCFileTimeToLocalFileTime("0x" & $FN_CTime_3)
@@ -1320,8 +1316,8 @@ Func _Get_FileName($MFTEntry, $FN_Offset, $FN_Size, $FN_Number)
 		$FN_RealSize_3 = Dec(_SwapEndian($FN_RealSize_3),2)
 		$FN_Flags_3 = StringMid($MFTEntry, $FN_Offset + 160, 8)
 		$FN_Flags_3 = _File_Permissions("0x" & $FN_Flags_3)
-		$FN_NameLength_3 = StringMid($MFTEntry, $FN_Offset + 176, 2)
-		$FN_NameLength_3 = Dec($FN_NameLength_3)
+		$FN_NameLen_3 = StringMid($MFTEntry, $FN_Offset + 176, 2)
+		$FN_NameLen_3 = Dec($FN_NameLen_3)
 		$FN_NameType_3 = StringMid($MFTEntry, $FN_Offset + 178, 2)
 		Select
 			Case $FN_NameType_3 = '01'
@@ -1333,63 +1329,9 @@ Func _Get_FileName($MFTEntry, $FN_Offset, $FN_Size, $FN_Number)
 			Case $FN_NameType_3 <> '01' And $FN_NameType_3 <> '02' And $FN_NameType_3 <> '03'
 				$FN_NameType_3 = 'UNKNOWN'
 		EndSelect
-		$FN_NameSpace_3 = $FN_NameLength_3 - 1 ;Not really
-		$FN_FileName_3 = StringMid($MFTEntry, $FN_Offset + 180, ($FN_NameLength_3 + $FN_NameSpace_3) * 2)
-		$FN_FileName_3 = _UnicodeHexToStr($FN_FileName_3)
-		If StringLen($FN_FileName_3) <> $FN_NameLength_3 Then $INVALID_FILENAME_3 = 1
-	EndIf
-	If $FN_Number = 4 Then
-		$FN_ParentReferenceNo_4 = StringMid($MFTEntry, $FN_Offset + 48, 12)
-		$FN_ParentReferenceNo_4 = Dec(_SwapEndian($FN_ParentReferenceNo_4),2)
-		$FN_ParentSequenceNo_4 = StringMid($MFTEntry, $FN_Offset + 60, 4)
-		$FN_ParentSequenceNo_4 = Dec(_SwapEndian($FN_ParentSequenceNo_4),2)
-		$FN_CTime_4 = StringMid($MFTEntry, $FN_Offset + 64, 16)
-		$FN_CTime_4 = _SwapEndian($FN_CTime_4)
-		$FN_CTime_4_tmp = _WinTime_UTCFileTimeToLocalFileTime("0x" & $FN_CTime_4)
-		$FN_CTime_4 = _WinTime_UTCFileTimeFormat(Dec($FN_CTime_4,2) - $tDelta, $DateTimeFormat, 2)
-		$FN_CTime_4 = $FN_CTime_4 & ":" & _FillZero(StringRight($FN_CTime_4_tmp, 4))
-		;
-		$FN_ATime_4 = StringMid($MFTEntry, $FN_Offset + 80, 16)
-		$FN_ATime_4 = _SwapEndian($FN_ATime_4)
-		$FN_ATime_4_tmp = _WinTime_UTCFileTimeToLocalFileTime("0x" & $FN_ATime_4)
-		$FN_ATime_4 = _WinTime_UTCFileTimeFormat(Dec($FN_ATime_4,2) - $tDelta, $DateTimeFormat, 2)
-		$FN_ATime_4 = $FN_ATime_4 & ":" & _FillZero(StringRight($FN_ATime_4_tmp, 4))
-		;
-		$FN_MTime_4 = StringMid($MFTEntry, $FN_Offset + 96, 16)
-		$FN_MTime_4 = _SwapEndian($FN_MTime_4)
-		$FN_MTime_4_tmp = _WinTime_UTCFileTimeToLocalFileTime("0x" & $FN_MTime_4)
-		$FN_MTime_4 = _WinTime_UTCFileTimeFormat(Dec($FN_MTime_4,2) - $tDelta, $DateTimeFormat, 2)
-		$FN_MTime_4 = $FN_MTime_4 & ":" & _FillZero(StringRight($FN_MTime_4_tmp, 4))
-		;
-		$FN_RTime_4 = StringMid($MFTEntry, $FN_Offset + 112, 16)
-		$FN_RTime_4 = _SwapEndian($FN_RTime_4)
-		$FN_RTime_4_tmp = _WinTime_UTCFileTimeToLocalFileTime("0x" & $FN_RTime_4)
-		$FN_RTime_4 = _WinTime_UTCFileTimeFormat(Dec($FN_RTime_4,2) - $tDelta, $DateTimeFormat, 2)
-		$FN_RTime_4 = $FN_RTime_4 & ":" & _FillZero(StringRight($FN_RTime_4_tmp, 4))
-		;
-		$FN_AllocSize_4 = StringMid($MFTEntry, $FN_Offset + 128, 16)
-		$FN_AllocSize_4 = Dec(_SwapEndian($FN_AllocSize_4),2)
-		$FN_RealSize_4 = StringMid($MFTEntry, $FN_Offset + 144, 16)
-		$FN_RealSize_4 = Dec(_SwapEndian($FN_RealSize_4),2)
-		$FN_Flags_4 = StringMid($MFTEntry, $FN_Offset + 160, 8)
-		$FN_Flags_4 = _File_Permissions("0x" & $FN_Flags_4)
-		$FN_NameLength_4 = StringMid($MFTEntry, $FN_Offset + 176, 2)
-		$FN_NameLength_4 = Dec($FN_NameLength_4)
-		$FN_NameType_4 = StringMid($MFTEntry, $FN_Offset + 178, 2)
-		Select
-			Case $FN_NameType_4 = '01'
-				$FN_NameType_4 = 'UNICODE'
-			Case $FN_NameType_4 = '02'
-				$FN_NameType_4 = 'DOS'
-			Case $FN_NameType_4 = '03'
-				$FN_NameType_4 = 'POSIX'
-			Case $FN_NameType_4 <> '01' And $FN_NameType_4 <> '02' And $FN_NameType_4 <> '03'
-				$FN_NameType_4 = 'UNKNOWN'
-		EndSelect
-		$FN_NameSpace_4 = $FN_NameLength_4 - 1 ;Not really
-		$FN_FileName_4 = StringMid($MFTEntry, $FN_Offset + 180, ($FN_NameLength_4 + $FN_NameSpace_4) * 2)
-		$FN_FileName_4 = _UnicodeHexToStr($FN_FileName_4)
-		If StringLen($FN_FileName_4) <> $FN_NameLength_4 Then $INVALID_FILENAME_4 = 1
+		$FN_NameSpace_3 = $FN_NameLen_3 - 1 ;Not really
+		$FN_Name_3 = StringMid($MFTEntry, $FN_Offset + 180, ($FN_NameLen_3 + $FN_NameSpace_3) * 2)
+		$FN_Name_3 = _UnicodeHexToStr($FN_Name_3)
 	EndIf
 	Return
 EndFunc   ;==>_Get_FileName
@@ -1450,112 +1392,112 @@ Func _Get_VolumeInformation($MFTEntry, $VOLUME_INFO_Offset, $VOLUME_INFO_Size)
 	Return
 EndFunc   ;==>_Get_VolumeInformation
 
-Func _Get_Data($MFTEntry, $DATA_Offset, $DATA_Size, $DATA_Number)
-	If $DATA_Number = 1 Then
-		$DATA_NonResidentFlag = StringMid($MFTEntry, $DATA_Offset + 16, 2)
-		$DATA_NameLength = Dec(StringMid($MFTEntry, $DATA_Offset + 18, 2))
-		$DATA_NameRelativeOffset = StringMid($MFTEntry, $DATA_Offset + 20, 4)
-		$DATA_NameRelativeOffset = Dec(_SwapEndian($DATA_NameRelativeOffset),2)
-		$DATA_Flags = StringMid($MFTEntry, $DATA_Offset + 24, 4)
-		$DATA_Flags = _SwapEndian($DATA_Flags)
-		$DATA_Flags = _AttribHeaderFlags("0x" & $DATA_Flags)
-		If $DATA_NameLength > 0 Then
-			$DATA_NameSpace = $DATA_NameLength - 1
-			$DATA_Name = StringMid($MFTEntry, $DATA_Offset + ($DATA_NameRelativeOffset * 2), ($DATA_NameLength + $DATA_NameSpace) * 2)
-			$DATA_Name = _UnicodeHexToStr($DATA_Name)
+Func _Get_Data($MFTEntry, $DT_Offset, $DT_Size, $DT_Number)
+	If $DT_Number = 1 Then
+		$DT_NonResidentFlag = StringMid($MFTEntry, $DT_Offset + 16, 2)
+		$DT_NameLength = Dec(StringMid($MFTEntry, $DT_Offset + 18, 2))
+		$DT_NameRelativeOffset = StringMid($MFTEntry, $DT_Offset + 20, 4)
+		$DT_NameRelativeOffset = Dec(_SwapEndian($DT_NameRelativeOffset),2)
+		$DT_Flags = StringMid($MFTEntry, $DT_Offset + 24, 4)
+		$DT_Flags = _SwapEndian($DT_Flags)
+		$DT_Flags = _AttribHeaderFlags("0x" & $DT_Flags)
+		If $DT_NameLength > 0 Then
+			$DT_NameSpace = $DT_NameLength - 1
+			$DT_Name = StringMid($MFTEntry, $DT_Offset + ($DT_NameRelativeOffset * 2), ($DT_NameLength + $DT_NameSpace) * 2)
+			$DT_Name = _UnicodeHexToStr($DT_Name)
 		EndIf
-		If $DATA_NonResidentFlag = '01' Then
-			$DATA_StartVCN = StringMid($MFTEntry, $DATA_Offset + 32, 16)
-			$DATA_StartVCN = Dec(_SwapEndian($DATA_StartVCN),2)
-			$DATA_LastVCN = StringMid($MFTEntry, $DATA_Offset + 48, 16)
-			$DATA_LastVCN = Dec(_SwapEndian($DATA_LastVCN),2)
-			$DATA_VCNs = $DATA_LastVCN - $DATA_StartVCN
-			$DATA_CompressionUnitSize = StringMid($MFTEntry, $DATA_Offset + 68, 4)
-			$DATA_CompressionUnitSize = Dec(_SwapEndian($DATA_CompressionUnitSize),2)
-			$DATA_AllocatedSize = StringMid($MFTEntry, $DATA_Offset + 80, 16)
-			$DATA_AllocatedSize = Dec(_SwapEndian($DATA_AllocatedSize),2)
-			$DATA_RealSize = StringMid($MFTEntry, $DATA_Offset + 96, 16)
-			$DATA_RealSize = Dec(_SwapEndian($DATA_RealSize),2)
-			$FileSizeBytes = $DATA_RealSize
-			$DATA_InitializedStreamSize = StringMid($MFTEntry, $DATA_Offset + 112, 16)
-			$DATA_InitializedStreamSize = Dec(_SwapEndian($DATA_InitializedStreamSize),2)
-		ElseIf $DATA_NonResidentFlag = '00' Then
-			$DATA_LengthOfAttribute = StringMid($MFTEntry, $DATA_Offset + 32, 8)
-			$DATA_LengthOfAttribute = Dec(_SwapEndian($DATA_LengthOfAttribute),2)
-			$FileSizeBytes = $DATA_LengthOfAttribute
-			$DATA_OffsetToAttribute = StringMid($MFTEntry, $DATA_Offset + 40, 4)
-			$DATA_OffsetToAttribute = Dec(_SwapEndian($DATA_OffsetToAttribute),2)
-			$DATA_IndexedFlag = Dec(StringMid($MFTEntry, $DATA_Offset + 44, 2))
-		EndIf
-	EndIf
-	If $DATA_Number = 2 Then
-		$DATA_NonResidentFlag_2 = StringMid($MFTEntry, $DATA_Offset + 16, 2)
-		$DATA_NameLength_2 = Dec(StringMid($MFTEntry, $DATA_Offset + 18, 2))
-		$DATA_NameRelativeOffset_2 = StringMid($MFTEntry, $DATA_Offset + 20, 4)
-		$DATA_NameRelativeOffset_2 = Dec(_SwapEndian($DATA_NameRelativeOffset_2),2)
-		$DATA_Flags_2 = StringMid($MFTEntry, $DATA_Offset + 24, 4)
-		$DATA_Flags_2 = _SwapEndian($DATA_Flags_2)
-		$DATA_Flags_2 = _AttribHeaderFlags("0x" & $DATA_Flags_2)
-		If $DATA_NameLength_2 > 0 Then
-			$DATA_NameSpace_2 = $DATA_NameLength_2 - 1
-			$DATA_Name_2 = StringMid($MFTEntry, $DATA_Offset + ($DATA_NameRelativeOffset_2 * 2), ($DATA_NameLength_2 + $DATA_NameSpace_2) * 2)
-			$DATA_Name_2 = _UnicodeHexToStr($DATA_Name_2)
-		EndIf
-		If $DATA_NonResidentFlag_2 = '01' Then
-			$DATA_StartVCN_2 = StringMid($MFTEntry, $DATA_Offset + 32, 16)
-			$DATA_StartVCN_2 = Dec(_SwapEndian($DATA_StartVCN_2),2)
-			$DATA_LastVCN_2 = StringMid($MFTEntry, $DATA_Offset + 48, 16)
-			$DATA_LastVCN_2 = Dec(_SwapEndian($DATA_LastVCN_2),2)
-			$DATA_VCNs_2 = $DATA_LastVCN_2 - $DATA_StartVCN_2
-			$DATA_CompressionUnitSize_2 = StringMid($MFTEntry, $DATA_Offset + 68, 4)
-			$DATA_CompressionUnitSize_2 = Dec(_SwapEndian($DATA_CompressionUnitSize_2),2)
-			$DATA_AllocatedSize_2 = StringMid($MFTEntry, $DATA_Offset + 80, 16)
-			$DATA_AllocatedSize_2 = Dec(_SwapEndian($DATA_AllocatedSize_2),2)
-			$DATA_RealSize_2 = StringMid($MFTEntry, $DATA_Offset + 96, 16)
-			$DATA_RealSize_2 = Dec(_SwapEndian($DATA_RealSize_2),2)
-			$DATA_InitializedStreamSize_2 = StringMid($MFTEntry, $DATA_Offset + 112, 16)
-			$DATA_InitializedStreamSize_2 = Dec(_SwapEndian($DATA_InitializedStreamSize_2),2)
-		ElseIf $DATA_NonResidentFlag_2 = '00' Then
-			$DATA_LengthOfAttribute_2 = StringMid($MFTEntry, $DATA_Offset + 32, 8)
-			$DATA_LengthOfAttribute_2 = Dec(_SwapEndian($DATA_LengthOfAttribute_2),2)
-			$DATA_OffsetToAttribute_2 = StringMid($MFTEntry, $DATA_Offset + 40, 4)
-			$DATA_OffsetToAttribute_2 = Dec(_SwapEndian($DATA_OffsetToAttribute_2),2)
-			$DATA_IndexedFlag_2 = Dec(StringMid($MFTEntry, $DATA_Offset + 44, 2))
+		If $DT_NonResidentFlag = '01' Then
+			$DT_StartVCN = StringMid($MFTEntry, $DT_Offset + 32, 16)
+			$DT_StartVCN = Dec(_SwapEndian($DT_StartVCN),2)
+			$DT_LastVCN = StringMid($MFTEntry, $DT_Offset + 48, 16)
+			$DT_LastVCN = Dec(_SwapEndian($DT_LastVCN),2)
+			$DT_VCNs = $DT_LastVCN - $DT_StartVCN
+			$DT_ComprUnitSize = StringMid($MFTEntry, $DT_Offset + 68, 4)
+			$DT_ComprUnitSize = Dec(_SwapEndian($DT_ComprUnitSize),2)
+			$DT_AllocSize = StringMid($MFTEntry, $DT_Offset + 80, 16)
+			$DT_AllocSize = Dec(_SwapEndian($DT_AllocSize),2)
+			$DT_RealSize = StringMid($MFTEntry, $DT_Offset + 96, 16)
+			$DT_RealSize = Dec(_SwapEndian($DT_RealSize),2)
+			$FileSizeBytes = $DT_RealSize
+			$DT_InitStreamSize = StringMid($MFTEntry, $DT_Offset + 112, 16)
+			$DT_InitStreamSize = Dec(_SwapEndian($DT_InitStreamSize),2)
+		ElseIf $DT_NonResidentFlag = '00' Then
+			$DT_LengthOfAttribute = StringMid($MFTEntry, $DT_Offset + 32, 8)
+			$DT_LengthOfAttribute = Dec(_SwapEndian($DT_LengthOfAttribute),2)
+			$FileSizeBytes = $DT_LengthOfAttribute
+			$DT_OffsetToAttribute = StringMid($MFTEntry, $DT_Offset + 40, 4)
+			$DT_OffsetToAttribute = Dec(_SwapEndian($DT_OffsetToAttribute),2)
+			$DT_IndexedFlag = Dec(StringMid($MFTEntry, $DT_Offset + 44, 2))
 		EndIf
 	EndIf
-	If $DATA_Number = 3 Then
-		$DATA_NonResidentFlag_3 = StringMid($MFTEntry, $DATA_Offset + 16, 2)
-		$DATA_NameLength_3 = Dec(StringMid($MFTEntry, $DATA_Offset + 18, 2))
-		$DATA_NameRelativeOffset_3 = StringMid($MFTEntry, $DATA_Offset + 20, 4)
-		$DATA_NameRelativeOffset_3 = Dec(_SwapEndian($DATA_NameRelativeOffset_3),2)
-		$DATA_Flags_3 = StringMid($MFTEntry, $DATA_Offset + 24, 4)
-		$DATA_Flags_3 = _SwapEndian($DATA_Flags_3)
-		$DATA_Flags_3 = _AttribHeaderFlags("0x" & $DATA_Flags_3)
-		If $DATA_NameLength_3 > 0 Then
-			$DATA_NameSpace_3 = $DATA_NameLength_3 - 1
-			$DATA_Name_3 = StringMid($MFTEntry, $DATA_Offset + ($DATA_NameRelativeOffset_3 * 2), ($DATA_NameLength_3 + $DATA_NameSpace_3) * 2)
-			$DATA_Name_3 = _UnicodeHexToStr($DATA_Name_3)
+	If $DT_Number = 2 Then
+		$DT_NonResidentFlag_2 = StringMid($MFTEntry, $DT_Offset + 16, 2)
+		$DT_NameLength_2 = Dec(StringMid($MFTEntry, $DT_Offset + 18, 2))
+		$DT_NameRelativeOffset_2 = StringMid($MFTEntry, $DT_Offset + 20, 4)
+		$DT_NameRelativeOffset_2 = Dec(_SwapEndian($DT_NameRelativeOffset_2),2)
+		$DT_Flags_2 = StringMid($MFTEntry, $DT_Offset + 24, 4)
+		$DT_Flags_2 = _SwapEndian($DT_Flags_2)
+		$DT_Flags_2 = _AttribHeaderFlags("0x" & $DT_Flags_2)
+		If $DT_NameLength_2 > 0 Then
+			$DT_NameSpace_2 = $DT_NameLength_2 - 1
+			$DT_Name_2 = StringMid($MFTEntry, $DT_Offset + ($DT_NameRelativeOffset_2 * 2), ($DT_NameLength_2 + $DT_NameSpace_2) * 2)
+			$DT_Name_2 = _UnicodeHexToStr($DT_Name_2)
 		EndIf
-		If $DATA_NonResidentFlag_3 = '01' Then
-			$DATA_StartVCN_3 = StringMid($MFTEntry, $DATA_Offset + 32, 16)
-			$DATA_StartVCN_3 = Dec(_SwapEndian($DATA_StartVCN_3),2)
-			$DATA_LastVCN_3 = StringMid($MFTEntry, $DATA_Offset + 48, 16)
-			$DATA_LastVCN_3 = Dec(_SwapEndian($DATA_LastVCN_3),2)
-			$DATA_VCNs_3 = $DATA_LastVCN_3 - $DATA_StartVCN_3
-			$DATA_CompressionUnitSize_3 = StringMid($MFTEntry, $DATA_Offset + 68, 4)
-			$DATA_CompressionUnitSize_3 = Dec(_SwapEndian($DATA_CompressionUnitSize_3),2)
-			$DATA_AllocatedSize_3 = StringMid($MFTEntry, $DATA_Offset + 80, 16)
-			$DATA_AllocatedSize_3 = Dec(_SwapEndian($DATA_AllocatedSize_3),2)
-			$DATA_RealSize_3 = StringMid($MFTEntry, $DATA_Offset + 96, 16)
-			$DATA_RealSize_3 = Dec(_SwapEndian($DATA_RealSize_3),2)
-			$DATA_InitializedStreamSize_3 = StringMid($MFTEntry, $DATA_Offset + 112, 16)
-			$DATA_InitializedStreamSize_3 = Dec(_SwapEndian($DATA_InitializedStreamSize_3),2)
-		ElseIf $DATA_NonResidentFlag_3 = '00' Then
-			$DATA_LengthOfAttribute_3 = StringMid($MFTEntry, $DATA_Offset + 32, 8)
-			$DATA_LengthOfAttribute_3 = Dec(_SwapEndian($DATA_LengthOfAttribute_3),2)
-			$DATA_OffsetToAttribute_3 = StringMid($MFTEntry, $DATA_Offset + 40, 4)
-			$DATA_OffsetToAttribute_3 = Dec(_SwapEndian($DATA_OffsetToAttribute_3),2)
-			$DATA_IndexedFlag_3 = Dec(StringMid($MFTEntry, $DATA_Offset + 44, 2))
+		If $DT_NonResidentFlag_2 = '01' Then
+			$DT_StartVCN_2 = StringMid($MFTEntry, $DT_Offset + 32, 16)
+			$DT_StartVCN_2 = Dec(_SwapEndian($DT_StartVCN_2),2)
+			$DT_LastVCN_2 = StringMid($MFTEntry, $DT_Offset + 48, 16)
+			$DT_LastVCN_2 = Dec(_SwapEndian($DT_LastVCN_2),2)
+			$DT_VCNs_2 = $DT_LastVCN_2 - $DT_StartVCN_2
+			$DT_ComprUnitSize_2 = StringMid($MFTEntry, $DT_Offset + 68, 4)
+			$DT_ComprUnitSize_2 = Dec(_SwapEndian($DT_ComprUnitSize_2),2)
+			$DT_AllocSize_2 = StringMid($MFTEntry, $DT_Offset + 80, 16)
+			$DT_AllocSize_2 = Dec(_SwapEndian($DT_AllocSize_2),2)
+			$DT_RealSize_2 = StringMid($MFTEntry, $DT_Offset + 96, 16)
+			$DT_RealSize_2 = Dec(_SwapEndian($DT_RealSize_2),2)
+			$DT_InitStreamSize_2 = StringMid($MFTEntry, $DT_Offset + 112, 16)
+			$DT_InitStreamSize_2 = Dec(_SwapEndian($DT_InitStreamSize_2),2)
+		ElseIf $DT_NonResidentFlag_2 = '00' Then
+			$DT_LengthOfAttribute_2 = StringMid($MFTEntry, $DT_Offset + 32, 8)
+			$DT_LengthOfAttribute_2 = Dec(_SwapEndian($DT_LengthOfAttribute_2),2)
+			$DT_OffsetToAttribute_2 = StringMid($MFTEntry, $DT_Offset + 40, 4)
+			$DT_OffsetToAttribute_2 = Dec(_SwapEndian($DT_OffsetToAttribute_2),2)
+			$DT_IndexedFlag_2 = Dec(StringMid($MFTEntry, $DT_Offset + 44, 2))
+		EndIf
+	EndIf
+	If $DT_Number = 3 Then
+		$DT_NonResidentFlag_3 = StringMid($MFTEntry, $DT_Offset + 16, 2)
+		$DT_NameLength_3 = Dec(StringMid($MFTEntry, $DT_Offset + 18, 2))
+		$DT_NameRelativeOffset_3 = StringMid($MFTEntry, $DT_Offset + 20, 4)
+		$DT_NameRelativeOffset_3 = Dec(_SwapEndian($DT_NameRelativeOffset_3),2)
+		$DT_Flags_3 = StringMid($MFTEntry, $DT_Offset + 24, 4)
+		$DT_Flags_3 = _SwapEndian($DT_Flags_3)
+		$DT_Flags_3 = _AttribHeaderFlags("0x" & $DT_Flags_3)
+		If $DT_NameLength_3 > 0 Then
+			$DT_NameSpace_3 = $DT_NameLength_3 - 1
+			$DT_Name_3 = StringMid($MFTEntry, $DT_Offset + ($DT_NameRelativeOffset_3 * 2), ($DT_NameLength_3 + $DT_NameSpace_3) * 2)
+			$DT_Name_3 = _UnicodeHexToStr($DT_Name_3)
+		EndIf
+		If $DT_NonResidentFlag_3 = '01' Then
+			$DT_StartVCN_3 = StringMid($MFTEntry, $DT_Offset + 32, 16)
+			$DT_StartVCN_3 = Dec(_SwapEndian($DT_StartVCN_3),2)
+			$DT_LastVCN_3 = StringMid($MFTEntry, $DT_Offset + 48, 16)
+			$DT_LastVCN_3 = Dec(_SwapEndian($DT_LastVCN_3),2)
+			$DT_VCNs_3 = $DT_LastVCN_3 - $DT_StartVCN_3
+			$DT_ComprUnitSize_3 = StringMid($MFTEntry, $DT_Offset + 68, 4)
+			$DT_ComprUnitSize_3 = Dec(_SwapEndian($DT_ComprUnitSize_3),2)
+			$DT_AllocSize_3 = StringMid($MFTEntry, $DT_Offset + 80, 16)
+			$DT_AllocSize_3 = Dec(_SwapEndian($DT_AllocSize_3),2)
+			$DT_RealSize_3 = StringMid($MFTEntry, $DT_Offset + 96, 16)
+			$DT_RealSize_3 = Dec(_SwapEndian($DT_RealSize_3),2)
+			$DT_InitStreamSize_3 = StringMid($MFTEntry, $DT_Offset + 112, 16)
+			$DT_InitStreamSize_3 = Dec(_SwapEndian($DT_InitStreamSize_3),2)
+		ElseIf $DT_NonResidentFlag_3 = '00' Then
+			$DT_LengthOfAttribute_3 = StringMid($MFTEntry, $DT_Offset + 32, 8)
+			$DT_LengthOfAttribute_3 = Dec(_SwapEndian($DT_LengthOfAttribute_3),2)
+			$DT_OffsetToAttribute_3 = StringMid($MFTEntry, $DT_Offset + 40, 4)
+			$DT_OffsetToAttribute_3 = Dec(_SwapEndian($DT_OffsetToAttribute_3),2)
+			$DT_IndexedFlag_3 = Dec(StringMid($MFTEntry, $DT_Offset + 44, 2))
 		EndIf
 	EndIf
 EndFunc   ;==>_Get_Data
@@ -1601,22 +1543,22 @@ Func _Get_LoggedUtilityStream()
 EndFunc   ;==>_Get_LoggedUtilityStream
 
 Func _ClearVar()
-	$STANDARD_INFORMATION_ON = "FALSE"
-	$ATTRIBUTE_LIST_ON = "FALSE"
-	$FILE_NAME_ON = "FALSE"
-	$OBJECT_ID_ON = "FALSE"
-	$SECURITY_DESCRIPTOR_ON = "FALSE"
-	$VOLUME_NAME_ON = "FALSE"
-	$VOLUME_INFORMATION_ON = "FALSE"
-	$DATA_ON = "FALSE"
-	$INDEX_ROOT_ON = "FALSE"
-	$INDEX_ALLOCATION_ON = "FALSE"
+	$SI_ON = "FALSE"
+	$AL_ON = "FALSE"
+	$FN_ON = "FALSE"
+	$OI_ON = "FALSE"
+	$SD_ON = "FALSE"
+	$VN_ON = "FALSE"
+	$VI_ON = "FALSE"
+	$DT_ON = "FALSE"
+	$IR_ON = "FALSE"
+	$IA_ON = "FALSE"
 	$BITMAP_ON = "FALSE"
-	$REPARSE_POINT_ON = "FALSE"
-	$EA_INFORMATION_ON = "FALSE"
+	$RP_ON = "FALSE"
+	$EAI_ON = "FALSE"
 	$EA_ON = "FALSE"
-	$PROPERTY_SET_ON = "FALSE"
-	$LOGGED_UTILITY_STREAM_ON = "FALSE"
+	$PS_ON = "FALSE"
+	$LUS_ON = "FALSE"
 	$SI_CTime = ""
 	$SI_ATime = ""
 	$SI_MTime = ""
@@ -1630,41 +1572,41 @@ Func _ClearVar()
 	$FN_AllocSize = ""
 	$FN_RealSize = ""
 	$FN_Flags = ""
-	$FN_FileName = ""
-	$DATA_NameLength = ""
-	$DATA_NameRelativeOffset = ""
-	$DATA_Flags = ""
-	$DATA_NameSpace = ""
-	$DATA_Name = ""
-	$DATA_VCNs = ""
-	$DATA_NonResidentFlag = ""
-	$DATA_AllocatedSize = ""
-	$DATA_RealSize = ""
-	$DATA_InitializedStreamSize = ""
-	$DATA_NonResidentFlag_2 = ""
-	$DATA_NameLength_2 = ""
-	$DATA_NameRelativeOffset_2 = ""
-	$DATA_Flags_2 = ""
-	$DATA_NameSpace_2 = ""
-	$DATA_Name_2 = ""
-	$DATA_StartVCN_2 = ""
-	$DATA_LastVCN_2 = ""
-	$DATA_VCNs_2 = ""
-	$DATA_AllocatedSize_2 = ""
-	$DATA_RealSize_2 = ""
-	$DATA_InitializedStreamSize_2 = ""
-	$DATA_NonResidentFlag_3 = ""
-	$DATA_NameLength_3 = ""
-	$DATA_NameRelativeOffset_3 = ""
-	$DATA_Flags_3 = ""
-	$DATA_NameSpace_3 = ""
-	$DATA_Name_3 = ""
-	$DATA_StartVCN_3 = ""
-	$DATA_LastVCN_3 = ""
-	$DATA_VCNs_3 = ""
-	$DATA_AllocatedSize_3 = ""
-	$DATA_RealSize_3 = ""
-	$DATA_InitializedStreamSize_3 = ""
+	$FN_Name = ""
+	$DT_NameLength = ""
+	$DT_NameRelativeOffset = ""
+	$DT_Flags = ""
+	$DT_NameSpace = ""
+	$DT_Name = ""
+	$DT_VCNs = ""
+	$DT_NonResidentFlag = ""
+	$DT_AllocSize = ""
+	$DT_RealSize = ""
+	$DT_InitStreamSize = ""
+	$DT_NonResidentFlag_2 = ""
+	$DT_NameLength_2 = ""
+	$DT_NameRelativeOffset_2 = ""
+	$DT_Flags_2 = ""
+	$DT_NameSpace_2 = ""
+	$DT_Name_2 = ""
+	$DT_StartVCN_2 = ""
+	$DT_LastVCN_2 = ""
+	$DT_VCNs_2 = ""
+	$DT_AllocSize_2 = ""
+	$DT_RealSize_2 = ""
+	$DT_InitStreamSize_2 = ""
+	$DT_NonResidentFlag_3 = ""
+	$DT_NameLength_3 = ""
+	$DT_NameRelativeOffset_3 = ""
+	$DT_Flags_3 = ""
+	$DT_NameSpace_3 = ""
+	$DT_Name_3 = ""
+	$DT_StartVCN_3 = ""
+	$DT_LastVCN_3 = ""
+	$DT_VCNs_3 = ""
+	$DT_AllocSize_3 = ""
+	$DT_RealSize_3 = ""
+	$DT_InitStreamSize_3 = ""
 	$RecordSlackSpace = ""
 	$FN_NameType = ""
 	$FN_CTime_2 = ""
@@ -1674,9 +1616,9 @@ Func _ClearVar()
 	$FN_AllocSize_2 = ""
 	$FN_RealSize_2 = ""
 	$FN_Flags_2 = ""
-	$FN_NameLength_2 = ""
+	$FN_NameLen_2 = ""
 	$FN_NameSpace_2 = ""
-	$FN_FileName_2 = ""
+	$FN_Name_2 = ""
 	$FN_NameType_2 = ""
 	$FN_CTime_3 = ""
 	$FN_ATime_3 = ""
@@ -1685,41 +1627,30 @@ Func _ClearVar()
 	$FN_AllocSize_3 = ""
 	$FN_RealSize_3 = ""
 	$FN_Flags_3 = ""
-	$FN_NameLength_3 = ""
+	$FN_NameLen_3 = ""
 	$FN_NameSpace_3 = ""
-	$FN_FileName_3 = ""
+	$FN_Name_3 = ""
 	$FN_NameType_3 = ""
-	$FN_CTime_4 = ""
-	$FN_ATime_4 = ""
-	$FN_MTime_4 = ""
-	$FN_RTime_4 = ""
-	$FN_AllocSize_4 = ""
-	$FN_RealSize_4 = ""
-	$FN_Flags_4 = ""
-	$FN_NameLength_4 = ""
-	$FN_NameSpace_4 = ""
-	$FN_FileName_4 = ""
-	$FN_NameType_4 = ""
-	$FN_ParentReferenceNo = ""
-	$FN_ParentSequenceNo = ""
-	$FN_ParentReferenceNo_2 = ""
-	$FN_ParentSequenceNo_2 = ""
-	$FN_ParentReferenceNo_3 = ""
-	$FN_ParentSequenceNo_3 = ""
-	$FN_ParentReferenceNo_4 = ""
-	$FN_ParentSequenceNo_4 = ""
-	$DATA_LengthOfAttribute = ""
-	$DATA_OffsetToAttribute = ""
-	$DATA_IndexedFlag = ""
-	$DATA_LengthOfAttribute_2 = ""
-	$DATA_OffsetToAttribute_2 = ""
-	$DATA_IndexedFlag_2 = ""
-	$DATA_LengthOfAttribute_3 = ""
-	$DATA_OffsetToAttribute_3 = ""
-	$DATA_IndexedFlag_3 = ""
-	$DATA_CompressionUnitSize = ""
-	$DATA_CompressionUnitSize_2 = ""
-	$DATA_CompressionUnitSize_3 = ""
+	$FN_ParentRefNo = ""
+	$FN_ParentSeqNo = ""
+	$FN_ParentRefNo_2 = ""
+	$FN_ParentSeqNo_2 = ""
+	$FN_ParentRefNo_3 = ""
+	$FN_ParentSeqNo_3 = ""
+	$FN_ParentRefNo_4 = ""
+	$FN_ParentSeqNo_4 = ""
+	$DT_LengthOfAttribute = ""
+	$DT_OffsetToAttribute = ""
+	$DT_IndexedFlag = ""
+	$DT_LengthOfAttribute_2 = ""
+	$DT_OffsetToAttribute_2 = ""
+	$DT_IndexedFlag_2 = ""
+	$DT_LengthOfAttribute_3 = ""
+	$DT_OffsetToAttribute_3 = ""
+	$DT_IndexedFlag_3 = ""
+	$DT_ComprUnitSize = ""
+	$DT_ComprUnitSize_2 = ""
+	$DT_ComprUnitSize_3 = ""
 	$MSecTest = ""
 	$CTimeTest = ""
 	$SI_MaxVersions = ""
@@ -1735,11 +1666,8 @@ Func _ClearVar()
 	$VOLUME_NAME_NAME = ""
 	$VOL_INFO_NTFS_VERSION = ""
 	$VOL_INFO_FLAGS = ""
-	$INVALID_FILENAME = 0
-	$INVALID_FILENAME_2 = 0
-	$INVALID_FILENAME_3 = 0
-	$DATA_Number = ""
-	$Alternate_Data_Stream = ""
+	$DT_Number = ""
+	$ADS = ""
 	$FileSizeBytes = ""
 	$SI_CTime_tmp = ""
 	$SI_ATime_tmp = ""
@@ -1754,17 +1682,17 @@ Func _ClearVar()
 	$FN_MTime_2_tmp = ""
 	$FN_RTime_2_tmp = ""
 	$IntegrityCheck = ""
-	$Header_HardLinkCount = ""
-	$HEADER_BaseRecSeqNo = ""
+	$HDR_HardLinkCount = ""
+	$HDR_BaseRecSeqNo = ""
 	$RecordActive = ""
-	$HEADER_Flags = ""
-	$HEADER_LSN = ""
-	$HEADER_SequenceNo = ""
-	$HEADER_RecordRealSize = ""
-	$HEADER_RecordAllocSize = ""
-	$HEADER_BaseRecord = ""
-	$HEADER_NextAttribID = ""
-	$HEADER_MFTREcordNumber = ""
+	$HDR_Flags = ""
+	$HDR_LSN = ""
+	$HDR_SequenceNo = ""
+	$HDR_RecRealSize = ""
+	$HDR_RecAllocSize = ""
+	$HDR_BaseRecord = ""
+	$HDR_NextAttribID = ""
+	$HDR_MFTREcordNumber = ""
 EndFunc   ;==>_ClearVar
 
 Func _Test_MilliSec($timestamp)
@@ -1854,38 +1782,75 @@ EndFunc   ;==>_FillZero
 Func _WriteCSV2()
 	If $dol2t Then
 ;		If $SI_CTime <> "" Then
-			FileWriteLine($csv, '"' & StringLeft($SI_CTime,10) & '","' & StringMid($SI_CTime,12,8) & '","' & $UTCconfig & '","' & "C" & '","' & "MFT" & '","' & $HEADER_Flags & '","' & "File Create" & '","' & "" & '","' & "" & '","' & "SI" & '","' & $FN_FileNamePath & '","' & "" & '","' & $FN_FileName & '","' & $HEADER_MFTREcordNumber & '","' & $RecordActive & '","' & "" & '","' & "" & '"' & @CRLF)
-			FileWriteLine($csv, '"' & StringLeft($SI_ATime,10) & '","' & StringMid($SI_ATime,12,8) & '","' & $UTCconfig & '","' & "M" & '","' & "MFT" & '","' & $HEADER_Flags & '","' & "File Modified" & '","' & "" & '","' & "" & '","' & "SI" & '","' & $FN_FileNamePath & '","' & "" & '","' & $FN_FileName & '","' & $HEADER_MFTREcordNumber & '","' & $RecordActive & '","' & "" & '","' & "" & '"' & @CRLF)
-			FileWriteLine($csv, '"' & StringLeft($SI_MTime,10) & '","' & StringMid($SI_MTime,12,8) & '","' & $UTCconfig & '","' & "B" & '","' & "MFT" & '","' & $HEADER_Flags & '","' & "MFT Entry" & '","' & "" & '","' & "" & '","' & "SI" & '","' & $FN_FileNamePath & '","' & "" & '","' & $FN_FileName & '","' & $HEADER_MFTREcordNumber & '","' & $RecordActive & '","' & "" & '","' & "" & '"' & @CRLF)
-			FileWriteLine($csv, '"' & StringLeft($SI_RTime,10) & '","' & StringMid($SI_RTime,12,8) & '","' & $UTCconfig & '","' & "A" & '","' & "MFT" & '","' & $HEADER_Flags & '","' & "File Last Access" & '","' & "" & '","' & "" & '","' & "SI" & '","' & $FN_FileNamePath & '","' & "" & '","' & $FN_FileName & '","' & $HEADER_MFTREcordNumber & '","' & $RecordActive & '","' & "" & '","' & "" & '"' & @CRLF)
+			FileWriteLine($csv, StringLeft($SI_CTime,10) & $de & StringMid($SI_CTime,12,8) & $de & $UTCconfig & $de & "C" & $de & "MFT" & $de & $HDR_Flags & $de & "File Create" & $de & "" & $de & "" & $de & "SI" & $de & $FN_NamePath & $de & "" & $de & $FN_Name & $de & $HDR_MFTREcordNumber & $de & $RecordActive & $de & "" & $de & "" & @CRLF)
+			FileWriteLine($csv, StringLeft($SI_ATime,10) & $de & StringMid($SI_ATime,12,8) & $de & $UTCconfig & $de & "M" & $de & "MFT" & $de & $HDR_Flags & $de & "File Modified" & $de & "" & $de & "" & $de & "SI" & $de & $FN_NamePath & $de & "" & $de & $FN_Name & $de & $HDR_MFTREcordNumber & $de & $RecordActive & $de & "" & $de & "" & @CRLF)
+			FileWriteLine($csv, StringLeft($SI_MTime,10) & $de & StringMid($SI_MTime,12,8) & $de & $UTCconfig & $de & "B" & $de & "MFT" & $de & $HDR_Flags & $de & "MFT Entry" & $de & "" & $de & "" & $de & "SI" & $de & $FN_NamePath & $de & "" & $de & $FN_Name & $de & $HDR_MFTREcordNumber & $de & $RecordActive & $de & "" & $de & "" & @CRLF)
+			FileWriteLine($csv, StringLeft($SI_RTime,10) & $de & StringMid($SI_RTime,12,8) & $de & $UTCconfig & $de & "A" & $de & "MFT" & $de & $HDR_Flags & $de & "File Last Access" & $de & "" & $de & "" & $de & "SI" & $de & $FN_NamePath & $de & "" & $de & $FN_Name & $de & $HDR_MFTREcordNumber & $de & $RecordActive & $de & "" & $de & "" & @CRLF)
 ;		EndIf
 		If $FN_CTime <> "" Then
-			FileWriteLine($csv, '"' & StringLeft($FN_CTime,10) & '","' & StringMid($FN_CTime,12,8) & '","' & $UTCconfig & '","' & "C" & '","' & "MFT" & '","' & $HEADER_Flags & '","' & "File Create" & '","' & "" & '","' & "" & '","' & "FN1" & '","' & $FN_FileNamePath & '","' & "" & '","' & $FN_FileName & '","' & $HEADER_MFTREcordNumber & '","' & $RecordActive & '","' & "" & '","' & "" & '"' & @CRLF)
-			FileWriteLine($csv, '"' & StringLeft($FN_ATime,10) & '","' & StringMid($FN_ATime,12,8) & '","' & $UTCconfig & '","' & "M" & '","' & "MFT" & '","' & $HEADER_Flags & '","' & "File Modified" & '","' & "" & '","' & "" & '","' & "FN1" & '","' & $FN_FileNamePath & '","' & "" & '","' & $FN_FileName & '","' & $HEADER_MFTREcordNumber & '","' & $RecordActive & '","' & "" & '","' & "" & '"' & @CRLF)
-			FileWriteLine($csv, '"' & StringLeft($FN_MTime,10) & '","' & StringMid($FN_MTime,12,8) & '","' & $UTCconfig & '","' & "B" & '","' & "MFT" & '","' & $HEADER_Flags & '","' & "MFT Entry" & '","' & "" & '","' & "" & '","' & "FN1" & '","' & $FN_FileNamePath & '","' & "" & '","' & $FN_FileName & '","' & $HEADER_MFTREcordNumber & '","' & $RecordActive & '","' & "" & '","' & "" & '"' & @CRLF)
-			FileWriteLine($csv, '"' & StringLeft($FN_RTime,10) & '","' & StringMid($FN_RTime,12,8) & '","' & $UTCconfig & '","' & "A" & '","' & "MFT" & '","' & $HEADER_Flags & '","' & "File Last Access" & '","' & "" & '","' & "" & '","' & "FN1" & '","' & $FN_FileNamePath & '","' & "" & '","' & $FN_FileName & '","' & $HEADER_MFTREcordNumber & '","' & $RecordActive & '","' & "" & '","' & "" & '"' & @CRLF)
+			FileWriteLine($csv, StringLeft($FN_CTime,10) & $de & StringMid($FN_CTime,12,8) & $de & $UTCconfig & $de & "C" & $de & "MFT" & $de & $HDR_Flags & $de & "File Create" & $de & "" & $de & "" & $de & "FN1" & $de & $FN_NamePath & $de & "" & $de & $FN_Name & $de & $HDR_MFTREcordNumber & $de & $RecordActive & $de & "" & $de & "" & @CRLF)
+			FileWriteLine($csv, StringLeft($FN_ATime,10) & $de & StringMid($FN_ATime,12,8) & $de & $UTCconfig & $de & "M" & $de & "MFT" & $de & $HDR_Flags & $de & "File Modified" & $de & "" & $de & "" & $de & "FN1" & $de & $FN_NamePath & $de & "" & $de & $FN_Name & $de & $HDR_MFTREcordNumber & $de & $RecordActive & $de & "" & $de & "" & @CRLF)
+			FileWriteLine($csv, StringLeft($FN_MTime,10) & $de & StringMid($FN_MTime,12,8) & $de & $UTCconfig & $de & "B" & $de & "MFT" & $de & $HDR_Flags & $de & "MFT Entry" & $de & "" & $de & "" & $de & "FN1" & $de & $FN_NamePath & $de & "" & $de & $FN_Name & $de & $HDR_MFTREcordNumber & $de & $RecordActive & $de & "" & $de & "" & @CRLF)
+			FileWriteLine($csv, StringLeft($FN_RTime,10) & $de & StringMid($FN_RTime,12,8) & $de & $UTCconfig & $de & "A" & $de & "MFT" & $de & $HDR_Flags & $de & "File Last Access" & $de & "" & $de & "" & $de & "FN1" & $de & $FN_NamePath & $de & "" & $de & $FN_Name & $de & $HDR_MFTREcordNumber & $de & $RecordActive & $de & "" & $de & "" & @CRLF)
 		EndIf
 		If $FN_CTime_2 <> "" Then
-			FileWriteLine($csv, '"' & StringLeft($FN_CTime_2,10) & '","' & StringMid($FN_CTime_2,12,8) & '","' & $UTCconfig & '","' & "C" & '","' & "MFT" & '","' & $HEADER_Flags & '","' & "File Create" & '","' & "" & '","' & "" & '","' & "FN2" & '","' & $FN_FileNamePath & '","' & "" & '","' & $FN_FileName_2 & '","' & $HEADER_MFTREcordNumber & '","' & $RecordActive & '","' & "" & '","' & "" & '"' & @CRLF)
-			FileWriteLine($csv, '"' & StringLeft($FN_ATime_2,10) & '","' & StringMid($FN_ATime_2,12,8) & '","' & $UTCconfig & '","' & "M" & '","' & "MFT" & '","' & $HEADER_Flags & '","' & "File Modified" & '","' & "" & '","' & "" & '","' & "FN2" & '","' & $FN_FileNamePath & '","' & "" & '","' & $FN_FileName_2 & '","' & $HEADER_MFTREcordNumber & '","' & $RecordActive & '","' & "" & '","' & "" & '"' & @CRLF)
-			FileWriteLine($csv, '"' & StringLeft($FN_MTime_2,10) & '","' & StringMid($FN_MTime_2,12,8) & '","' & $UTCconfig & '","' & "B" & '","' & "MFT" & '","' & $HEADER_Flags & '","' & "MFT Entry" & '","' & "" & '","' & "" & '","' & "FN2" & '","' & $FN_FileNamePath & '","' & "" & '","' & $FN_FileName_2 & '","' & $HEADER_MFTREcordNumber & '","' & $RecordActive & '","' & "" & '","' & "" & '"' & @CRLF)
-			FileWriteLine($csv, '"' & StringLeft($FN_RTime_2,10) & '","' & StringMid($FN_RTime_2,12,8) & '","' & $UTCconfig & '","' & "A" & '","' & "MFT" & '","' & $HEADER_Flags & '","' & "File Last Access" & '","' & "" & '","' & "" & '","' & "FN2" & '","' & $FN_FileNamePath & '","' & "" & '","' & $FN_FileName_2 & '","' & $HEADER_MFTREcordNumber & '","' & $RecordActive & '","' & "" & '","' & "" & '"' & @CRLF)
+			FileWriteLine($csv, StringLeft($FN_CTime_2,10) & $de & StringMid($FN_CTime_2,12,8) & $de & $UTCconfig & $de & "C" & $de & "MFT" & $de & $HDR_Flags & $de & "File Create" & $de & "" & $de & "" & $de & "FN2" & $de & $FN_NamePath & $de & "" & $de & $FN_Name_2 & $de & $HDR_MFTREcordNumber & $de & $RecordActive & $de & "" & $de & "" & @CRLF)
+			FileWriteLine($csv, StringLeft($FN_ATime_2,10) & $de & StringMid($FN_ATime_2,12,8) & $de & $UTCconfig & $de & "M" & $de & "MFT" & $de & $HDR_Flags & $de & "File Modified" & $de & "" & $de & "" & $de & "FN2" & $de & $FN_NamePath & $de & "" & $de & $FN_Name_2 & $de & $HDR_MFTREcordNumber & $de & $RecordActive & $de & "" & $de & "" & @CRLF)
+			FileWriteLine($csv, StringLeft($FN_MTime_2,10) & $de & StringMid($FN_MTime_2,12,8) & $de & $UTCconfig & $de & "B" & $de & "MFT" & $de & $HDR_Flags & $de & "MFT Entry" & $de & "" & $de & "" & $de & "FN2" & $de & $FN_NamePath & $de & "" & $de & $FN_Name_2 & $de & $HDR_MFTREcordNumber & $de & $RecordActive & $de & "" & $de & "" & @CRLF)
+			FileWriteLine($csv, StringLeft($FN_RTime_2,10) & $de & StringMid($FN_RTime_2,12,8) & $de & $UTCconfig & $de & "A" & $de & "MFT" & $de & $HDR_Flags & $de & "File Last Access" & $de & "" & $de & "" & $de & "FN2" & $de & $FN_NamePath & $de & "" & $de & $FN_Name_2 & $de & $HDR_MFTREcordNumber & $de & $RecordActive & $de & "" & $de & "" & @CRLF)
 		EndIf
 	ElseIf $DoBodyfile Then
 ;		If $SI_CTime <> "" Then
-			FileWriteLine($csv, '"' & "" & '"|"' & $FN_FileName & '"|"' & $HEADER_MFTREcordNumber & '"|"' & "" & '"|"' & "" & '"|"' & "" & '"|"' & $FileSizeBytes & '"|"' & StringLeft($SI_ATime,19) & '"|"' & StringLeft($SI_MTime,19) & '"|"' & StringLeft($SI_CTime,19) & '"|"' & StringLeft($SI_RTime,19) & '"' & @CRLF)
+			FileWriteLine($csv, "" & $de & $FN_Name & $de & $HDR_MFTREcordNumber & $de & "" & $de & "" & $de & "" & $de & $FileSizeBytes & $de & StringLeft($SI_ATime,19) & $de & StringLeft($SI_MTime,19) & $de & StringLeft($SI_CTime,19) & $de & StringLeft($SI_RTime,19) & @CRLF)
+;		EndIf
+	EndIf
+EndFunc
+
+Func _WriteCSV2withQuotes()
+	If $dol2t Then
+;		If $SI_CTime <> "" Then
+			FileWriteLine($csv, '"'& StringLeft($SI_CTime,10) &'"'& $de &'"'& StringMid($SI_CTime,12,8) &'"'& $de &'"'& $UTCconfig &'"'& $de &'"'& "C" &'"'& $de &'"'& "MFT" &'"'& $de &'"'& $HDR_Flags &'"'& $de &'"'& "File Create" &'"'& $de &'"'& "" &'"'& $de &'"'& "" &'"'& $de &'"'& "SI" &'"'& $de &'"'& $FN_NamePath &'"'& $de &'"'& "" &'"'& $de &'"'& $FN_Name &'"'& $de &'"'& $HDR_MFTREcordNumber &'"'& $de &'"'& $RecordActive &'"'& $de &'"'& "" &'"'& $de &'"'& "" &'"'& @CRLF)
+			FileWriteLine($csv, '"'& StringLeft($SI_ATime,10) &'"'& $de &'"'& StringMid($SI_ATime,12,8) &'"'& $de &'"'& $UTCconfig &'"'& $de &'"'& "M" &'"'& $de &'"'& "MFT" &'"'& $de &'"'& $HDR_Flags &'"'& $de &'"'& "File Modified" &'"'& $de &'"'& "" &'"'& $de &'"'& "" &'"'& $de &'"'& "SI" &'"'& $de &'"'& $FN_NamePath &'"'& $de &'"'& "" &'"'& $de &'"'& $FN_Name &'"'& $de &'"'& $HDR_MFTREcordNumber &'"'& $de &'"'& $RecordActive &'"'& $de &'"'& "" &'"'& $de &'"'& "" &'"'& @CRLF)
+			FileWriteLine($csv, '"'& StringLeft($SI_MTime,10) &'"'& $de &'"'& StringMid($SI_MTime,12,8) &'"'& $de &'"'& $UTCconfig &'"'& $de &'"'& "B" &'"'& $de &'"'& "MFT" &'"'& $de &'"'& $HDR_Flags &'"'& $de &'"'& "MFT Entry" &'"'& $de &'"'& "" &'"'& $de &'"'& "" &'"'& $de &'"'& "SI" &'"'& $de &'"'& $FN_NamePath &'"'& $de &'"'& "" &'"'& $de &'"'& $FN_Name &'"'& $de &'"'& $HDR_MFTREcordNumber &'"'& $de &'"'& $RecordActive &'"'& $de &'"'& "" &'"'& $de &'"'& "" &'"'& @CRLF)
+			FileWriteLine($csv, '"'& StringLeft($SI_RTime,10) &'"'& $de &'"'& StringMid($SI_RTime,12,8) &'"'& $de &'"'& $UTCconfig &'"'& $de &'"'& "A" &'"'& $de &'"'& "MFT" &'"'& $de &'"'& $HDR_Flags &'"'& $de &'"'& "File Last Access" &'"'& $de &'"'& "" &'"'& $de &'"'& "" &'"'& $de &'"'& "SI" &'"'& $de &'"'& $FN_NamePath &'"'& $de &'"'& "" &'"'& $de &'"'& $FN_Name &'"'& $de &'"'& $HDR_MFTREcordNumber &'"'& $de &'"'& $RecordActive &'"'& $de &'"'& "" &'"'& $de &'"'& "" &'"'& @CRLF)
+;		EndIf
+		If $FN_CTime <> "" Then
+			FileWriteLine($csv, '"'& StringLeft($FN_CTime,10) &'"'& $de &'"'& StringMid($FN_CTime,12,8) &'"'& $de &'"'& $UTCconfig &'"'& $de &'"'& "C" &'"'& $de &'"'& "MFT" &'"'& $de &'"'& $HDR_Flags &'"'& $de &'"'& "File Create" &'"'& $de &'"'& "" &'"'& $de &'"'& "" &'"'& $de &'"'& "FN1" &'"'& $de &'"'& $FN_NamePath &'"'& $de &'"'& "" &'"'& $de &'"'& $FN_Name &'"'& $de &'"'& $HDR_MFTREcordNumber &'"'& $de &'"'& $RecordActive &'"'& $de &'"'& "" &'"'& $de &'"'& "" &'"'& @CRLF)
+			FileWriteLine($csv, '"'& StringLeft($FN_ATime,10) &'"'& $de &'"'& StringMid($FN_ATime,12,8) &'"'& $de &'"'& $UTCconfig &'"'& $de &'"'& "M" &'"'& $de &'"'& "MFT" &'"'& $de &'"'& $HDR_Flags &'"'& $de &'"'& "File Modified" &'"'& $de &'"'& "" &'"'& $de &'"'& "" &'"'& $de &'"'& "FN1" &'"'& $de &'"'& $FN_NamePath &'"'& $de &'"'& "" &'"'& $de &'"'& $FN_Name &'"'& $de &'"'& $HDR_MFTREcordNumber &'"'& $de &'"'& $RecordActive &'"'& $de &'"'& "" &'"'& $de &'"'& "" &'"'& @CRLF)
+			FileWriteLine($csv, '"'& StringLeft($FN_MTime,10) &'"'& $de &'"'& StringMid($FN_MTime,12,8) &'"'& $de &'"'& $UTCconfig &'"'& $de &'"'& "B" &'"'& $de &'"'& "MFT" &'"'& $de &'"'& $HDR_Flags &'"'& $de &'"'& "MFT Entry" &'"'& $de &'"'& "" &'"'& $de &'"'& "" &'"'& $de &'"'& "FN1" &'"'& $de &'"'& $FN_NamePath &'"'& $de &'"'& "" &'"'& $de &'"'& $FN_Name &'"'& $de &'"'& $HDR_MFTREcordNumber &'"'& $de &'"'& $RecordActive &'"'& $de &'"'& "" &'"'& $de &'"'& "" &'"'& @CRLF)
+			FileWriteLine($csv, '"'& StringLeft($FN_RTime,10) &'"'& $de &'"'& StringMid($FN_RTime,12,8) &'"'& $de &'"'& $UTCconfig &'"'& $de &'"'& "A" &'"'& $de &'"'& "MFT" &'"'& $de &'"'& $HDR_Flags &'"'& $de &'"'& "File Last Access" &'"'& $de &'"'& "" &'"'& $de &'"'& "" &'"'& $de &'"'& "FN1" &'"'& $de &'"'& $FN_NamePath &'"'& $de &'"'& "" &'"'& $de &'"'& $FN_Name &'"'& $de &'"'& $HDR_MFTREcordNumber &'"'& $de &'"'& $RecordActive &'"'& $de &'"'& "" &'"'& $de &'"'& "" &'"'& @CRLF)
+		EndIf
+		If $FN_CTime_2 <> "" Then
+			FileWriteLine($csv, '"'& StringLeft($FN_CTime_2,10) &'"'& $de &'"'& StringMid($FN_CTime_2,12,8) &'"'& $de &'"'& $UTCconfig &'"'& $de &'"'& "C" &'"'& $de &'"'& "MFT" &'"'& $de &'"'& $HDR_Flags &'"'& $de &'"'& "File Create" &'"'& $de &'"'& "" &'"'& $de &'"'& "" &'"'& $de &'"'& "FN2" &'"'& $de &'"'& $FN_NamePath &'"'& $de &'"'& "" &'"'& $de &'"'& $FN_Name_2 &'"'& $de &'"'& $HDR_MFTREcordNumber &'"'& $de &'"'& $RecordActive &'"'& $de &'"'& "" &'"'& $de &'"'& "" &'"'& @CRLF)
+			FileWriteLine($csv, '"'& StringLeft($FN_ATime_2,10) &'"'& $de &'"'& StringMid($FN_ATime_2,12,8) &'"'& $de &'"'& $UTCconfig &'"'& $de &'"'& "M" &'"'& $de &'"'& "MFT" &'"'& $de &'"'& $HDR_Flags &'"'& $de &'"'& "File Modified" &'"'& $de &'"'& "" &'"'& $de &'"'& "" &'"'& $de &'"'& "FN2" &'"'& $de &'"'& $FN_NamePath &'"'& $de &'"'& "" &'"'& $de &'"'& $FN_Name_2 &'"'& $de &'"'& $HDR_MFTREcordNumber &'"'& $de &'"'& $RecordActive &'"'& $de &'"'& "" &'"'& $de &'"'& "" &'"'& @CRLF)
+			FileWriteLine($csv, '"'& StringLeft($FN_MTime_2,10) &'"'& $de &'"'& StringMid($FN_MTime_2,12,8) &'"'& $de &'"'& $UTCconfig &'"'& $de &'"'& "B" &'"'& $de &'"'& "MFT" &'"'& $de &'"'& $HDR_Flags &'"'& $de &'"'& "MFT Entry" &'"'& $de &'"'& "" &'"'& $de &'"'& "" &'"'& $de &'"'& "FN2" &'"'& $de &'"'& $FN_NamePath &'"'& $de &'"'& "" &'"'& $de &'"'& $FN_Name_2 &'"'& $de &'"'& $HDR_MFTREcordNumber &'"'& $de &'"'& $RecordActive &'"'& $de &'"'& "" &'"'& $de &'"'& "" &'"'& @CRLF)
+			FileWriteLine($csv, '"'& StringLeft($FN_RTime_2,10) &'"'& $de &'"'& StringMid($FN_RTime_2,12,8) &'"'& $de &'"'& $UTCconfig &'"'& $de &'"'& "A" &'"'& $de &'"'& "MFT" &'"'& $de &'"'& $HDR_Flags &'"'& $de &'"'& "File Last Access" &'"'& $de &'"'& "" &'"'& $de &'"'& "" &'"'& $de &'"'& "FN2" &'"'& $de &'"'& $FN_NamePath &'"'& $de &'"'& "" &'"'& $de &'"'& $FN_Name_2 &'"'& $de &'"'& $HDR_MFTREcordNumber &'"'& $de &'"'& $RecordActive &'"'& $de &'"'& "" &'"'& $de &'"'& "" &'"'& @CRLF)
+		EndIf
+	ElseIf $DoBodyfile Then
+;		If $SI_CTime <> "" Then
+			FileWriteLine($csv, '"'& "" &'"'& $de &'"'& $FN_Name &'"'& $de &'"'& $HDR_MFTREcordNumber &'"'& $de &'"'& "" &'"'& $de &'"'& "" &'"'& $de &'"'& "" &'"'& $de &'"'& $FileSizeBytes &'"'& $de &'"'& StringLeft($SI_ATime,19) &'"'& $de &'"'& StringLeft($SI_MTime,19) &'"'& $de &'"'& StringLeft($SI_CTime,19) &'"'& $de &'"'& StringLeft($SI_RTime,19) &'"'& @CRLF)
 ;		EndIf
 	EndIf
 EndFunc
 
 Func _WriteCSV()
-	FileWriteLine($csv, '"' & $RecordOffset & '","' & $Signature & '","' & $IntegrityCheck & '","' & $HEADER_MFTREcordNumber & '","' & $HEADER_SequenceNo & '","' & $Header_HardLinkCount & '","' & $FN_ParentReferenceNo & '","' & $FN_ParentSequenceNo & '","' & $FN_FileName & '","' & $FN_FileNamePath & '","' & $HEADER_Flags & '","' & $RecordActive & '","' & $FileSizeBytes & '","' & $INVALID_FILENAME & '","' & $SI_FilePermission & '","' & $FN_Flags & '","' & $FN_NameType & '","' & $Alternate_Data_Stream & '","' & $SI_CTime & '","' & $SI_ATime & '","' & $SI_MTime & '","' & $SI_RTime & '","' & _
-			$MSecTest & '","' & $FN_CTime & '","' & $FN_ATime & '","' & $FN_MTime & '","' & $FN_RTime & '","' & $CTimeTest & '","' & $FN_AllocSize & '","' & $FN_RealSize & '","' & $SI_USN & '","' & $DATA_Name & '","' & $DATA_Flags & '","' & $DATA_LengthOfAttribute & '","' & $DATA_IndexedFlag & '","' & $DATA_VCNs & '","' & $DATA_NonResidentFlag & '","' & $DATA_CompressionUnitSize & '","' & $HEADER_LSN & '","' & _
-			$HEADER_RecordRealSize & '","' & $HEADER_RecordAllocSize & '","' & $HEADER_BaseRecord & '","' & $HEADER_BaseRecSeqNo & '","' & $HEADER_NextAttribID & '","' & $DATA_AllocatedSize & '","' & $DATA_RealSize & '","' & $DATA_InitializedStreamSize & '","' & $SI_HEADER_Flags & '","' & $SI_MaxVersions & '","' & $SI_VersionNumber & '","' & $SI_ClassID & '","' & $SI_OwnerID & '","' & $SI_SecurityID & '","' & $FN_CTime_2 & '","' & $FN_ATime_2 & '","' & _
-			$FN_MTime_2 & '","' & $FN_RTime_2 & '","' & $FN_AllocSize_2 & '","' & $FN_RealSize_2 & '","' & $FN_Flags_2 & '","' & $FN_NameLength_2 & '","' & $FN_NameType_2 & '","' & $FN_FileName_2 & '","' & $INVALID_FILENAME_2 & '","' & $GUID_ObjectID & '","' & $GUID_BirthVolumeID & '","' & $GUID_BirthObjectID & '","' & $GUID_BirthDomainID & '","' & $VOLUME_NAME_NAME & '","' & $VOL_INFO_NTFS_VERSION & '","' & $VOL_INFO_FLAGS & '","' & $FN_CTime_3 & '","' & $FN_ATime_3 & '","' & $FN_MTime_3 & '","' & $FN_RTime_3 & '","' & $FN_AllocSize_3 & '","' & $FN_RealSize_3 & '","' & $FN_Flags_3 & '","' & $FN_NameLength_3 & '","' & $FN_NameType_3 & '","' & $FN_FileName_3 & '","' & $INVALID_FILENAME_3 & '","' & _
-			$FN_CTime_4 & '","' & $FN_ATime_4 & '","' & $FN_MTime_4 & '","' & $FN_RTime_4 & '","' & $FN_AllocSize_4 & '","' & $FN_RealSize_4 & '","' & $FN_Flags_4 & '","' & $FN_NameLength_4 & '","' & $FN_NameType_4 & '","' & $FN_FileName_4 & '","' & $DATA_Name_2 & '","' & $DATA_NonResidentFlag_2 & '","' & $DATA_Flags_2 & '","' & $DATA_LengthOfAttribute_2 & '","' & $DATA_IndexedFlag_2 & '","' & $DATA_StartVCN_2 & '","' & $DATA_LastVCN_2 & '","' & _
-			$DATA_VCNs_2 & '","' & $DATA_CompressionUnitSize_2 & '","' & $DATA_AllocatedSize_2 & '","' & $DATA_RealSize_2 & '","' & $DATA_InitializedStreamSize_2 & '","' & $DATA_Name_3 & '","' & $DATA_NonResidentFlag_3 & '","' & $DATA_Flags_3 & '","' & $DATA_LengthOfAttribute_3 & '","' & $DATA_IndexedFlag_3 & '","' & $DATA_StartVCN_3 & '","' & $DATA_LastVCN_3 & '","' & $DATA_VCNs_3 & '","' & $DATA_CompressionUnitSize_3 & '","' & $DATA_AllocatedSize_3 & '","' & _
-			$DATA_RealSize_3 & '","' & $DATA_InitializedStreamSize_3 & '","' & $STANDARD_INFORMATION_ON & '","' & $ATTRIBUTE_LIST_ON & '","' & $FILE_NAME_ON & '","' & $OBJECT_ID_ON & '","' & $SECURITY_DESCRIPTOR_ON & '","' & $VOLUME_NAME_ON & '","' & $VOLUME_INFORMATION_ON & '","' & $DATA_ON & '","' & $INDEX_ROOT_ON & '","' & $INDEX_ALLOCATION_ON & '","' & $BITMAP_ON & '","' & $REPARSE_POINT_ON & '","' & $EA_INFORMATION_ON & '","' & $EA_ON & '","' & $PROPERTY_SET_ON & '","' & $LOGGED_UTILITY_STREAM_ON & '"' & @CRLF)
+	FileWriteLine($csv, $RecordOffset & $de & $Signature & $de & $IntegrityCheck & $de & $HDR_MFTREcordNumber & $de & $HDR_SequenceNo & $de & $HDR_HardLinkCount & $de & $FN_ParentRefNo & $de & $FN_ParentSeqNo & $de & $FN_Name & $de & $FN_NamePath & $de & $HDR_Flags & $de & $RecordActive & $de & $FileSizeBytes & $de & $SI_FilePermission & $de & $FN_Flags & $de & $FN_NameType & $de & $ADS & $de & $SI_CTime & $de & $SI_ATime & $de & $SI_MTime & $de & $SI_RTime & $de & _
+			$MSecTest & $de & $FN_CTime & $de & $FN_ATime & $de & $FN_MTime & $de & $FN_RTime & $de & $CTimeTest & $de & $FN_AllocSize & $de & $FN_RealSize & $de & $SI_USN & $de & $DT_Name & $de & $DT_Flags & $de & $DT_LengthOfAttribute & $de & $DT_IndexedFlag & $de & $DT_VCNs & $de & $DT_NonResidentFlag & $de & $DT_ComprUnitSize & $de & $HDR_LSN & $de & _
+			$HDR_RecRealSize & $de & $HDR_RecAllocSize & $de & $HDR_BaseRecord & $de & $HDR_BaseRecSeqNo & $de & $HDR_NextAttribID & $de & $DT_AllocSize & $de & $DT_RealSize & $de & $DT_InitStreamSize & $de & $SI_HEADER_Flags & $de & $SI_MaxVersions & $de & $SI_VersionNumber & $de & $SI_ClassID & $de & $SI_OwnerID & $de & $SI_SecurityID & $de & $FN_CTime_2 & $de & $FN_ATime_2 & $de & _
+			$FN_MTime_2 & $de & $FN_RTime_2 & $de & $FN_AllocSize_2 & $de & $FN_RealSize_2 & $de & $FN_Flags_2 & $de & $FN_NameLen_2 & $de & $FN_NameType_2 & $de & $FN_Name_2 & $de & $GUID_ObjectID & $de & $GUID_BirthVolumeID & $de & $GUID_BirthObjectID & $de & $GUID_BirthDomainID & $de & $VOLUME_NAME_NAME & $de & $VOL_INFO_NTFS_VERSION & $de & $VOL_INFO_FLAGS & $de & $FN_CTime_3 & $de & $FN_ATime_3 & $de & $FN_MTime_3 & $de & $FN_RTime_3 & $de & $FN_AllocSize_3 & $de & $FN_RealSize_3 & $de & $FN_Flags_3 & $de & $FN_NameLen_3 & $de & $FN_NameType_3 & $de & $FN_Name_3 & $de & _
+			$DT_Name_2 & $de & $DT_NonResidentFlag_2 & $de & $DT_Flags_2 & $de & $DT_LengthOfAttribute_2 & $de & $DT_IndexedFlag_2 & $de & $DT_StartVCN_2 & $de & $DT_LastVCN_2 & $de & _
+			$DT_VCNs_2 & $de & $DT_ComprUnitSize_2 & $de & $DT_AllocSize_2 & $de & $DT_RealSize_2 & $de & $DT_InitStreamSize_2 & $de & $DT_Name_3 & $de & $DT_NonResidentFlag_3 & $de & $DT_Flags_3 & $de & $DT_LengthOfAttribute_3 & $de & $DT_IndexedFlag_3 & $de & $DT_StartVCN_3 & $de & $DT_LastVCN_3 & $de & $DT_VCNs_3 & $de & $DT_ComprUnitSize_3 & $de & $DT_AllocSize_3 & $de & _
+			$DT_RealSize_3 & $de & $DT_InitStreamSize_3 & $de & $SI_ON & $de & $AL_ON & $de & $FN_ON & $de & $OI_ON & $de & $SD_ON & $de & $VN_ON & $de & $VI_ON & $de & $DT_ON & $de & $IR_ON & $de & $IA_ON & $de & $BITMAP_ON & $de & $RP_ON & $de & $EAI_ON & $de & $EA_ON & $de & $PS_ON & $de & $LUS_ON & @CRLF)
+EndFunc
+
+Func _WriteCSVwithQuotes()
+	FileWriteLine($csv, '"'&$RecordOffset&'"'&$de&'"'&$Signature&'"'&$de&'"'&$IntegrityCheck&'"'&$de&'"'&$HDR_MFTREcordNumber&'"'&$de&'"'&$HDR_SequenceNo&'"'&$de&'"'&$HDR_HardLinkCount&'"'&$de&'"'&$FN_ParentRefNo&'"'&$de&'"'&$FN_ParentSeqNo&'"'&$de&'"'&$FN_Name&'"'&$de&'"'&$FN_NamePath&'"'&$de&'"'&$HDR_Flags&'"'&$de&'"'&$RecordActive&'"'&$de&'"'&$FileSizeBytes&'"'&$de&'"'&$SI_FilePermission&'"'&$de&'"'&$FN_Flags&'"'&$de&'"'&$FN_NameType&'"'&$de&'"'&$ADS&'"'&$de&'"'&$SI_CTime&'"'&$de&'"' & _
+		$SI_ATime&'"'&$de&'"'&$SI_MTime&'"'&$de&'"'&$SI_RTime&'"'&$de&'"'&$MSecTest&'"'&$de&'"'&$FN_CTime&'"'&$de&'"'&$FN_ATime&'"'&$de&'"'&$FN_MTime&'"'&$de&'"'&$FN_RTime&'"'&$de&'"'&$CTimeTest&'"'&$de&'"'&$FN_AllocSize&'"'&$de&'"'&$FN_RealSize&'"'&$de&'"'&$SI_USN&'"'&$de&'"'&$DT_Name&'"'&$de&'"'&$DT_Flags&'"'&$de&'"'&$DT_LengthOfAttribute&'"'&$de&'"'&$DT_IndexedFlag&'"'&$de&'"'&$DT_VCNs&'"'&$de&'"'&$DT_NonResidentFlag&'"'&$de&'"'&$DT_ComprUnitSize&'"'&$de&'"'&$HDR_LSN&'"'&$de&'"' & _
+		$HDR_RecRealSize&'"'&$de&'"'&$HDR_RecAllocSize&'"'&$de&'"'&$HDR_BaseRecord&'"'&$de&'"'&$HDR_BaseRecSeqNo&'"'&$de&'"'&$HDR_NextAttribID&'"'&$de&'"'&$DT_AllocSize&'"'&$de&'"'&$DT_RealSize&'"'&$de&'"'&$DT_InitStreamSize&'"'&$de&'"'&$SI_HEADER_Flags&'"'&$de&'"'&$SI_MaxVersions&'"'&$de&'"'&$SI_VersionNumber&'"'&$de&'"'&$SI_ClassID&'"'&$de&'"'&$SI_OwnerID&'"'&$de&'"'&$SI_SecurityID&'"'&$de&'"'&$FN_CTime_2&'"'&$de&'"'&$FN_ATime_2&'"'&$de&'"' & _
+		$FN_MTime_2&'"'&$de&'"'&$FN_RTime_2&'"'&$de&'"'&$FN_AllocSize_2&'"'&$de&'"'&$FN_RealSize_2&'"'&$de&'"'&$FN_Flags_2&'"'&$de&'"'&$FN_NameLen_2&'"'&$de&'"'&$FN_NameType_2&'"'&$de&'"'&$FN_Name_2&'"'&$de&'"'&$GUID_ObjectID&'"'&$de&'"'&$GUID_BirthVolumeID&'"'&$de&'"'&$GUID_BirthObjectID&'"'&$de&'"'&$GUID_BirthDomainID&'"'&$de&'"'&$VOLUME_NAME_NAME&'"'&$de&'"'&$VOL_INFO_NTFS_VERSION&'"'&$de&'"'&$VOL_INFO_FLAGS&'"'&$de&'"'&$FN_CTime_3&'"'&$de&'"'&$FN_ATime_3&'"'&$de&'"'&$FN_MTime_3&'"'&$de&'"'&$FN_RTime_3&'"'&$de&'"'&$FN_AllocSize_3&'"'&$de&'"' & _
+		$FN_RealSize_3&'"'&$de&'"'&$FN_Flags_3&'"'&$de&'"'&$FN_NameLen_3&'"'&$de&'"'&$FN_NameType_3&'"'&$de&'"'&$FN_Name_3&'"'&$de&'"'&$DT_Name_2&'"'&$de&'"'&$DT_NonResidentFlag_2&'"'&$de&'"'&$DT_Flags_2&'"'&$de&'"'&$DT_LengthOfAttribute_2&'"'&$de&'"'&$DT_IndexedFlag_2&'"'&$de&'"'&$DT_StartVCN_2&'"'&$de&'"'&$DT_LastVCN_2&'"'&$de&'"' & _
+		$DT_VCNs_2&'"'&$de&'"'&$DT_ComprUnitSize_2&'"'&$de&'"'&$DT_AllocSize_2&'"'&$de&'"'&$DT_RealSize_2&'"'&$de&'"'&$DT_InitStreamSize_2&'"'&$de&'"'&$DT_Name_3&'"'&$de&'"'&$DT_NonResidentFlag_3&'"'&$de&'"'&$DT_Flags_3&'"'&$de&'"'&$DT_LengthOfAttribute_3&'"'&$de&'"'&$DT_IndexedFlag_3&'"'&$de&'"'&$DT_StartVCN_3&'"'&$de&'"'&$DT_LastVCN_3&'"'&$de&'"'&$DT_VCNs_3&'"'&$de&'"'&$DT_ComprUnitSize_3&'"'&$de&'"'&$DT_AllocSize_3&'"'&$de&'"' & _
+		$DT_RealSize_3&'"'&$de&'"'&$DT_InitStreamSize_3&'"'&$de&'"'&$SI_ON&'"'&$de&'"'&$AL_ON&'"'&$de&'"'&$FN_ON&'"'&$de&'"'&$OI_ON&'"'&$de&'"'&$SD_ON&'"'&$de&'"'&$VN_ON&'"'&$de&'"'&$VI_ON&'"'&$de&'"'&$DT_ON&'"'&$de&'"'&$IR_ON&'"'&$de&'"'&$IA_ON&'"'&$de&'"'&$BITMAP_ON&'"'&$de&'"'&$RP_ON&'"'&$de&'"'&$EAI_ON&'"'&$de&'"'&$EA_ON&'"'&$de&'"'&$PS_ON&'"'&$de&'"'&$LUS_ON&'"'&@CRLF)
 EndFunc
 
 Func _SelectCsv()
@@ -1899,17 +1864,17 @@ EndFunc
 Func _WriteCSVHeader()
 FileWriteLine($csv, "#	Timestamps presented in UTC " & $UTCconfig & @CRLF)
 If $DoDefaultAll Then
-	$csv_header = 'RecordOffset,Signature,IntegrityCheck,HEADER_MFTREcordNumber,HEADER_SequenceNo,Header_HardLinkCount,FN_ParentReferenceNo,FN_ParentSequenceNo,FN_FileName,FilePath,HEADER_Flags,RecordActive,FileSizeBytes,INVALID_FILENAME,SI_FilePermission,FN_Flags,FN_NameType,ADS,SI_CTime,SI_ATime,SI_MTime,SI_RTime,MSecTest,'
-	$csv_header &= 'FN_CTime,FN_ATime,FN_MTime,FN_RTime,CTimeTest,FN_AllocSize,FN_RealSize,SI_USN,DATA_Name,DATA_Flags,DATA_LengthOfAttribute,DATA_IndexedFlag,DATA_VCNs,DATA_NonResidentFlag,DATA_CompressionUnitSize,HEADER_LSN,HEADER_RecordRealSize,'
-	$csv_header &= 'HEADER_RecordAllocSize,HEADER_BaseRecord,HEADER_BaseRecSeqNo,HEADER_NextAttribID,DATA_AllocatedSize,DATA_RealSize,DATA_InitializedStreamSize,SI_HEADER_Flags,SI_MaxVersions,SI_VersionNumber,SI_ClassID,SI_OwnerID,SI_SecurityID,FN_CTime_2,FN_ATime_2,FN_MTime_2,'
-	$csv_header &= 'FN_RTime_2,FN_AllocSize_2,FN_RealSize_2,FN_Flags_2,FN_NameLength_2,FN_NameType_2,FN_FileName_2,INVALID_FILENAME_2,GUID_ObjectID,GUID_BirthVolumeID,GUID_BirthObjectID,GUID_BirthDomainID,VOLUME_NAME_NAME,VOL_INFO_NTFS_VERSION,VOL_INFO_FLAGS,FN_CTime_3,FN_ATime_3,FN_MTime_3,FN_RTime_3,FN_AllocSize_3,FN_RealSize_3,FN_Flags_3,FN_NameLength_3,FN_NameType_3,FN_FileName_3,INVALID_FILENAME_3,FN_CTime_4,'
-	$csv_header &= 'FN_ATime_4,FN_MTime_4,FN_RTime_4,FN_AllocSize_4,FN_RealSize_4,FN_Flags_4,FN_NameLength_4,FN_NameType_4,FN_FileName_4,DATA_Name_2,DATA_NonResidentFlag_2,DATA_Flags_2,DATA_LengthOfAttribute_2,DATA_IndexedFlag_2,DATA_StartVCN_2,DATA_LastVCN_2,'
-	$csv_header &= 'DATA_VCNs_2,DATA_CompressionUnitSize_2,DATA_AllocatedSize_2,DATA_RealSize_2,DATA_InitializedStreamSize_2,DATA_Name_3,DATA_NonResidentFlag_3,DATA_Flags_3,DATA_LengthOfAttribute_3,DATA_IndexedFlag_3,DATA_StartVCN_3,DATA_LastVCN_3,DATA_VCNs_3,'
-	$csv_header &= 'DATA_CompressionUnitSize_3,DATA_AllocatedSize_3,DATA_RealSize_3,DATA_InitializedStreamSize_3,STANDARD_INFORMATION_ON,ATTRIBUTE_LIST_ON,FILE_NAME_ON,OBJECT_ID_ON,SECURITY_DESCRIPTOR_ON,VOLUME_NAME_ON,VOLUME_INFORMATION_ON,DATA_ON,INDEX_ROOT_ON,INDEX_ALLOCATION_ON,BITMAP_ON,REPARSE_POINT_ON,EA_INFORMATION_ON,EA_ON,PROPERTY_SET_ON,LOGGED_UTILITY_STREAM_ON'
+	$csv_header = "RecordOffset"&$de&"Signature"&$de&"IntegrityCheck"&$de&"HEADER_MFTREcordNumber"&$de&"HEADER_SequenceNo"&$de&"Header_HardLinkCount"&$de&"FN_ParentReferenceNo"&$de&"FN_ParentSequenceNo"&$de&"FN_FileName"&$de&"FilePath"&$de&"HEADER_Flags"&$de&"RecordActive"&$de&"FileSizeBytes"&$de&"SI_FilePermission"&$de&"FN_Flags"&$de&"FN_NameType"&$de&"ADS"&$de&"SI_CTime"&$de&"SI_ATime"&$de&"SI_MTime"&$de&"SI_RTime"&$de&"MSecTest"&$de
+	$csv_header &= "FN_CTime"&$de&"FN_ATime"&$de&"FN_MTime"&$de&"FN_RTime"&$de&"CTimeTest"&$de&"FN_AllocSize"&$de&"FN_RealSize"&$de&"SI_USN"&$de&"DATA_Name"&$de&"DATA_Flags"&$de&"DATA_LengthOfAttribute"&$de&"DATA_IndexedFlag"&$de&"DATA_VCNs"&$de&"DATA_NonResidentFlag"&$de&"DATA_CompressionUnitSize"&$de&"HEADER_LSN"&$de&"HEADER_RecordRealSize"&$de
+	$csv_header &= "HEADER_RecordAllocSize"&$de&"HEADER_BaseRecord"&$de&"HEADER_BaseRecSeqNo"&$de&"HEADER_NextAttribID"&$de&"DATA_AllocatedSize"&$de&"DATA_RealSize"&$de&"DATA_InitializedStreamSize"&$de&"SI_HEADER_Flags"&$de&"SI_MaxVersions"&$de&"SI_VersionNumber"&$de&"SI_ClassID"&$de&"SI_OwnerID"&$de&"SI_SecurityID"&$de&"FN_CTime_2"&$de&"FN_ATime_2"&$de&"FN_MTime_2"&$de
+	$csv_header &= "FN_RTime_2"&$de&"FN_AllocSize_2"&$de&"FN_RealSize_2"&$de&"FN_Flags_2"&$de&"FN_NameLength_2"&$de&"FN_NameType_2"&$de&"FN_FileName_2"&$de&"GUID_ObjectID"&$de&"GUID_BirthVolumeID"&$de&"GUID_BirthObjectID"&$de&"GUID_BirthDomainID"&$de&"VOLUME_NAME_NAME"&$de&"VOL_INFO_NTFS_VERSION"&$de&"VOL_INFO_FLAGS"&$de&"FN_CTime_3"&$de&"FN_ATime_3"&$de&"FN_MTime_3"&$de&"FN_RTime_3"&$de&"FN_AllocSize_3"&$de&"FN_RealSize_3"&$de&"FN_Flags_3"&$de&"FN_NameLength_3"&$de&"FN_NameType_3"&$de&"FN_FileName_3"&$de
+	$csv_header &= "DATA_Name_2"&$de&"DATA_NonResidentFlag_2"&$de&"DATA_Flags_2"&$de&"DATA_LengthOfAttribute_2"&$de&"DATA_IndexedFlag_2"&$de&"DATA_StartVCN_2"&$de&"DATA_LastVCN_2"&$de
+	$csv_header &= "DATA_VCNs_2"&$de&"DATA_CompressionUnitSize_2"&$de&"DATA_AllocatedSize_2"&$de&"DATA_RealSize_2"&$de&"DATA_InitializedStreamSize_2"&$de&"DATA_Name_3"&$de&"DATA_NonResidentFlag_3"&$de&"DATA_Flags_3"&$de&"DATA_LengthOfAttribute_3"&$de&"DATA_IndexedFlag_3"&$de&"DATA_StartVCN_3"&$de&"DATA_LastVCN_3"&$de&"DATA_VCNs_3"&$de
+	$csv_header &= "DATA_CompressionUnitSize_3"&$de&"DATA_AllocatedSize_3"&$de&"DATA_RealSize_3"&$de&"DATA_InitializedStreamSize_3"&$de&"STANDARD_INFORMATION_ON"&$de&"ATTRIBUTE_LIST_ON"&$de&"FILE_NAME_ON"&$de&"OBJECT_ID_ON"&$de&"SECURITY_DESCRIPTOR_ON"&$de&"VOLUME_NAME_ON"&$de&"VOLUME_INFORMATION_ON"&$de&"DATA_ON"&$de&"INDEX_ROOT_ON"&$de&"INDEX_ALLOCATION_ON"&$de&"BITMAP_ON"&$de&"REPARSE_POINT_ON"&$de&"EA_INFORMATION_ON"&$de&"EA_ON"&$de&"PROPERTY_SET_ON"&$de&"LOGGED_UTILITY_STREAM_ON"
 ElseIf $dol2t Then
-	$csv_header = 'Date,Time,Timezone,MACB,Source,SourceType,Type,User,Host,Short,Desc,Version,Filename,Inode,Notes,Format,Extra'
+	$csv_header = "Date"&$de&"Time"&$de&"Timezone"&$de&"MACB"&$de&"Source"&$de&"SourceType"&$de&"Type"&$de&"User"&$de&"Host"&$de&"Short"&$de&"Desc"&$de&"Version"&$de&"Filename"&$de&"Inode"&$de&"Notes"&$de&"Format"&$de&"Extra"
 ElseIf $DoBodyfile Then
-	$csv_header = 'MD5|name|inode|mode_as_string|UID|GID|size|atime|mtime|ctime|crtime'
+	$csv_header = "MD5"&$de&"name"&$de&"inode"&$de&"mode_as_string"&$de&"UID"&$de&"GID"&$de&"size"&$de&"atime"&$de&"mtime"&$de&"ctime"&$de&"crtime"
 EndIf
 FileWriteLine($csv, $csv_header & @CRLF)
 EndFunc
@@ -2147,3 +2112,9 @@ Func _WinTime_FormatTime($iYear,$iMonth,$iDay,$iHour,$iMin,$iSec,$iMilSec,$iDayO
 	Return $sDateTimeStr
 EndFunc
 ; end: by Ascend4nt ----------------------------
+
+Func _TranslateSeparator()
+	; Or do it the other way around to allow setting other trickier separators, like specifying it in hex
+	GUICtrlSetData($SaparatorInput,StringLeft(GUICtrlRead($SaparatorInput),1))
+	GUICtrlSetData($SaparatorInput2,"0x"&Hex(Asc(GUICtrlRead($SaparatorInput)),2))
+EndFunc
