@@ -96,16 +96,6 @@ The focus have been on the attributes $STANDARD_INFORMATION, $FILE_NAME, $DATA a
   * FN_NameLength_3
   * FN_NameType_3
   * FN_FileName_3
-  * FN_CTime_4
-  * FN_ATime_4
-  * FN_MTime_4
-  * FN_RTime_4
-  * FN_AllocSize_4
-  * FN_RealSize_4
-  * FN_Flags_4
-  * FN_NameLength_4
-  * FN_NameType_4
-  * FN_FileName_4
   * DATA_Name_2
   * DATA_NonResidentFlag_2
   * DATA_Flags_2
@@ -146,9 +136,6 @@ The focus have been on the attributes $STANDARD_INFORMATION, $FILE_NAME, $DATA a
   * EA_ON
   * PROPERTY_SET_ON
   * LOGGED_UTILITY_STREAM_ON
-  * INVALID_FILENAME
-  * INVALID_FILENAME_2
-  * INVALID_FILENAME_3
 
 = Explanation =
 
@@ -184,9 +171,11 @@ Resolved paths may not be correct for deleted files/folders. That is because its
 
 = Latest Version =
 
-v2.0.0.2
+v2.0.0.3
 
 = Changelog =
+
+v2.0.0.3. Fixed crash on certain MFT's with specific invalid records. Added option to choose separator, and if surrounding quotes. Removed decode of filename attribute number 4, as well as the invalid name variable.
 
 v2.0.0.2. Speed improvement by 30 %. Fixed bug where some columns was missing in csv with the All format.
 
