@@ -11,6 +11,7 @@ Input can be any of the following:
   * Raw/dd image of partition
   * $MFT extracted file
   * Reading of $MFT directly from a live system
+  * $MFT fragments extracted off memory dumps (see MFTCarver)
 
 There is an option to choose which UTC region to decode for. For instance you have a disk image and the target system had a timezone configuration of UTC -9.30, then you can configure it like that and get the timestamps directly into UTC 0.00. Default is UTC 0.00, and if running on a live system, there is no need to do anything as timestamps are automatically set to UTC 0.00. 
 
@@ -18,6 +19,10 @@ The format of output can be chosen. Currently it is possible to choose from:
   * All (will write to csv everything it can). Default set.
   * log2timeline: http://code.google.com/p/log2timeline/wiki/l2t_csv
   * bodyfile (v3.x): http://wiki.sleuthkit.org/index.php?title=Body_file
+
+It is possible to parse broken/partial $MFT by configuring "Broken $MFT". This setting is necessary if for instance index number 0 is missing (the record for $MFT itself).
+
+Also it is possible to configure the tool to skip fixups. This is something you may want if you are working on memory dumps. If so, you need to run MFTCarver on the memdump first. Then run mft2csv on the output file from MFTCarver. Must have both "Broken $MFT" and "Skip Fixups" configured in such a case.
 
 The focus have been on the attributes $STANDARD_INFORMATION, $FILE_NAME, $DATA and $VOLUME_ID as well as the file record headers themselves. More attributes will be added for sure.  Here is the listing of data that is currently covered (more descriptive names may be chosen in the future);
   * RecordOffset
@@ -171,9 +176,11 @@ Resolved paths may not be correct for deleted files/folders. That is because its
 
 = Latest Version =
 
-v2.0.0.3
+v2.0.0.4
 
 = Changelog =
+
+v2.0.0.4. Added functionality to parse broken $MFT. Added option to skip fixups.
 
 v2.0.0.3. Fixed crash on certain MFT's with specific invalid records. Added option to choose separator, and if surrounding quotes. Removed decode of filename attribute number 4, as well as the invalid name variable.
 
