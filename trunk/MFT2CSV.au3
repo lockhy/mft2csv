@@ -3,11 +3,11 @@
 #AutoIt3Wrapper_UseX64=y
 #AutoIt3Wrapper_Res_Comment=Decode $MFT and write to CSV
 #AutoIt3Wrapper_Res_Description=Decode $MFT and write to CSV
-#AutoIt3Wrapper_Res_Fileversion=2.0.0.3
+#AutoIt3Wrapper_Res_Fileversion=2.0.0.4
 #AutoIt3Wrapper_Res_requestedExecutionLevel=asInvoker
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
 
-#include <array.au3>
+;#include <array.au3>
 #Include <WinAPIEx.au3> ; http://www.autoitscript.com/forum/topic/98712-winapiex-udf/
 #include <String.au3>
 #include <Date.au3>
@@ -15,8 +15,8 @@
 ; by Joakim Schicht & Ddan
 ; parts by trancexxx, Ascend4nt & others
 
-Global $_COMMON_KERNEL32DLL=DllOpen("kernel32.dll"), $separator=",", $DTPrecision, $dol2t=False, $DoDefaultAll=False, $DoBodyfile=False
-Global $csv, $csvfile, $RecordOffset, $Signature, $ADS, $FN_NamePath, $UTCconfig, $de=","
+Global $_COMMON_KERNEL32DLL=DllOpen("kernel32.dll"), $separator=",", $DTPrecision, $dol2t=False, $DoDefaultAll=False, $DoBodyfile=False, $SkipFixups=False, $MftIsBroken=False
+Global $csv, $csvfile, $RecordOffset, $Signature, $ADS, $FN_NamePath, $UTCconfig, $de=",", $MftFileSize
 Global $HDR_LSN, $HDR_SequenceNo, $HDR_Flags, $HDR_RecRealSize, $HDR_RecAllocSize, $HDR_BaseRecord, $HDR_NextAttribID, $HDR_MFTREcordNumber, $HDR_HardLinkCount, $HDR_BaseRecSeqNo
 Global $SI_CTime, $SI_ATime, $SI_MTime, $SI_RTime, $SI_FilePermission, $SI_USN, $Errors, $DT_AllocSize, $DT_RealSize, $DT_InitStreamSize, $RecordSlackSpace
 Global $FN_CTime, $FN_ATime, $FN_MTime, $FN_RTime, $FN_AllocSize, $FN_RealSize, $FN_Flags, $FN_Name, $DT_VCNs, $DT_NonResidentFlag, $FN_NameType
@@ -106,6 +106,8 @@ GUISetOnEvent($GUI_EVENT_CLOSE, "_HandleExit", $Form)
 $Combo = GUICtrlCreateCombo("", 20, 20, 400, 25)
 $buttonDrive = GUICtrlCreateButton("Rescan Drives", 440, 20, 100, 20)
 GUICtrlSetOnEvent($buttonDrive, "_HandleEvent")
+$checkFixups = GUICtrlCreateCheckbox("Skip Fixups", 340, 50, 90, 20)
+$checkBrokenMFT = GUICtrlCreateCheckbox("Broken $MFT", 340, 80, 90, 20)
 $buttonImage = GUICtrlCreateButton("Choose Image", 440, 50, 100, 20)
 GUICtrlSetOnEvent($buttonImage, "_HandleEvent")
 $buttonMftFile = GUICtrlCreateButton("Choose $MFT", 440, 80, 100, 20)
@@ -163,6 +165,7 @@ ElseIf $IsMftFile Then
    _DebugOut("Target $MFT file: " & $TargetMftFile)
    $hDisk = _WinAPI_CreateFile("\\.\" & $TargetMftFile,2,2,7)
    If $hDisk = 0 Then _DebugOut("Disk Access Error")
+   $MftFileSize = _WinAPI_GetFileSizeEx($hDisk)
 Else
    $TargetDrive = StringMid(GUICtrlRead($Combo),1,2)
    _DebugOut("Target volume: " & $TargetDrive)
@@ -218,6 +221,8 @@ Func _ExtractSystemfile()
 		_DebugOut("Error: Output format can only be one of the options (not more than 1).")
 		Return
 	EndIf
+	If GUICtrlRead($checkFixups) = 1 Then $SkipFixups = True
+	If GUICtrlRead($checkBrokenMFT) = 1 Then $MftIsBroken = True
 	If GUICtrlRead($checkl2t) = 1 Then
 		$Dol2t = True
 		$DateTimeFormat = 2
@@ -272,6 +277,10 @@ Func _ExtractSystemfile()
 	_DecodeDataQEntry($DataQ[1])         ;produces datarun for $MFT
 	$MFT_Size = $DT_RealSize
 	_ExtractDataRuns()                   ;converts datarun to RUN_VCN[] and RUN_Clusters[]
+	If $IsMftFile And $MftIsBroken Then
+		$RUN_VCN[1] = 1
+		$RUN_Clusters[1] = Int(((512+$MftFileSize-Mod($MftFileSize,512))/512/8))
+	EndIf
 	$MFT_RUN_VCN = $RUN_VCN
 	$MFT_RUN_Clusters = $RUN_Clusters	;preserve values for $MFT
 	$Progress = GUICtrlCreateLabel("Decoding $MFT info and writing to csv", 10, 280,540,20)
@@ -279,8 +288,12 @@ Func _ExtractSystemfile()
 	$ProgressStatus = GUICtrlCreateLabel("", 10, 310, 540, 20)
 	$ElapsedTime = GUICtrlCreateLabel("", 10, 325, 540, 20)
 	$OverallProgress = GUICtrlCreateProgress(10, 350, 540, 30)
-
-	_DoFileTree()                        ;creates folder structure
+	If Not $MftIsBroken Then
+		_DoFileTree()                        ;creates folder structure
+	Else
+		$Total = ($MftFileSize/$MFT_Record_Size)
+		Redim $FileTree[$Total]
+	EndIf
 	$ProgressFileName = GUICtrlCreateLabel("", 10,  390, 540, 20, $DT_END_ELLIPSIS)
 	$FileProgress = GUICtrlCreateProgress(10, 415, 540, 30)
 	AdlibRegister("_ExtractionProgress", 500)
@@ -400,7 +413,7 @@ Func _DoFileTree()
 		 $CurrentMFTOffset = DllCall('kernel32.dll', 'int', 'SetFilePointerEx', 'ptr', $hDisk, 'int64', 0, 'int64*', 0, 'dword', 1)
 		 $MFTTree[$ref] = $CurrentMFTOffset[3]-$MFT_Record_Size
 		 $Flags = Dec(StringMid($record,47,4))
-         $record = _DoFixup($record, $ref)
+         If Not $SkipFixups Then $record = _DoFixup($record, $ref)
          If $record = "" then ContinueLoop   ;corrupt, failed fixup
          $FileRef = $ref
          $BaseRef = Dec(_SwapEndian(StringMid($record,67,8)),2)
@@ -584,7 +597,7 @@ Func _DecodeDataQEntry($attr)		;processes data attribute
 	  $DT_LengthOfAttribute = Dec(_SwapEndian(StringMid($attr,33,8)),2)
 	  $Offset = Dec(_SwapEndian(StringMid($attr,41,4)))
 	  $DataRun = StringMid($attr,$Offset*2+1,$DT_LengthOfAttribute*2)
-   EndIf
+  EndIf
 EndFunc
 
 Func _DecodeMFTRecord($record, $FileRef)      ;produces DataQ
@@ -633,7 +646,10 @@ Func _DecodeMFTRecord($record, $FileRef)      ;produces DataQ
 		 $DataQ[UBound($DataQ) - 1] = StringMid($record,$AttributeOffset,$AttributeSize*2) 		;whole data attribute
 	  EndIf
 	  $AttributeOffset += $AttributeSize*2
-   WEnd
+  WEnd
+  	If $IsMftFile And $MftIsBroken Then
+		_GenDummyDataQ()
+	EndIf
    Return $record
 EndFunc
 
@@ -671,6 +687,7 @@ Func _ReadMFT()
    _WinAPI_ReadFile($hDisk, DllStructGetPtr($rBuffer), $MFT_Record_Size, $nBytes)
    $record = DllStructGetData($rBuffer, 1)
    If StringMid($record,3,8) = $RecordSignature And StringMid($record,47,4) = "0100" Then Return $record		;returns record for MFT
+   If $MftIsBroken Then Return $record
    _DebugOut("Check record for $MFT", $record)	;bad $MFT record
    Return ""
 EndFunc
@@ -2117,4 +2134,24 @@ Func _TranslateSeparator()
 	; Or do it the other way around to allow setting other trickier separators, like specifying it in hex
 	GUICtrlSetData($SaparatorInput,StringLeft(GUICtrlRead($SaparatorInput),1))
 	GUICtrlSetData($SaparatorInput2,"0x"&Hex(Asc(GUICtrlRead($SaparatorInput)),2))
+EndFunc
+
+Func _GenDummyDataQ()
+	Global $DataQ[2]
+	Local $PartA, $PartB, $PartC, $PartD, $PartE, $PartF, $PartG, $PartH, $PartI, $PartJ, $PartK
+	$PartA = "8000000048000000010040000000010000000000000000003F000000000000004000000000000000"
+;	$PartA = "800000004800000001004000000001000000000000000000"
+;	"3F00000000000000" ; Last VCN
+;	"4000000000000000"
+	$partB = _SwapEndian(Hex($MftFileSize,8)) ; Allocated size
+	$partC = "00000000"
+	$partD = _SwapEndian(Hex($MftFileSize,8)) ; Real size
+	$partE = "00000000"
+	$partF = _SwapEndian(Hex($MftFileSize,8)) ; Initialized size
+	$partG = "00000000"
+	$partH = "14"
+	$partI = Hex(Int(((512+$MftFileSize-Mod($MftFileSize,512))/512/8)),8)
+	$partJ = "01"
+	$partK = "0000"
+	$DataQ[1] = $PartA & $PartB & $PartC & $PartD & $PartE & $PartF & $PartG & $PartH & $PartI & $PartJ & $PartK
 EndFunc
