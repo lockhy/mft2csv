@@ -11,12 +11,12 @@
 #Include <WinAPIEx.au3> ; http://www.autoitscript.com/forum/topic/98712-winapiex-udf/
 #include <String.au3>
 #include <Date.au3>
-
+#include <array.au3>
 ; by Joakim Schicht & Ddan
 ; parts by trancexxx, Ascend4nt & others
 
-Global $_COMMON_KERNEL32DLL=DllOpen("kernel32.dll"), $separator=",", $DTPrecision, $dol2t=False, $DoDefaultAll=False, $DoBodyfile=False, $SkipFixups=False, $MftIsBroken=False
-Global $csv, $csvfile, $RecordOffset, $Signature, $ADS, $FN_NamePath, $UTCconfig, $de=",", $MftFileSize
+Global $_COMMON_KERNEL32DLL=DllOpen("kernel32.dll"), $separator=",", $DTPrecision, $dol2t=False, $DoDefaultAll=False, $DoBodyfile=False, $SkipFixups=False, $MftIsBroken=False, $ExtractResident=False, $ExtractionPath
+Global $csv, $csvfile, $RecordOffset, $Signature, $ADS, $FN_NamePath, $UTCconfig, $de=",", $MftFileSize, $FN_FileName;, $DATA_Clusters, $DATA_InitSize
 Global $HDR_LSN, $HDR_SequenceNo, $HDR_Flags, $HDR_RecRealSize, $HDR_RecAllocSize, $HDR_BaseRecord, $HDR_NextAttribID, $HDR_MFTREcordNumber, $HDR_HardLinkCount, $HDR_BaseRecSeqNo
 Global $SI_CTime, $SI_ATime, $SI_MTime, $SI_RTime, $SI_FilePermission, $SI_USN, $Errors, $DT_AllocSize, $DT_RealSize, $DT_InitStreamSize, $RecordSlackSpace
 Global $FN_CTime, $FN_ATime, $FN_MTime, $FN_RTime, $FN_AllocSize, $FN_RealSize, $FN_Flags, $FN_Name, $DT_VCNs, $DT_NonResidentFlag, $FN_NameType
@@ -94,7 +94,7 @@ Global $IsCompressed, $IsSparse, $subset, $logfile = 0, $subst, $active = False
 Global $RUN_VCN[1], $RUN_Clusters[1], $MFT_RUN_Clusters[1], $MFT_RUN_VCN[1], $DataQ[1], $AttrQ[1]
 Global $TargetImageFile, $Entries, $IsImage = False, $ImageOffset=0, $IsMftFile=False, $TargetMftFile
 Global $begin, $ElapsedTime
-Global $OverallProgress, $FileProgress, $CurrentProgress, $ProgressStatus, $ProgressFileName, $ProgressSize
+Global $OverallProgress, $FileProgress, $CurrentProgress=-1, $ProgressStatus, $ProgressFileName, $ProgressSize
 
 Global Const $RecordSignature = '46494C45' ; FILE signature
 
@@ -106,14 +106,17 @@ GUISetOnEvent($GUI_EVENT_CLOSE, "_HandleExit", $Form)
 $Combo = GUICtrlCreateCombo("", 20, 20, 400, 25)
 $buttonDrive = GUICtrlCreateButton("Rescan Drives", 440, 20, 100, 20)
 GUICtrlSetOnEvent($buttonDrive, "_HandleEvent")
-$checkFixups = GUICtrlCreateCheckbox("Skip Fixups", 340, 50, 90, 20)
-$checkBrokenMFT = GUICtrlCreateCheckbox("Broken $MFT", 340, 80, 90, 20)
+$checkFixups = GUICtrlCreateCheckbox("Skip Fixups", 335, 50, 95, 20)
+$checkBrokenMFT = GUICtrlCreateCheckbox("Broken $MFT", 335, 75, 95, 20)
+$checkExtractResident = GUICtrlCreateCheckbox("Extract Resident", 335, 100, 95, 20)
 $buttonImage = GUICtrlCreateButton("Choose Image", 440, 50, 100, 20)
 GUICtrlSetOnEvent($buttonImage, "_HandleEvent")
 $buttonMftFile = GUICtrlCreateButton("Choose $MFT", 440, 80, 100, 20)
 GUICtrlSetOnEvent($buttonMftFile, "_HandleEvent")
 $buttonOutput = GUICtrlCreateButton("Choose CSV", 440, 110, 100, 20)
 GUICtrlSetOnEvent($buttonOutput, "_HandleEvent")
+$buttonExtractedOut = GUICtrlCreateButton("Set Extract Path", 440, 140, 100, 20)
+GUICtrlSetOnEvent($buttonExtractedOut, "_HandleEvent")
 $buttonStart = GUICtrlCreateButton("Start Processing", 290, 120, 120, 40)
 GUICtrlSetOnEvent($buttonStart, "_HandleEvent")
 $Label1 = GUICtrlCreateLabel("Adjust timestamps to specific region:",20,50,180,20)
@@ -203,7 +206,18 @@ Func _HandleEvent()
 					_DisplayInfo("Error: Output CSV not set " & @CRLF)
 					Return
 				EndIf
+				If GUICtrlRead($checkExtractResident) = 1 Then
+					$ExtractResident = True
+					If $ExtractionPath="" Then
+						_DisplayInfo("Error: No path selected for extracted resident data" & @CRLF)
+						Return
+					EndIf
+					_DebugOut("Extracting resident data to: " & $ExtractionPath)
+				EndIf
 				$active = True
+			Case $buttonExtractedOut
+				_SetExtractionPath()
+;				If $ExtractionPath="" Then Return
 		EndSwitch
 	EndIf
 EndFunc
@@ -221,8 +235,14 @@ Func _ExtractSystemfile()
 		_DebugOut("Error: Output format can only be one of the options (not more than 1).")
 		Return
 	EndIf
-	If GUICtrlRead($checkFixups) = 1 Then $SkipFixups = True
-	If GUICtrlRead($checkBrokenMFT) = 1 Then $MftIsBroken = True
+	If GUICtrlRead($checkFixups) = 1 Then
+		$SkipFixups = True
+		_DebugOut("Skipping Fixups")
+	EndIf
+	If GUICtrlRead($checkBrokenMFT) = 1 Then
+		$MftIsBroken = True
+		_DebugOut("Handling broken $MFT")
+	EndIf
 	If GUICtrlRead($checkl2t) = 1 Then
 		$Dol2t = True
 		$DateTimeFormat = 2
@@ -252,6 +272,7 @@ Func _ExtractSystemfile()
 	Else
 		_DebugOut("Writing variables without surrounding qoutes")
 	EndIf
+
 	_WriteCSVHeader()
 	If (Not $IsImage and Not $IsMftFile) Then
 		If DriveGetFileSystem($TargetDrive) <> "NTFS" Then		;read boot sector and extract $MFT data
@@ -301,10 +322,7 @@ Func _ExtractSystemfile()
 
 	For $i = 0 To UBound($FileTree)-1	;note $i is mft reference number
 		$CurrentProgress = $i
-
 		$Files = $Filetree[$i]
-;		local $Names[1]
-
 		If $IsMftFile Then
 			_WinAPI_SetFilePointerEx($hDisk, $i*$MFT_Record_Size, $FILE_BEGIN)
 			$RecordOffsetDec = $MFT_Record_Size * $i
@@ -314,6 +332,7 @@ Func _ExtractSystemfile()
 		EndIf
 		_WinAPI_ReadFile($hDisk, DllStructGetPtr($rBuffer), $MFT_Record_Size, $nBytes)
 		$FN_NamePath = StringMid($Files, 1,StringInStr($Files, "?") - 1)
+		$FN_FileName = $FN_NamePath
 		$MFTEntry = DllStructGetData($rBuffer, 1)
 		If (StringMid($MFTEntry, 3, 8) = '46494C45') Then
 			$Signature = "GOOD"
@@ -357,6 +376,9 @@ Func _ExtractSystemfile()
 			EndIf
 			$Signature = ""
 			ContinueLoop
+		EndIf
+		If $ExtractResident Then
+			_ExtractSingleFile($MFTEntry, $i)
 		EndIf
 		_ClearVar()
 		_ParserCodeOldVersion($MFTEntry)
@@ -520,7 +542,8 @@ Func _DecodeAttrList($FileRef, $AttrList)
 EndFunc
 
 Func _StripMftRecord($record, $FileRef)
-   $record = _DoFixup($record, $FileRef)
+   If Not $SkipFixups Then $record = _DoFixup($record, $FileRef)
+;   $record = _DoFixup($record, $FileRef)
    If $record = "" then Return ""  ;corrupt, failed fixup
    $RecordSize = Dec(_SwapEndian(StringMid($record,51,8)),2)
    $HeaderSize = Dec(_SwapEndian(StringMid($record,43,4)),2)
@@ -601,56 +624,71 @@ Func _DecodeDataQEntry($attr)		;processes data attribute
 EndFunc
 
 Func _DecodeMFTRecord($record, $FileRef)      ;produces DataQ
-   $record = _DoFixup($record, $FileRef)
-   If $record = "" then Return ""  ;corrupt, failed fixup
-   $RecordSize = Dec(_SwapEndian(StringMid($record,51,8)),2)
-   $AttributeOffset = (Dec(StringMid($record,43,2))*2)+3
-   While 1		;only want Attribute List and Data Attributes
-	  $Type = Dec(_SwapEndian(StringMid($record,$AttributeOffset,8)),2)
-	  If $Type > 256 Then ExitLoop		;attributes may not be in numerical order
-	  $AttributeSize = Dec(_SwapEndian(StringMid($record,$AttributeOffset+8,8)),2)
-	  If $Type = 32 Then
-		 $AttrList = StringMid($record,$AttributeOffset,$AttributeSize*2)	;whole attribute
-		 $AttrList = _DecodeAttrList($FileRef, $AttrList)		;produces $AttrQ - extra record list
-		 If $AttrList = "" Then
-			_DebugOut($FileRef & " Bad Attribute List signature", $record)
-			Return ""
-		 Else
-			If $AttrQ[0] = "" Then ContinueLoop		;no new records
-			$str = ""
-			For $i = 1 To $AttrQ[0]
-			   If Not IsNumber($FileTree[$AttrQ[$i]]) Then
-				  _DebugOut($FileRef & " Overwritten extra record (" & $AttrQ[$i] & ")", $record)
-				  Return ""
-			   EndIf
-			   $rec = _GetAttrListMFTRecord($FileTree[$AttrQ[$i]])
-			   If StringMid($rec,3,8) <> $RecordSignature Then
-				  _DebugOut($FileRef & " Bad signature for extra record", $record)
-				  Return ""
-			   EndIf
-			   If Dec(_SwapEndian(StringMid($rec,67,8)),2) <> $FileRef Then
-				  _DebugOut($FileRef & " Bad extra record", $record)
-				  Return ""
-			   EndIf
-			   $rec = _StripMftRecord($rec, $FileRef)
-			   If $rec = "" Then
-				  _DebugOut($FileRef & " Extra record failed Fixup", $record)
-				  Return ""
-			   EndIf
-			   $str &= $rec		;no header or end marker
-			Next
-			$record = StringMid($record,1,($RecordSize-8)*2+2) & $str & "FFFFFFFF"       ;strip end first then add
-		 EndIf
-	  ElseIf $Type = 128 Then
-		 ReDim $DataQ[UBound($DataQ) + 1]
-		 $DataQ[UBound($DataQ) - 1] = StringMid($record,$AttributeOffset,$AttributeSize*2) 		;whole data attribute
-	  EndIf
-	  $AttributeOffset += $AttributeSize*2
-  WEnd
-  	If $IsMftFile And $MftIsBroken Then
-		_GenDummyDataQ()
+	If Not $SkipFixups Then $record = _DoFixup($record, $FileRef)
+	If $record = "" then Return ""  ;corrupt, failed fixup
+	$RecordSize = Dec(_SwapEndian(StringMid($record,51,8)),2)
+	$AttributeOffset = (Dec(StringMid($record,43,2))*2)+3
+	While 1		;only want Attribute List and Data Attributes
+		$Type = Dec(_SwapEndian(StringMid($record,$AttributeOffset,8)),2)
+		If $Type = 0 Or $Type > 256 Then ExitLoop		;attributes may not be in numerical order
+		If $AttributeOffset > 2040 Then Exitloop
+		$Flags = Dec(StringMid($record,47,4))
+		$AttributeSize = Dec(_SwapEndian(StringMid($record,$AttributeOffset+8,8)),2)
+		If $Type = 32 Then
+			$AttrList = StringMid($record,$AttributeOffset,$AttributeSize*2)	;whole attribute
+			$AttrList = _DecodeAttrList($FileRef, $AttrList)		;produces $AttrQ - extra record list
+			If $AttrList = "" Then
+				_DebugOut($FileRef & " Bad Attribute List signature", $record)
+				Return ""
+			Else
+				If $AttrQ[0] = "" Then ContinueLoop		;no new records
+				$str = ""
+				For $i = 1 To $AttrQ[0]
+					If Not IsNumber($FileTree[$AttrQ[$i]]) Then
+						_DebugOut($FileRef & " Overwritten extra record (" & $AttrQ[$i] & ")", $record)
+						Return ""
+					EndIf
+					$rec = _GetAttrListMFTRecord($FileTree[$AttrQ[$i]])
+					If StringMid($rec,3,8) <> $RecordSignature Then
+						_DebugOut($FileRef & " Bad signature for extra record", $record)
+						Return ""
+					EndIf
+					If Dec(_SwapEndian(StringMid($rec,67,8)),2) <> $FileRef Then
+						_DebugOut($FileRef & " Bad extra record", $record)
+						Return ""
+					EndIf
+					$rec = _StripMftRecord($rec, $FileRef)
+					If $rec = "" Then
+						_DebugOut($FileRef & " Extra record failed Fixup", $record)
+						Return ""
+					EndIf
+					$str &= $rec		;no header or end marker
+				Next
+				$record = StringMid($record,1,($RecordSize-8)*2+2) & $str & "FFFFFFFF"       ;strip end first then add
+			EndIf
+		ElseIf $Type = 48 Then
+			Global $FileName = ""
+			$attr = StringMid($record,$AttributeOffset,$AttributeSize*2)
+			$NameSpace = StringMid($attr,179,2)
+			If $NameSpace <> "02" Then
+				$NameLength = Dec(StringMid($attr,177,2))
+				$FileName = StringMid($attr,181,$NameLength*4)
+				$FileName = _UnicodeHexToStr($FileName)
+				If Not BitAND($Flags,Dec("0100")) Then $FileName = "[DEL]" & $FileName     ;deleted record
+				Global $FN_Name = $FileName
+			EndIf
+		ElseIf $Type = 128 Then
+			ReDim $DataQ[UBound($DataQ) + 1]
+			$DataQ[UBound($DataQ) - 1] = StringMid($record,$AttributeOffset,$AttributeSize*2) 		;whole data attribute
+		EndIf
+		$AttributeOffset += $AttributeSize*2
+	WEnd
+  	If $CurrentProgress=-1 Then ; Only create dummy data attribute to mimick $MFT as first record when using corrupted $MFT as input
+		If $IsMftFile And $MftIsBroken Then
+			_GenDummyDataQ()
+		EndIf
 	EndIf
-   Return $record
+	Return $record
 EndFunc
 
 Func _DoFixup($record, $FileRef)		;handles NT and XP style
@@ -1590,6 +1628,7 @@ Func _ClearVar()
 	$FN_RealSize = ""
 	$FN_Flags = ""
 	$FN_Name = ""
+	$FN_FileName = ""
 	$DT_NameLength = ""
 	$DT_NameRelativeOffset = ""
 	$DT_Flags = ""
@@ -2140,9 +2179,6 @@ Func _GenDummyDataQ()
 	Global $DataQ[2]
 	Local $PartA, $PartB, $PartC, $PartD, $PartE, $PartF, $PartG, $PartH, $PartI, $PartJ, $PartK
 	$PartA = "8000000048000000010040000000010000000000000000003F000000000000004000000000000000"
-;	$PartA = "800000004800000001004000000001000000000000000000"
-;	"3F00000000000000" ; Last VCN
-;	"4000000000000000"
 	$partB = _SwapEndian(Hex($MftFileSize,8)) ; Allocated size
 	$partC = "00000000"
 	$partD = _SwapEndian(Hex($MftFileSize,8)) ; Real size
@@ -2154,4 +2190,66 @@ Func _GenDummyDataQ()
 	$partJ = "01"
 	$partK = "0000"
 	$DataQ[1] = $PartA & $PartB & $PartC & $PartD & $PartE & $PartF & $PartG & $PartH & $PartI & $PartJ & $PartK
+EndFunc
+
+Func _ExtractSingleFile($MFTRecord, $FileRef)
+	Global $DataQ[1]				;clear array
+	$MFTRecord = _DecodeMFTRecord($MFTRecord, $FileRef)
+	If $MFTRecord = "" Then Return	;error so finish
+	If UBound($DataQ) = 1 Then
+		_DebugOut($FileRef & " No $DATA attribute for the file: " & $FN_FileName, $MFTRecord)
+		Return
+	EndIf
+	For $i = 1 To UBound($DataQ) - 1
+		_DecodeDataQEntry($DataQ[$i])
+		If $ADS_Name = "" Then
+			_DebugOut($FileRef & " No $NAME attribute for the file",$MFTRecord)
+			Return
+		EndIf
+		If $NonResidentFlag = '00' Then
+			_ExtractResidentFile($ADS_Name, $DT_LengthOfAttribute, $MFTRecord)
+		Else
+;			Skipping Non-resident
+		EndIf
+	Next
+EndFunc
+
+Func _ExtractResidentFile($Name, $Size, $record)
+	Local $nBytes
+	$xBuffer = DllStructCreate("byte[" & $Size & "]")
+    DllStructSetData($xBuffer, 1, '0x' & $DataRun)
+    $zflag = 0
+	Do
+        DirCreate(StringMid($Name, 1, StringInStr($Name,"\",0,-1)))
+		$hFile = _WinAPI_CreateFile("\\.\" & $ExtractionPath & "\[0x" & Hex($CurrentProgress*1024,8) & "]" & $Name,3,6,7)
+;		$hFile = _WinAPI_CreateFile("\\.\" & $ExtractionPath & "\" & $Name & "[0x" & Hex($CurrentProgress*1024,8) & "]",3,6,7)
+        If $hFile Then
+            _WinAPI_SetFilePointer($hFile, 0,$FILE_BEGIN)
+            _WinAPI_WriteFile($hFile, DllStructGetPtr($xBuffer), $Size, $nBytes)
+            _WinAPI_CloseHandle($hFile)
+            If StringInStr($Name, $subst) Then $ret = _WinAPI_DefineDosDevice($subst, 2, $zPath)     ;close spare
+            Return
+        Else
+            If $zflag = 0 Then		;first pass
+			   $mid = Int(StringLen($Name)/2)
+			   $zPath = StringMid($Name, 1, StringInStr($Name, "\", 0, -1, $mid)-1)
+			ElseIf $zflag = 1 Then		;second pass
+			   $ret = _WinAPI_DefineDosDevice($subst, 2, $zPath)     ;close spare
+			   $Name = StringReplace($Name,$subst, $zPath)	;restore full name
+			   $zPath = StringMid($Name, 1, StringInStr($Name, "\", 0, 1, $mid)-1)
+			Else		;fail
+			   _DebugOut("Error in creating resident file " & StringReplace($Name,$subst,$zPath), $record)
+			   $ret = _WinAPI_DefineDosDevice($subst, 2, $zPath)     ;close spare
+			   Return
+			EndIf
+			$ret = _WinAPI_DefineDosDevice($subst, 0, $zPath)     ;open spare
+			$Name = StringReplace($Name,$zPath, $subst)
+			$zflag += 1
+		 EndIf
+    Until $hFile
+EndFunc
+
+Func _SetExtractionPath()
+	$ExtractionPath = FileSelectFolder("Select path for extracted resident data.", "",7,@scriptdir)
+	If @error Then Return
 EndFunc
