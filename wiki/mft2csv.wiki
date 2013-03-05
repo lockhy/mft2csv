@@ -174,11 +174,17 @@ The timestamps are now at the precision of nanoseconds. Prior to processing, the
 
 Resolved paths may not be correct for deleted files/folders. That is because its parent ref (or parents parents ref, etc) may have been overwritten with a new entry.
 
+= Usage and examples=
+
+See the readme included in the download package.
+
 = Latest Version =
 
-v2.0.0.5
+v2.0.0.6
 
 = Changelog =
+
+v2.0.0.6. Fixed bug when handling attribute lists and broken $MFT file as input.
 
 v2.0.0.5. Added functionality to optionally extract all resident data.
 
@@ -231,6 +237,7 @@ v1.1. Fixed a mixup of ContinueLoop with ContinueCase in the main record process
 
 = Thanks and credits =
 
+  * DDan at forensicfocus.
   * AutoIt forums (KaFu & trancexx) where the starter code was provided; http://www.autoitscript.com/forum/topic/94269-mft-access-reading-parsing-the-master-file-table-on-ntfs-filesystems/
   * Ascend4nt's AutoIt wintimefunctions; http://sites.google.com/site/ascend4ntscode/
   * David Kovar's nice analyzeMFT.py python script; http://www.integriography.com/
