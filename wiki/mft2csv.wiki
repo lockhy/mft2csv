@@ -180,9 +180,11 @@ See the readme included in the download package.
 
 = Latest Version =
 
-v2.0.0.6
+v2.0.0.7
 
 = Changelog =
+
+v2.0.0.7. Fixed incorrect default value for Bytes Per Cluster when using $MFT file as input (caused some crashes).
 
 v2.0.0.6. Fixed bug when handling attribute lists and broken $MFT file as input.
 
