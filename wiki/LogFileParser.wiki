@@ -1,4 +1,4 @@
-#Parser for the $LogFile on NTFS.
+#summary Parser for the $LogFile on NTFS.
 
 = Features =
 
