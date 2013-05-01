@@ -14,7 +14,7 @@
 
 NTFS is designed as a recoverable filesystem. This done through logging of all transactions that alters volume structure. So any change to a file on the volume will require something to be logged to the $LogFile too, so that it can be reversed in case of system failure at any time. Therefore a lot of information is written to this file, and since it is circular, it means new transactions are overwriting older records in the file. Thus it is somewhat limited how much historical data can be retrieved from this file. Again, that would depend on the type of volume, and the size of the $LogFile. On the systemdrive of a frequently used system, you will likely only get a few hours of history, whereas an external/secondary disk with backup files on, would likely contain more historical information. And a 2MB file will contain far less history than a 256MB one. So in what size range can this file be configured to? Anything from 256 KB and up. Configure the size to 2 GB can be done like this, "chkdsk D: /L:2097152". 
 
-http://s1100.photobucket.com/user/joakimschicht/media/LogFile2Gb_zps1e875dce.png
+http://i1100.photobucket.com/albums/g407/joakimschicht/LogFile2Gb_zps1e875dce.png
 
 How a large sized logfile impacts on performance is beyond the scope of this text. Setting it lower than 2048 is normally not possible. 
 
