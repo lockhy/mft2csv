@@ -4,10 +4,12 @@
 
   * Decode and dump $LogFile records.
   * Decode many attribute changes.
+  * Recreate a dummy $MFT
+  * Decode all index related transaction (from IndexRoot/IndexAllocation).
   * Resolve all datarun list information available in $LogFile.
   * Configurable verbose mode (does not affect logging).
   * Optionally decode $UsnJrnl.
-  * Logs to csv and imports to sqlite database with several tables.
+  * Logs to csv and imports to sqlite database with several tables (read included readme for details on each csv / table).
 
 
 = Background =
