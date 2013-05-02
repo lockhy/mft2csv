@@ -2,11 +2,11 @@
 
 = Description =
 This tool will extract files from an NTFS volume. It supports resident, non-resident, compressed, sparse, normal, alternate data streams (ADS). It has several different methods/modes to choose from.  In short the choices are:
- * Mounted volume or image file.
+ * Mounted volume, image file or directly at \\.\PhysicalDriveN.
  * Active files, deleted files, or all files.
  * Choose individual files based on their index number.
 
-At program start all mounted NTFS volumes are populated in the combobox at the top. You can also rescan for volumes by pressing the button 'Choose Drive'.
+At program start all mounted NTFS volumes are populated in the second combobox at the top. You can also rescan for volumes by pressing the button 'Rescan Mounted Drives'. All attached disk will also be visible in the first combo by their PhysicalDrive number.
 
 By default the output directory is set to the directory the program is executed from. In order to set it differently, press the button 'Choose Output'.
 
@@ -40,9 +40,11 @@ The tools have been tested on almost all recent Windows version, from 32-bit XP 
 
 = Latest Version =
 
-v4.0.0.0
+v4.0.0.1
 
 = Changelog =
+v4.0.0.1 Fixed the flag filter to also include 0x04/0x05 (deactivated/active $UsnJrnl). Added support for accessing \\.\PhysicalDriveN, and thus completely removing the requirement of having a mounted volume to extract from.
+
 v4.0.0.0 Merged together the data recovery tool. Added full native support for reparse points. Option to choose between Active files, deleted files, and All files. Option to choose individual files. Support for image files. Added nice progress bars.
 
 v3.2 Changes by DDan implmented that fixed slightly wrong data extracted when initialized file size differed from logical filesize. Some other minor things too.
@@ -69,7 +71,6 @@ v1.1. Tiny error inside the function _GetAllRuns() as well as when calling it. W
 = ToDo =
 
   * Optionally choose which attribute to extract.
-  * Access local volumes through \\PhysicalDriveN
 
 = Thanks and credits =
 
