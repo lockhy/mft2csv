@@ -3,7 +3,7 @@
 #AutoIt3Wrapper_UseX64=y
 #AutoIt3Wrapper_Res_Comment=Decode $MFT and write to CSV
 #AutoIt3Wrapper_Res_Description=Decode $MFT and write to CSV
-#AutoIt3Wrapper_Res_Fileversion=2.0.0.4
+#AutoIt3Wrapper_Res_Fileversion=2.0.0.8
 #AutoIt3Wrapper_Res_requestedExecutionLevel=asInvoker
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
 
@@ -11,7 +11,7 @@
 #Include <WinAPIEx.au3> ; http://www.autoitscript.com/forum/topic/98712-winapiex-udf/
 #include <String.au3>
 #include <Date.au3>
-#include <array.au3>
+
 ; by Joakim Schicht & Ddan
 ; parts by trancexxx, Ascend4nt & others
 
@@ -30,7 +30,7 @@ Global $FN_ParentRefNo, $FN_ParentSeqNo, $FN_ParentRefNo_2, $FN_ParentSeqNo_2, $
 Global $DT_LengthOfAttribute, $DT_OffsetToAttribute, $DT_IndexedFlag, $DT_LengthOfAttribute_2, $DT_OffsetToAttribute_2, $DT_IndexedFlag_2, $DT_LengthOfAttribute_3, $DT_OffsetToAttribute_3, $DT_IndexedFlag_3
 Global $hFile, $nBytes, $MSecTest, $CTimeTest, $SI_MaxVersions, $SI_VersionNumber, $SI_ClassID, $SI_OwnerID, $SI_SecurityID, $SI_HEADER_Flags, $SI_ON, $AL_ON, $FN_ON, $OI_ON, $SD_ON, $VN_ON, $VI_ON, $DT_ON, $IR_ON, $IA_ON, $BITMAP_ON, $RP_ON, $EAI_ON, $EA_ON, $PS_ON, $LUS_ON
 Global $GUID_ObjectID, $GUID_BirthVolumeID, $GUID_BirthObjectID, $GUID_BirthDomainID, $VOLUME_NAME_NAME, $VOL_INFO_NTFS_VERSION, $VOL_INFO_FLAGS, $INV_FNAME, $INV_FNAME_2, $INV_FNAME_3, $DT_Number
-Global $FileSizeBytes, $IntegrityCheck
+Global $FileSizeBytes, $IntegrityCheck, $ComboPhysicalDrives, $IsPhysicalDrive=False
 Global Const $RecordSignatureBad = '42414144' ; BAAD signature
 Global Const $STANDARD_INFORMATION = '10000000'; Standard Information
 Global Const $ATTRIBUTE_LIST = '20000000'
@@ -103,8 +103,13 @@ Opt("GUIOnEventMode", 1)  ; Change to OnEvent mode
 $Form = GUICreate("MFT2CSV", 560, 450, -1, -1)
 GUISetOnEvent($GUI_EVENT_CLOSE, "_HandleExit", $Form)
 
-$Combo = GUICtrlCreateCombo("", 20, 20, 400, 25)
-$buttonDrive = GUICtrlCreateButton("Rescan Drives", 440, 20, 100, 20)
+$Combo = GUICtrlCreateCombo("", 20, 25, 390, 20)
+$ComboPhysicalDrives = GUICtrlCreateCombo("", 190, 0, 220, 20)
+$buttonScanPhysicalDrives = GUICtrlCreateButton("Rescan PhysicalDrive", 20, 0, 120, 20)
+GUICtrlSetOnEvent($buttonScanPhysicalDrives, "_HandleEvent")
+$buttonTestPhysicalDrive = GUICtrlCreateButton("Check physical drive", 425, 0, 130, 20)
+GUICtrlSetOnEvent($buttonTestPhysicalDrive, "_HandleEvent")
+$buttonDrive = GUICtrlCreateButton("Rescan Mounted Drives", 425, 25, 130, 20)
 GUICtrlSetOnEvent($buttonDrive, "_HandleEvent")
 $checkFixups = GUICtrlCreateCheckbox("Skip Fixups", 335, 50, 95, 20)
 $checkBrokenMFT = GUICtrlCreateCheckbox("Broken $MFT", 335, 75, 95, 20)
@@ -135,7 +140,8 @@ GUICtrlSetState($SaparatorInput2, $GUI_DISABLE)
 $checkquotes = GUICtrlCreateCheckbox("Quotation mark", 170, 135, 100, 20)
 GUICtrlSetState($checkquotes, $GUI_CHECKED)
 $myctredit = GUICtrlCreateEdit("Extracting files from NTFS formatted volume" & @CRLF, 0, 165, 560, 115, $ES_AUTOVSCROLL + $WS_VSCROLL)
-_GetPhysicalDriveInfo()
+_GetPhysicalDrives()
+_GetMountedDrivesInfo()
 _InjectTimeZoneInfo()
 
 $LogState = True
@@ -163,17 +169,22 @@ If $IsImage Then
    _DisplayInfo(@CRLF & "Target is: " & GUICtrlRead($Combo) & @CRLF)
    _DebugOut("Target image file: " & $TargetImageFile)
    $hDisk = _WinAPI_CreateFile("\\.\" & $TargetImageFile,2,2,7)
-   If $hDisk = 0 Then _DebugOut("Image Access Error")
+   If $hDisk = 0 Then _DebugOut("CreateFile: " & _WinAPI_GetLastErrorMessage())
 ElseIf $IsMftFile Then
    _DebugOut("Target $MFT file: " & $TargetMftFile)
    $hDisk = _WinAPI_CreateFile("\\.\" & $TargetMftFile,2,2,7)
-   If $hDisk = 0 Then _DebugOut("Disk Access Error")
+   If $hDisk = 0 Then _DebugOut("CreateFile: " & _WinAPI_GetLastErrorMessage())
    $MftFileSize = _WinAPI_GetFileSizeEx($hDisk)
-Else
+ElseIf $IsPhysicalDrive=False Then
    $TargetDrive = StringMid(GUICtrlRead($Combo),1,2)
    _DebugOut("Target volume: " & $TargetDrive)
    $hDisk = _WinAPI_CreateFile("\\.\" & $TargetDrive,2,2,7)
-   If $hDisk = 0 Then _DebugOut("Disk Access Error")
+   If $hDisk = 0 Then _DebugOut("CreateFile: " & _WinAPI_GetLastErrorMessage())
+ElseIf $IsPhysicalDrive=True Then
+   $ImageOffset = Int(StringMid(GUICtrlRead($Combo),10),2)
+   _DebugOut("Target is: \\.\" & $TargetImageFile)
+   $hDisk = _WinAPI_CreateFile("\\.\" & $TargetImageFile,2,2,7)
+   If $hDisk = 0 Then _DebugOut("CreateFile: " & _WinAPI_GetLastErrorMessage())
 EndIf
 _DebugOut("Timestamps presented in UTC " & $UTCconfig)
 _DebugOut("Output CSV file: " & $csvfile)
@@ -190,7 +201,7 @@ Func _HandleEvent()
 	If Not $active Then
 		Switch @GUI_CTRLID
 			Case $buttonDrive
-				_GetPhysicalDriveInfo()
+				_GetMountedDrivesInfo()
 			Case $buttonImage
 				_ProcessImage()
 				$IsImage = True
@@ -218,6 +229,10 @@ Func _HandleEvent()
 			Case $buttonExtractedOut
 				_SetExtractionPath()
 ;				If $ExtractionPath="" Then Return
+			Case $buttonScanPhysicalDrives
+				_GetPhysicalDrives()
+			Case $buttonTestPhysicalDrive
+				_TestPhysicalDrive()
 		EndSwitch
 	EndIf
 EndFunc
@@ -408,7 +423,7 @@ Func _ExtractSystemfile()
 EndFunc
 
 Func _DoFileTree()
-   Local $nBytes, $ParentRef, $FileRef, $BaseRef, $tag
+   Local $nBytes, $ParentRef, $FileRef, $BaseRef, $tag, $PrintName
    $Total = Int($MFT_Size/$MFT_Record_Size)
    Global $FileTree[$Total]
    Global $MFTTree[$Total]
@@ -474,7 +489,7 @@ Func _DoFileTree()
 			EndIf
             $Offset += $Size*2
          WEnd
-         If Not BitAND($Flags,Dec("0E00")) And $BaseRef = 0 And $FileTree[$FileRef] <> "" Then $FileTree[$FileRef] &= "?" & ($Pos + $i)     ;file also add FilePointer
+         If Not BitAND($Flags,Dec("0200")) And $BaseRef = 0 And $FileTree[$FileRef] <> "" Then $FileTree[$FileRef] &= "?" & ($Pos + $i)     ;file also add FilePointer
          If StringInStr($FileTree[$FileRef], "**") = 1 Then $FileTree[$FileRef] = StringTrimLeft($FileTree[$FileRef],2)    ;remove leading **
       Next
    Next
@@ -635,6 +650,7 @@ Func _DecodeMFTRecord($record, $FileRef)      ;produces DataQ
 		$Flags = Dec(StringMid($record,47,4))
 		$AttributeSize = Dec(_SwapEndian(StringMid($record,$AttributeOffset+8,8)),2)
 		If $Type = 32 Then
+			If $SkipFixups And $MftIsBroken Then Return "" ;Skip attribute lists because it simply will not work under this condition
 			$AttrList = StringMid($record,$AttributeOffset,$AttributeSize*2)	;whole attribute
 			$AttrList = _DecodeAttrList($FileRef, $AttrList)		;produces $AttrQ - extra record list
 			If $AttrList = "" Then
@@ -749,7 +765,7 @@ Func _GetDiskConstants()
 	EndIf
 	If $IsMftFile Then
 		Global $MFT_Record_Size = 1024
-		Global $BytesPerCluster = 4096
+		Global $BytesPerCluster = 512
 		Global $MFT_Offset = 0
 	EndIf
    Return $record
@@ -759,27 +775,28 @@ Func _DisplayInfo($DebugInfo)
    GUICtrlSetData($myctredit, $DebugInfo, 1)
 EndFunc
 
-Func _GetPhysicalDriveInfo()
-   GUICtrlSetData($Combo,"","")
-   Local $menu = '', $Drive = DriveGetDrive('All')
-   If @error Then
-	  _DisplayInfo("Error - something went wrong in Func _GetPhysicalDriveInfo" & @CRLF)
-	  Return
-   EndIf
-   For $i = 1 to $Drive[0]
-	  $DriveType = DriveGetType($Drive[$i])
-	  $DriveCapacity = Round(DriveSpaceTotal($Drive[$i]),0)
-	  If DriveGetFileSystem($Drive[$i]) = 'NTFS' Then
-		 $menu &=  StringUpper($Drive[$i]) & "  (" & $DriveType & ")  - " & $DriveCapacity & " MB  - NTFS|"
-	  EndIf
-   Next
-   If $menu Then
-	  _DisplayInfo("NTFS drives detected" & @CRLF)
-	  GUICtrlSetData($Combo, $menu, StringMid($menu, 1, StringInStr($menu, "|") -1))
-	  $IsImage = False
-   Else
-	  _DisplayInfo("No NTFS drives detected" & @CRLF)
-   EndIf
+Func _GetMountedDrivesInfo()
+	$IsPhysicalDrive=False
+	GUICtrlSetData($Combo,"","")
+	Local $menu = '', $Drive = DriveGetDrive('All')
+	If @error Then
+		_DisplayInfo("Error - something went wrong in Func _GetPhysicalDriveInfo" & @CRLF)
+		Return
+	EndIf
+	For $i = 1 to $Drive[0]
+		$DriveType = DriveGetType($Drive[$i])
+		$DriveCapacity = Round(DriveSpaceTotal($Drive[$i]),0)
+		If DriveGetFileSystem($Drive[$i]) = 'NTFS' Then
+			$menu &=  StringUpper($Drive[$i]) & "  (" & $DriveType & ")  - " & $DriveCapacity & " MB  - NTFS|"
+		EndIf
+	Next
+	If $menu Then
+		_DisplayInfo("NTFS drives detected" & @CRLF)
+		GUICtrlSetData($Combo, $menu, StringMid($menu, 1, StringInStr($menu, "|") -1))
+		$IsImage = False
+	Else
+		_DisplayInfo("No NTFS drives detected" & @CRLF)
+	EndIf
 EndFunc
 
 Func _DecToLittleEndian($DecimalInput)
@@ -981,7 +998,8 @@ Func _TestNTFS($hImage, $PartitionStartSector)
 	$sector = DllStructGetData($tBuffer, 1)
 	$TestSig = StringMid($sector,9,8)
 	If $TestSig = "4E544653" Then Return 1		; Volume is NTFS
-	_DebugOut("Could not find NTFS:", StringMid($sector,3))		; Volume is not NTFS
+;	_DebugOut("Could not find NTFS:", StringMid($sector,3))		; Volume is not NTFS
+	_DebugOut("Could not find NTFS:", $sector)		; Volume is not NTFS
     Return 0
 EndFunc   ;==>_TestNTFS
 
@@ -1037,6 +1055,12 @@ Func _ParserCodeOldVersion($MFTEntry)
 			$RecordActive = 'DELETED'
 		Case $HDR_Flags = '0300'
 			$HDR_Flags = 'FOLDER'
+			$RecordActive = 'ALLOCATED'
+		Case $HDR_Flags = '0400'
+			$HDR_Flags = 'FILE+USNJRNL+DISABLED'
+			$RecordActive = 'ALLOCATED'
+		Case $HDR_Flags = '0500'
+			$HDR_Flags = 'FILE+USNJRNL+ENABLED'
 			$RecordActive = 'ALLOCATED'
 		Case $HDR_Flags = '0900'
 			$HDR_Flags = 'FILE+INDEX_SECURITY'
@@ -2221,6 +2245,7 @@ Func _ExtractResidentFile($Name, $Size, $record)
     $zflag = 0
 	Do
         DirCreate(StringMid($Name, 1, StringInStr($Name,"\",0,-1)))
+;		$hFile = _WinAPI_CreateFile("\\.\" & $ExtractionPath & "\" & $Name,3,6,7)
 		$hFile = _WinAPI_CreateFile("\\.\" & $ExtractionPath & "\[0x" & Hex($CurrentProgress*1024,8) & "]" & $Name,3,6,7)
 ;		$hFile = _WinAPI_CreateFile("\\.\" & $ExtractionPath & "\" & $Name & "[0x" & Hex($CurrentProgress*1024,8) & "]",3,6,7)
         If $hFile Then
@@ -2253,3 +2278,34 @@ Func _SetExtractionPath()
 	$ExtractionPath = FileSelectFolder("Select path for extracted resident data.", "",7,@scriptdir)
 	If @error Then Return
 EndFunc
+
+Func _GetPhysicalDrives()
+	Local $PhysicalDriveString, $hFile0
+	GUICtrlSetData($ComboPhysicalDrives,"","")
+	$sDrivePath = '\\.\PhysicalDrive'
+	$i=0
+	Do
+		$hFile0 = _WinAPI_CreateFile($sDrivePath & $i,2,2,2)
+		If $hFile0 <> 0 Then
+;			ConsoleWrite("Found: " & $sDrivePath & $i & @CRLF)
+			_WinAPI_CloseHandle($hFile0)
+			$PhysicalDriveString &= "PhysicalDrive"&$i&"|"
+		EndIf
+		$i+=1
+	Until $hFile0=0
+	GUICtrlSetData($ComboPhysicalDrives, $PhysicalDriveString, StringMid($PhysicalDriveString, 1, StringInStr($PhysicalDriveString, "|") -1))
+EndFunc
+
+Func _TestPhysicalDrive()
+	$TargetImageFile = GUICtrlRead($ComboPhysicalDrives)
+	If @error then Return
+	_DisplayInfo("Target is \\.\" & $TargetImageFile & @CRLF)
+	GUICtrlSetData($Combo,"","")
+	$Entries = ''
+	_CheckMBR()
+	GUICtrlSetData($Combo,$Entries,StringMid($Entries, 1, StringInStr($Entries, "|") -1))
+	$IsPhysicalDrive=True
+	If $Entries = "" Then _DisplayInfo("Sorry, no NTFS volume found on that PhysicalDrive" & @CRLF)
+EndFunc
+
+
