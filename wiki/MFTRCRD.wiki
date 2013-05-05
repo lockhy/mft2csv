@@ -4,7 +4,7 @@
 
 This tool will decode the $MFT record for a given file. It is a combination of mft2csv and NtfsFileExtracter. That means it is a tool for quick decode and dumping of file records. It does not write any csv, but dumps the information to the console. It is very handy when testing stuff and learning NTFS, as you can do stuff to a file and get it decoded right away, without first having to extract the whole $MFT and then decode it to a csv, before importing it into Excel or something and get the actual result. MFTRCRD is therefore for quick dumping of record information for individual files, whereas mft2csv is for decoding the complete $MFT with all its records, which may be a substantial amount and timeconsuming task.
 
-It supports both file name+path and IndexNumber (MFT record) as input (param1). Now also disk offset can be specified as alternative. See examples below for syntax. One switch (param3) is for optimizing decode speed when $ATTRIBUTE_LIST is present for a given file. For most usage, set param3 as attriblist=off. That will produce faster output. Only set param3 as attriblist=on when there is an $ATTRIBUTE_LIST attribute present. Another switch (param4) is for choosing wether to hexdump resolved INDX records from the $INDEX_ALLOCATION attribute.
+It supports both file name+path and IndexNumber (MFT record) as input (param1). Now also disk offset can be specified as alternative. See examples below for syntax. Param4 is for choosing wether to hexdump resolved INDX records from the $INDEX_ALLOCATION attribute.
 
 Attributes currently handled:
   * $STANDARD_INFORMATION
@@ -34,7 +34,7 @@ Here is a sample console dump (older version): http://mft2csv.googlecode.com/fil
 
 It is command line and the syntax is:
 
-=== Usage: "MFTRCRD param1 param2 param3 param4" ===
+=== Usage: "MFTRCRD param1 param2 param3" ===
 
 param1 can be a valid file path or an IndexNumber ($MFT record number)
 
@@ -42,29 +42,23 @@ param2 can be -d or -a:
 -d means just decode $MFT entry
 -a same as -d but also dumps the whole $MFT entry to console
 
-param3 is for optimizing speed of processing and can be either attriblist_on or attriblist_off. attriblist_on is for faster processing when $ATTRIBUTE_LIST is present.
-
-param4 for specifying wether to hexdump complete INDX records and can be either indxdump=on or indxdump=off. Beware that indxdump=on may generate a significant amount of dump to console for certain directories.
+param3 for specifying wether to hexdump complete INDX records and can be either indxdump=on or indxdump=off. Beware that indxdump=on may generate a significant amount of dump to console for certain directories.
 
 === Example for dumping an $MFT decode for boot.ini: ===
 
-MFTRCRD C:\boot.ini -d attriblist=off indxdump=off
+MFTRCRD C:\boot.ini -d indxdump=off
 
 === Example for dumping an $MFT decode + a 1024 byte $MFT record dump for $MFT itself from the C: drive: ===
 
-MFTRCRD C:0 -a attriblist=off indxdump=off
+MFTRCRD C:0 -a indxdump=off
 
 === Example for dumping an $MFT decode for $LogFile from the D: drive: ===
 
-MFTRCRD D:2 -d attriblist=off indxdump=off
-
-=== Example for dumping a speed optimized $MFT decode for an extremely fragmented file with $ATTRIBUTE_LIST present: ===
-
-MFTRCRD C:\ExtremelyFragmented.bin -d attriblist=on indxdump=off
+MFTRCRD D:2 -d indxdump=off
 
 === Example for dumping an $MFT record decode + hexdump of its resolved INDX records for the root directory on C:, equivalent to the 'folder' named C:\ ===
 
-MFTRCRD C:5 -d attriblist=off indxdump=on
+MFTRCRD C:5 -d indxdump=on
 
 === Example for decoding what is found at offset 3246809088 on the c drive: ===
 
@@ -77,9 +71,11 @@ Running the tool without any parameter will display help information.
 
 
 = Latest version =
-v1.0.0.23
+v1.0.0.24
 
 = Changelog =
+
+v1.0.0.24: General speed improvement. Added missing header flags. Added missing file attribute flags. Added missing reparse type tag. Fixed decode of indx to only cover $I30. Remove some uneeded stuff. Syntax changed (1 param less). Slightly changed how some of the output is displayed.
 
 v1.0.0.23: Fixed a missing declaration of 2 global variables that caused certain issues under certain circumstances. Fixed issue with the "NT style" record identification.
 
