@@ -1,29 +1,21 @@
 #RequireAdmin
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
-#AutoIt3Wrapper_UseX64=y
 #AutoIt3Wrapper_Change2CUI=y
 #AutoIt3Wrapper_Res_Comment=Quick $MFT record dump
 #AutoIt3Wrapper_Res_Description=Decode a file's attributes from $MFT
-#AutoIt3Wrapper_Res_Fileversion=1.0.0.23
+#AutoIt3Wrapper_Res_Fileversion=1.0.0.24
 #AutoIt3Wrapper_Res_LegalCopyright=Joakim Schicht
 #AutoIt3Wrapper_Res_requestedExecutionLevel=asInvoker
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
-#include "_WinTimeFunctions2.au3"
-#include <GUIConstantsEx.au3>
-#include <WindowsConstants.au3>
-#include <StaticConstants.au3>
-#include <EditConstants.au3>
-#include <GuiEdit.au3>
 #Include <WinAPIEx.au3>
-#Include <APIConstants.au3>
 #Include <Date.au3>
 #include <Array.au3>
 #Include <String.au3>
 ;
 ; http://code.google.com/p/mft2csv/
 ;
-Global $ReparseType,$ReparseDataLength,$ReparsePadding,$ReparseSubstititeNameOffset,$ReparseSubstituteNameLength,$ReparsePrintNameOffset,$ReparsePrintNameLength,$ResidentIndx
-Global $BrowsedFile,$TargetDrive = "", $ALInnerCouner, $MFTSize, $MFTRecordsArr[1][1],$TargetIsOffset=0,$TargetOffset
+Global $ReparseType,$ReparseDataLength,$ReparsePadding,$ReparseSubstititeNameOffset,$ReparseSubstituteNameLength,$ReparsePrintNameOffset,$ReparsePrintNameLength,$ResidentIndx, $_COMMON_KERNEL32DLL=DllOpen("kernel32.dll")
+Global $BrowsedFile,$TargetDrive = "", $ALInnerCouner, $MFTSize, $TargetIsOffset=0,$TargetOffset
 Global $SectorsPerCluster,$MFT_Record_Size,$BytesPerCluster,$BytesPerSector,$MFT_Offset
 Global $HEADER_LSN,$HEADER_SequenceNo,$HEADER_Flags,$HEADER_RecordRealSize,$HEADER_RecordAllocSize,$HEADER_BaseRecord
 Global $HEADER_NextAttribID,$HEADER_MFTREcordNumber
@@ -41,7 +33,6 @@ Global $HexDumpRecordSlack[1],$HexDumpRecord[1],$HexDumpHeader[1],$HexDumpStanda
 Global $FN_Number,$DATA_Number,$SI_Number,$ATTRIBLIST_Number,$OBJID_Number,$SECURITY_Number,$VOLNAME_Number,$VOLINFO_Number,$INDEXROOT_Number,$INDEXALLOC_Number,$BITMAP_Number,$REPARSEPOINT_Number,$EAINFO_Number,$EA_Number,$PROPERTYSET_Number,$LOGGEDUTILSTREAM_Number
 Global $STANDARD_INFORMATION_ON,$ATTRIBUTE_LIST_ON,$FILE_NAME_ON,$OBJECT_ID_ON,$SECURITY_DESCRIPTOR_ON,$VOLUME_NAME_ON,$VOLUME_INFORMATION_ON,$DATA_ON,$INDEX_ROOT_ON,$INDEX_ALLOCATION_ON,$BITMAP_ON,$REPARSE_POINT_ON,$EA_INFORMATION_ON,$EA_ON,$PROPERTY_SET_ON,$LOGGED_UTILITY_STREAM_ON,$ATTRIBUTE_END_MARKER_ON
 Global $GUID_ObjectID,$GUID_BirthVolumeID,$GUID_BirthObjectID,$GUID_BirthDomainID,$VOLUME_NAME_NAME,$VOL_INFO_NTFS_VERSION,$VOL_INFO_FLAGS,$INVALID_FILENAME
-Global $MFTRecordsArr1[65530][2],$MFTRecordsArr2[65530][2],$MFTRecordsArr3[65530][2],$MFTRecordsArr4[65530][2],$MFTRecordsArr5[65530][2],$MFTRecordsArr6[65530][2],$MFTRecordsArr7[65530][2],$MFTRecordsArr8[65530][2],$MFTRecordsArr9[65530][2],$MFTRecordsArr10[65530][2],$MFTRecordsArr11[65530][2],$MFTRecordsArr12[65530][2],$MFTRecordsArr13[65530][2],$MFTRecordsArr14[65530][2],$MFTRecordsArr15[65530][2],$MFTRecordsArr16[65530][2],$MFTRecordsArr17[65530][2],$MFTRecordsArr18[65530][2],$MFTRecordsArr19[65530][2],$MFTRecordsArr20[65530][2]
 Global $DateTimeFormat = 6 ; YYYY-MM-DD HH:MM:SS:MSMSMS:NSNSNSNS = 2007-08-18 08:15:37:733:1234
 Global $tDelta = _WinTime_GetUTCToLocalFileTimeDelta()
 Global Const $RecordSignature = '46494C45' ; FILE signature
@@ -98,7 +89,7 @@ Global $FormattedTimestamp
 Global $Timerstart = TimerInit()
 ConsoleWrite("" & @CRLF)
 ConsoleWrite("Starting MFTRCRD by Joakim Schicht" & @CRLF)
-ConsoleWrite("Version 1.0.0.23" & @CRLF)
+ConsoleWrite("Version 1.0.0.24" & @CRLF)
 ConsoleWrite("" & @CRLF)
 _validate_parameters()
 $TargetDrive = StringMid($cmdline[1],1,1)&":"
@@ -115,7 +106,6 @@ If $TargetIsOffset Then
 	_DumpInfo()
 	ConsoleWrite(@CRLF)
 	_End($Timerstart)
-	ConsoleWrite("FINISHED!!" & @CRLF)
 	Exit
 EndIf
 If StringIsDigit(StringMid($cmdline[1],3)) Then
@@ -128,7 +118,6 @@ If $cmdline[2] = "-d" OR $cmdline[2] = "-a" Then
 	_DumpInfo()
 	ConsoleWrite(@CRLF)
 	_End($Timerstart)
-	ConsoleWrite("FINISHED!!" & @CRLF)
 	Exit
 EndIf
 ConsoleWrite("Error: something not right.." & @CRLF)
@@ -136,34 +125,29 @@ Exit
 
 Func _validate_parameters()
 Local $FileAttrib
-If $cmdline[0] <> 4 Then
+If $cmdline[0] <> 3 Then
 	ConsoleWrite("Error: Wrong number of parameters supplied: " & $cmdline[0] & @CRLF)
 	ConsoleWrite("" & @CRLF)
-	ConsoleWrite('Usage: "MFTRCRD param1 param2 param3 param4"' & @CRLF)
+	ConsoleWrite('Usage: "MFTRCRD param1 param2 param3"' & @CRLF)
 	ConsoleWrite("" & @CRLF)
 	ConsoleWrite("param1 can be a valid file/folder path or an IndexNumber ($MFT record number)" & @CRLF)
 	ConsoleWrite("param2 can be -d or -a: " & @CRLF)
 	ConsoleWrite("	-d means decode $MFT entry " & @CRLF)
 	ConsoleWrite("	-a same as -d but also display formatted hexdump of $MFT record and individual attributes " & @CRLF)
 	ConsoleWrite("" & @CRLF)
-	ConsoleWrite("param3 is for optimizing speed of processing and can be either attriblist=on or attriblist=off. attriblist=on is for faster processing when $ATTRIBUTE_LIST is present." & @CRLF)
-	ConsoleWrite("" & @CRLF)
-	ConsoleWrite("param4 for specifying wether to hexdump complete INDX records and can be either indxdump=on or indxdump=off. Beware that indxdump=on may generate a significant amount of dump to console for certain directories." & @CRLF)
+	ConsoleWrite("param3 for specifying wether to hexdump complete INDX records and can be either indxdump=on or indxdump=off. Beware that indxdump=on may generate a significant amount of dump to console for certain directories." & @CRLF)
 	ConsoleWrite("" & @CRLF)
 	ConsoleWrite("Example for dumping an $MFT decode for boot.ini:" & @CRLF)
-	ConsoleWrite("MFTRCRD C:\boot.ini -d attriblist=off indxdump=off" & @CRLF)
+	ConsoleWrite("MFTRCRD C:\boot.ini -d indxdump=off" & @CRLF)
 	ConsoleWrite("" & @CRLF)
 	ConsoleWrite("Example for dumping an $MFT decode + the $MFT record and individual attributes for $MFT itself from the C: drive:" & @CRLF)
-	ConsoleWrite("MFTRCRD C:0 -a attriblist=off indxdump=off" & @CRLF)
+	ConsoleWrite("MFTRCRD C:0 -a indxdump=off" & @CRLF)
 	ConsoleWrite("" & @CRLF)
 	ConsoleWrite("Example for dumping an $MFT decode for $LogFile from the D: drive:" & @CRLF)
-	ConsoleWrite("MFTRCRD D:2 -d attriblist=off indxdump=off" & @CRLF)
-	ConsoleWrite("" & @CRLF)
-	ConsoleWrite("Example for dumping a speed optimized $MFT decode for an extremely fragmented file with $ATTRIBUTE_LIST present" & @CRLF)
-	ConsoleWrite("MFTRCRD C:\ExtremelyFragmented.bin -d attriblist=on indxdump=off" & @CRLF)
+	ConsoleWrite("MFTRCRD D:2 -d indxdump=off" & @CRLF)
 	ConsoleWrite("" & @CRLF)
 	ConsoleWrite("Example for dumping an $MFT record decode + hexdump of its resolved INDX records for the root directory on C:, equivalent to the 'folder' named C:\" & @CRLF)
-	ConsoleWrite("MFTRCRD C:5 -d attriblist=off indxdump=on" & @CRLF)
+	ConsoleWrite("MFTRCRD C:5 -d indxdump=on" & @CRLF)
 	Exit
 EndIf
 If $cmdline[2] <> "-d" AND $cmdline[2] <> "-a" Then
@@ -209,11 +193,7 @@ Else
 	EndIf
 EndIf
 $file = $cmdline[1]
-If $cmdline[3] <> "attriblist=on" AND $cmdline[3] <> "attriblist=off" Then
-	ConsoleWrite("Param 3 must be either attriblist=on or attriblist=off" & @CRLF)
-	Exit
-EndIf
-If $cmdline[4] <> "indxdump=on" AND $cmdline[4] <> "indxdump=off" Then
+If $cmdline[3] <> "indxdump=on" AND $cmdline[3] <> "indxdump=off" Then
 	ConsoleWrite("Param 4 must be either indxdump=on or indxdump=off" & @CRLF)
 	Exit
 EndIf
@@ -325,15 +305,8 @@ Func _ExtractSystemfile($TargetFile)
 			_ExtractSingleFile($i)
 		Next
 	Else
-;		ConsoleWrite("TargetFile is " & $TargetFile & @CRLF)
-		If $TargetFile > 24 AND $cmdline[3] = "attriblist=on" Then _InitiateMftArray()
-		If @error Then
-			ConsoleWrite("Error when creating the MFT arrays" & @crlf)
-			Exit
-		EndIf
 		_ExtractSingleFile(Int($TargetFile,2))
 	EndIf
-;	ConsoleWrite("Finished extraction of files." & @crlf)
 EndFunc
 
 Func _ExtractSingleFile($MFTReferenceNumber)
@@ -341,8 +314,6 @@ Func _ExtractSingleFile($MFTReferenceNumber)
 	_ClearVar()
 	If $TargetIsOffset Then
 		$MFTRecord = _DumpFromOffset($MFTReferenceNumber)
-	ElseIf $MFTReferenceNumber > 24 AND $cmdline[3] = "attriblist=on" Then
-		$MFTRecord = _ProcessMftArray($MFTReferenceNumber)
 	Else
 		$MFTRecord = _FindFileMFTRecord($MFTReferenceNumber)
 	EndIf
@@ -707,20 +678,35 @@ $HEADER_SequenceNo = Dec(_SwapEndian(StringMid($MFTEntry,35,4)))
 $Header_HardLinkCount = StringMid($MFTEntry,39,4)
 $Header_HardLinkCount = Dec(StringMid($Header_HardLinkCount,3,2) & StringMid($Header_HardLinkCount,1,2))
 $HEADER_Flags = StringMid($MFTEntry,47,4)
-$RecordActive = "DELETED"
-If BitAND(Dec($HEADER_Flags),Dec('0100')) Then $RecordActive = "ALLOCATED"
-Select
-	Case $HEADER_Flags = '0000'
-		$HEADER_Flags = 'FILE'
-	Case $HEADER_Flags = '0100'
-		$HEADER_Flags = 'FILE'
-	Case $HEADER_Flags = '0200'
-		$HEADER_Flags = 'FOLDER'
-	Case $HEADER_Flags = '0300'
-		$HEADER_Flags = 'FOLDER'
-	Case Else
-		$HEADER_Flags = 'UNKNOWN'
-EndSelect
+	Select
+		Case $HEADER_Flags = '0000'
+			$HEADER_Flags = 'FILE'
+			$RecordActive = 'DELETED'
+		Case $HEADER_Flags = '0100'
+			$HEADER_Flags = 'FILE'
+			$RecordActive = 'ALLOCATED'
+		Case $HEADER_Flags = '0200'
+			$HEADER_Flags = 'FOLDER'
+			$RecordActive = 'DELETED'
+		Case $HEADER_Flags = '0300'
+			$HEADER_Flags = 'FOLDER'
+			$RecordActive = 'ALLOCATED'
+		Case $HEADER_Flags = '0400'
+			$HEADER_Flags = 'FILE+USNJRNL+DISABLED'
+			$RecordActive = 'ALLOCATED'
+		Case $HEADER_Flags = '0500'
+			$HEADER_Flags = 'FILE+USNJRNL+ENABLED'
+			$RecordActive = 'ALLOCATED'
+		Case $HEADER_Flags = '0900'
+			$HEADER_Flags = 'FILE+INDEX_SECURITY'
+			$RecordActive = 'ALLOCATED'
+		Case $HEADER_Flags = '0D00'
+			$HEADER_Flags = 'FILE+INDEX_OTHER'
+			$RecordActive = 'ALLOCATED'
+		Case Else
+			$HEADER_Flags = 'UNKNOWN'
+			$RecordActive = 'UNKNOWN'
+	EndSelect
 $HEADER_RecordRealSize = Dec(_SwapEndian(StringMid($MFTEntry,51,8)),2)
 $HEADER_RecordAllocSize = Dec(_SwapEndian(StringMid($MFTEntry,59,8)),2)
 $HEADER_BaseRecord = Dec(_SwapEndian(StringMid($MFTEntry,67,12)),2) ;Base file record
@@ -770,11 +756,7 @@ While 1
 			_DecodeAttrList($HEADER_MFTRecordNumber, $AttrList)		;produces $AttrQ - extra record list
 			$str = ""
 			For $i = 1 To $AttrQ[0]
-				If $cmdline[3] = "attriblist=on" Then
-					$record = _ProcessMftArray($AttrQ[$i])
-				Else
-					$record = _FindFileMFTRecord($AttrQ[$i])
-				EndIf
+				$record = _FindFileMFTRecord($AttrQ[$i])
 			   $str &= _StripMftRecord($record)		;no header or end marker
 			Next
 			$str &= "FFFFFFFF"		;add end marker
@@ -855,7 +837,7 @@ While 1
 			$CoreIndexAllocationChunk = $CoreIndexAllocation[0]
 			$CoreIndexAllocationName = $CoreIndexAllocation[1]
 			_Arrayadd($HexDumpIndxRecord,$CoreIndexAllocationChunk)
-			_Get_IndexAllocation($CoreIndexAllocationChunk,$INDEXALLOC_Number,$CoreIndexAllocationName)
+			If $CoreIndexAllocationName = "$I30" Then _Get_IndexAllocation($CoreIndexAllocationChunk,$INDEXALLOC_Number,$CoreIndexAllocationName)
 			ReDim $HexDumpIndexAllocation[$INDEXALLOC_Number]
 			_Arrayadd($HexDumpIndexAllocation,StringMid($MFTEntry,$AttributeOffset,$AttributeSize*2))
 		Case $AttributeType = $BITMAP
@@ -1031,7 +1013,7 @@ Func _ExtractDataRuns()
 EndFunc
 
 Func _FindFileMFTRecord($TargetFile)
-	Local $nBytes, $TmpOffset
+	Local $nBytes, $TmpOffset, $Counter, $Counter2, $RecordJumper, $TargetFileDec, $RecordsTooMuch
 	$tBuffer = DllStructCreate("byte[" & $MFT_Record_Size & "]")
 	$hFile = _WinAPI_CreateFile("\\.\" & $TargetDrive, 2, 6, 6)
 	If $hFile = 0 Then
@@ -1040,21 +1022,36 @@ Func _FindFileMFTRecord($TargetFile)
 		Exit
 	EndIf
 	$TargetFile = _DecToLittleEndian($TargetFile)
-	For $r = 1 To Ubound($MFT_RUN_VCN)-1
-		_WinAPI_SetFilePointerEx($hFile, $MFT_RUN_VCN[$r]*$BytesPerCluster, $FILE_BEGIN)
-		For $i = 0 To $MFT_RUN_Clusters[$r]*$BytesPerCluster Step $MFT_Record_Size
-			_WinAPI_ReadFile($hFile, DllStructGetPtr($tBuffer), $MFT_Record_Size, $nBytes)
-			$record = DllStructGetData($tBuffer, 1)
-			If StringMid($record,91,8) = $TargetFile Then
-				$TmpOffset = DllCall('kernel32.dll', 'int', 'SetFilePointerEx', 'ptr', $hFile, 'int64', 0, 'int64*', 0, 'dword', 1)
-				ConsoleWrite("Target record number: " & Dec(_SwapEndian($TargetFile),2) & " found at disk offset: " & $TmpOffset[3] & @CRLF)
-				_WinAPI_CloseHandle($hFile)
-				Return $record		;returns MFT record for file
-			EndIf
-		Next
+	$TargetFileDec = Dec(_SwapEndian($TargetFile),2)
+	For $i = 1 To UBound($MFT_RUN_Clusters)-1
+		$CurrentClusters = $MFT_RUN_Clusters[$i]
+		$RecordsInCurrentRun = ($CurrentClusters*$SectorsPerCluster)/2
+		$Counter+=$RecordsInCurrentRun
+		If $Counter>$TargetFileDec Then
+			ExitLoop
+		EndIf
 	Next
-	_WinAPI_CloseHandle($hFile)
-	Return ""
+	$TryAt = $Counter-$RecordsInCurrentRun
+	$TryAtArrIndex = $i
+	$RecordsPerCluster = $SectorsPerCluster/2
+	Do
+		$RecordJumper+=$RecordsPerCluster
+		$Counter2+=1
+		$Final = $TryAt+$RecordJumper
+	Until $Final>=$TargetFileDec
+	$RecordsTooMuch = $Final-$TargetFileDec
+	_WinAPI_SetFilePointerEx($hFile, $MFT_RUN_VCN[$i]*$BytesPerCluster+($Counter2*$BytesPerCluster)-($RecordsTooMuch*1024), $FILE_BEGIN)
+	_WinAPI_ReadFile($hFile, DllStructGetPtr($tBuffer), $MFT_Record_Size, $nBytes)
+	$record = DllStructGetData($tBuffer, 1)
+	If StringMid($record,91,8) = $TargetFile Then
+		$TmpOffset = DllCall('kernel32.dll', 'int', 'SetFilePointerEx', 'ptr', $hFile, 'int64', 0, 'int64*', 0, 'dword', 1)
+		ConsoleWrite("Record number: " & Dec(_SwapEndian($TargetFile),2) & " found at disk offset: " & $TmpOffset[3] & " -> 0x" & Hex($TmpOffset[3]) & @CRLF)
+		_WinAPI_CloseHandle($hFile)
+		Return $record
+	Else
+		_WinAPI_CloseHandle($hFile)
+		Return ""
+	EndIf
 EndFunc
 
 Func _FindMFT($TargetFile)
@@ -1220,11 +1217,11 @@ $RecordHdrArr[13][0] = "File reference (MFT Record number)"
 $RecordHdrArr[14][0] = "Update Sequence Number (a)"
 $RecordHdrArr[15][0] = "Update Sequence Array (a)"
 $SIArr[0][0] = "Field name:"
-$SIArr[1][0] = "HEADER_Flags"
-$SIArr[2][0] = "CreationTime (CTime)"
-$SIArr[3][0] = "LastWriteTime (ATime)"
-$SIArr[4][0] = "ChangeTime (MTime)"
-$SIArr[5][0] = "LastAccessTime (RTime)"
+;$SIArr[1][0] = "HEADER_Flags"
+$SIArr[2][0] = "File Create Time (CTime)"
+$SIArr[3][0] = "File Modified Time (ATime)"
+$SIArr[4][0] = "MFT Entry modified Time (MTime)"
+$SIArr[5][0] = "File Last Access Time (RTime)"
 $SIArr[6][0] = "DOS File Permissions"
 $SIArr[7][0] = "Max Versions"
 $SIArr[8][0] = "Version Number"
@@ -1237,10 +1234,10 @@ $SIArr[0][2] = "Field offset:"
 $SIArr[0][3] = "Field size (bytes):"
 $FNArr[0][0] = "Field name"
 $FNArr[1][0] = "ParentSequenceNo"
-$FNArr[2][0] = "CreationTime (CTime)"
-$FNArr[3][0] = "LastWriteTime (ATime)"
-$FNArr[4][0] = "ChangeTime (MTime)"
-$FNArr[5][0] = "LastAccessTime (RTime)"
+$FNArr[2][0] = "File Create Time (CTime)"
+$FNArr[3][0] = "File Modified Time (ATime)"
+$FNArr[4][0] = "MFT Entry modified Time (MTime)"
+$FNArr[5][0] = "File Last Access Time (RTime)"
 $FNArr[6][0] = "AllocSize"
 $FNArr[7][0] = "RealSize"
 $FNArr[8][0] = "Flags"
@@ -1378,96 +1375,72 @@ Func _HexEncode($bInput)
 EndFunc  ;==>_HexEncode
 
 Func _Get_StandardInformation($MFTEntry,$SI_Offset,$SI_Size,$Current_SI_Number)
-;ConsoleWrite("$SI_Size = " & $SI_Size & @crlf)
-$SI_HEADER_Flags = StringMid($MFTEntry,$SI_Offset+24,4)
-$SI_HEADER_Flags = StringMid($SI_HEADER_Flags,3,2) & StringMid($SI_HEADER_Flags,1,2)
-;ConsoleWrite("$SI_HEADER_Flags = " & $SI_HEADER_Flags & @crlf)
-$SI_HEADER_Flags = _AttribHeaderFlags("0x" & $SI_HEADER_Flags)
-;ConsoleWrite("$SI_HEADER_Flags = " & $SI_HEADER_Flags & @crlf)
-;
-$SI_CTime = StringMid($MFTEntry,$SI_Offset+48,16)
-;ConsoleWrite("$SI_CTime = " & $SI_CTime & @crlf)
-$SI_CTime = StringMid($SI_CTime,15,2) & StringMid($SI_CTime,13,2) & StringMid($SI_CTime,11,2) & StringMid($SI_CTime,9,2) & StringMid($SI_CTime,7,2) & StringMid($SI_CTime,5,2) & StringMid($SI_CTime,3,2) & StringMid($SI_CTime,1,2)
-;$SI_CTime = Dec(StringMid($SI_CTime,15,2) & StringMid($SI_CTime,13,2) & StringMid($SI_CTime,11,2) & StringMid($SI_CTime,9,2) & StringMid($SI_CTime,7,2) & StringMid($SI_CTime,5,2) & StringMid($SI_CTime,3,2) & StringMid($SI_CTime,1,2))
-;ConsoleWrite("$SI_CTime = " & $SI_CTime & @crlf)
-$SI_CTime_tmp = _WinTime_UTCFileTimeToLocalFileTime("0x" & $SI_CTime)
-;ConsoleWrite("$SI_CTime_tmp = " & $SI_CTime_tmp & @crlf)
-$SI_CTime = _WinTime_UTCFileTimeFormat(Dec($SI_CTime)-$tDelta,$DateTimeFormat,2)
-$SI_CTime = $SI_CTime & ":" & _FillZero(StringRight($SI_CTime_tmp,4))
-;ConsoleWrite("$SI_CTime = " & $SI_CTime & @crlf)
-;$MSecTest = _Test_MilliSec($SI_CTime)
-;
-$SI_ATime = StringMid($MFTEntry,$SI_Offset+64,16)
-;ConsoleWrite("$SI_ATime = " & $SI_ATime & @crlf)
-$SI_ATime = StringMid($SI_ATime,15,2) & StringMid($SI_ATime,13,2) & StringMid($SI_ATime,11,2) & StringMid($SI_ATime,9,2) & StringMid($SI_ATime,7,2) & StringMid($SI_ATime,5,2) & StringMid($SI_ATime,3,2) & StringMid($SI_ATime,1,2)
-;$SI_ATime = Dec(StringMid($SI_ATime,15,2) & StringMid($SI_ATime,13,2) & StringMid($SI_ATime,11,2) & StringMid($SI_ATime,9,2) & StringMid($SI_ATime,7,2) & StringMid($SI_ATime,5,2) & StringMid($SI_ATime,3,2) & StringMid($SI_ATime,1,2))
-;ConsoleWrite("$SI_ATime = " & $SI_ATime & @crlf)
-$SI_ATime_tmp = _WinTime_UTCFileTimeToLocalFileTime("0x" & $SI_ATime)
-;ConsoleWrite("$SI_ATime_tmp = " & $SI_ATime_tmp & @crlf)
-$SI_ATime = _WinTime_UTCFileTimeFormat(Dec($SI_ATime)-$tDelta,$DateTimeFormat,2)
-$SI_ATime = $SI_ATime & ":" & _FillZero(StringRight($SI_ATime_tmp,4))
-;ConsoleWrite("$SI_ATime = " & $SI_ATime & @crlf)
-;
-$SI_MTime = StringMid($MFTEntry,$SI_Offset+80,16)
-;ConsoleWrite("$SI_MTime = " & $SI_MTime & @crlf)
-$SI_MTime = StringMid($SI_MTime,15,2) & StringMid($SI_MTime,13,2) & StringMid($SI_MTime,11,2) & StringMid($SI_MTime,9,2) & StringMid($SI_MTime,7,2) & StringMid($SI_MTime,5,2) & StringMid($SI_MTime,3,2) & StringMid($SI_MTime,1,2)
-;$SI_MTime = Dec(StringMid($SI_MTime,15,2) & StringMid($SI_MTime,13,2) & StringMid($SI_MTime,11,2) & StringMid($SI_MTime,9,2) & StringMid($SI_MTime,7,2) & StringMid($SI_MTime,5,2) & StringMid($SI_MTime,3,2) & StringMid($SI_MTime,1,2))
-;ConsoleWrite("$SI_MTime = " & $SI_MTime & @crlf)
-$SI_MTime_tmp = _WinTime_UTCFileTimeToLocalFileTime("0x" & $SI_MTime)
-;ConsoleWrite("$SI_MTime_tmp = " & $SI_MTime_tmp & @crlf)
-$SI_MTime = _WinTime_UTCFileTimeFormat(Dec($SI_MTime)-$tDelta,$DateTimeFormat,2)
-$SI_MTime = $SI_MTime & ":" & _FillZero(StringRight($SI_MTime_tmp,4))
-;ConsoleWrite("$SI_MTime = " & $SI_MTime & @crlf)
-;
-$SI_RTime = StringMid($MFTEntry,$SI_Offset+96,16)
-;ConsoleWrite("$SI_RTime = " & $SI_RTime & @crlf)
-$SI_RTime = StringMid($SI_RTime,15,2) & StringMid($SI_RTime,13,2) & StringMid($SI_RTime,11,2) & StringMid($SI_RTime,9,2) & StringMid($SI_RTime,7,2) & StringMid($SI_RTime,5,2) & StringMid($SI_RTime,3,2) & StringMid($SI_RTime,1,2)
-;$SI_RTime = Dec(StringMid($SI_RTime,15,2) & StringMid($SI_RTime,13,2) & StringMid($SI_RTime,11,2) & StringMid($SI_RTime,9,2) & StringMid($SI_RTime,7,2) & StringMid($SI_RTime,5,2) & StringMid($SI_RTime,3,2) & StringMid($SI_RTime,1,2))
-;ConsoleWrite("$SI_RTime = " & $SI_RTime & @crlf)
-$SI_RTime_tmp = _WinTime_UTCFileTimeToLocalFileTime("0x" & $SI_RTime)
-;ConsoleWrite("$SI_RTime_tmp = " & $SI_RTime_tmp & @crlf)
-$SI_RTime = _WinTime_UTCFileTimeFormat(Dec($SI_RTime)-$tDelta,$DateTimeFormat,2)
-$SI_RTime = $SI_RTime & ":" & _FillZero(StringRight($SI_RTime_tmp,4))
-;ConsoleWrite("$SI_RTime = " & $SI_RTime & @crlf)
-;
-$SI_FilePermission = StringMid($MFTEntry,$SI_Offset+112,8)
-$SI_FilePermission = StringMid($SI_FilePermission,7,2) & StringMid($SI_FilePermission,5,2) & StringMid($SI_FilePermission,3,2) & StringMid($SI_FilePermission,1,2)
-;ConsoleWrite("$SI_FilePermission = " & $SI_FilePermission & @crlf)
-$SI_FilePermission = _File_Permissions("0x" & $SI_FilePermission)
-;ConsoleWrite("$SI_FilePermission = " & $SI_FilePermission & @crlf)
-$SI_MaxVersions = StringMid($MFTEntry,$SI_Offset+120,8)
-$SI_MaxVersions = Dec(StringMid($SI_MaxVersions,7,2) & StringMid($SI_MaxVersions,5,2) & StringMid($SI_MaxVersions,3,2) & StringMid($SI_MaxVersions,1,2))
-;$SI_MaxVersions = Dec($SI_MaxVersions)
-$SI_VersionNumber = StringMid($MFTEntry,$SI_Offset+128,8)
-$SI_VersionNumber = Dec(StringMid($SI_VersionNumber,7,2) & StringMid($SI_VersionNumber,5,2) & StringMid($SI_VersionNumber,3,2) & StringMid($SI_VersionNumber,1,2))
-;$SI_VersionNumber = Dec($SI_VersionNumber)
-$SI_ClassID = StringMid($MFTEntry,$SI_Offset+136,8)
-$SI_ClassID = Dec(StringMid($SI_ClassID,7,2) & StringMid($SI_ClassID,5,2) & StringMid($SI_ClassID,3,2) & StringMid($SI_ClassID,1,2))
-;$SI_ClassID = Dec($SI_ClassID)
-$SI_OwnerID = StringMid($MFTEntry,$SI_Offset+144,8)
-$SI_OwnerID = Dec(StringMid($SI_OwnerID,7,2) & StringMid($SI_OwnerID,5,2) & StringMid($SI_OwnerID,3,2) & StringMid($SI_OwnerID,1,2))
-;$SI_OwnerID = Dec($SI_OwnerID)
-$SI_SecurityID = StringMid($MFTEntry,$SI_Offset+152,8)
-$SI_SecurityID = Dec(StringMid($SI_SecurityID,7,2) & StringMid($SI_SecurityID,5,2) & StringMid($SI_SecurityID,3,2) & StringMid($SI_SecurityID,1,2))
-;$SI_SecurityID = Dec($SI_SecurityID)
-$SI_USN = StringMid($MFTEntry,$SI_Offset+176,16)
-$SI_USN = Dec(StringMid($SI_USN,15,2) & StringMid($SI_USN,13,2) & StringMid($SI_USN,11,2) & StringMid($SI_USN,9,2) & StringMid($SI_USN,7,2) & StringMid($SI_USN,5,2) & StringMid($SI_USN,3,2) & StringMid($SI_USN,1,2),2)
-;$SI_USN = Dec($SI_USN)
-;ConsoleWrite("$SI_USN = " & $SI_USN & @crlf)
+	$SI_CTime = StringMid($MFTEntry, $SI_Offset + 48, 16)
+	$SI_CTime = _SwapEndian($SI_CTime)
+	$SI_CTime_tmp = _WinTime_UTCFileTimeToLocalFileTime("0x" & $SI_CTime)
+	$SI_CTime = _WinTime_UTCFileTimeFormat(Dec($SI_CTime,2) - $tDelta, $DateTimeFormat, 2)
+	If @error Then
+		$SI_CTime = "-"
+	Else
+		$SI_CTime = $SI_CTime & ":" & _FillZero(StringRight($SI_CTime_tmp, 4))
+	EndIf
+	$SI_ATime = StringMid($MFTEntry, $SI_Offset + 64, 16)
+	$SI_ATime = _SwapEndian($SI_ATime)
+	$SI_ATime_tmp = _WinTime_UTCFileTimeToLocalFileTime("0x" & $SI_ATime)
+	$SI_ATime = _WinTime_UTCFileTimeFormat(Dec($SI_ATime,2) - $tDelta, $DateTimeFormat, 2)
+	If @error Then
+		$SI_ATime = "-"
+	Else
+		$SI_ATime = $SI_ATime & ":" & _FillZero(StringRight($SI_ATime_tmp, 4))
+	EndIf
+	$SI_MTime = StringMid($MFTEntry, $SI_Offset + 80, 16)
+	$SI_MTime = _SwapEndian($SI_MTime)
+	$SI_MTime_tmp = _WinTime_UTCFileTimeToLocalFileTime("0x" & $SI_MTime)
+	$SI_MTime = _WinTime_UTCFileTimeFormat(Dec($SI_MTime,2) - $tDelta, $DateTimeFormat, 2)
+	If @error Then
+		$SI_MTime = "-"
+	Else
+		$SI_MTime = $SI_MTime & ":" & _FillZero(StringRight($SI_MTime_tmp, 4))
+	EndIf
+	$SI_RTime = StringMid($MFTEntry, $SI_Offset + 96, 16)
+	$SI_RTime = _SwapEndian($SI_RTime)
+	$SI_RTime_tmp = _WinTime_UTCFileTimeToLocalFileTime("0x" & $SI_RTime)
+	$SI_RTime = _WinTime_UTCFileTimeFormat(Dec($SI_RTime,2) - $tDelta, $DateTimeFormat, 2)
+	If @error Then
+		$SI_RTime = "-"
+	Else
+		$SI_RTime = $SI_RTime & ":" & _FillZero(StringRight($SI_RTime_tmp, 4))
+	EndIf
+	$SI_FilePermission = StringMid($MFTEntry, $SI_Offset + 112, 8)
+	$SI_FilePermission = _SwapEndian($SI_FilePermission)
+	$SI_FilePermission = _File_Attributes("0x" & $SI_FilePermission)
+	$SI_MaxVersions = StringMid($MFTEntry, $SI_Offset + 120, 8)
+	$SI_MaxVersions = Dec(_SwapEndian($SI_MaxVersions),2)
+	$SI_VersionNumber = StringMid($MFTEntry, $SI_Offset + 128, 8)
+	$SI_VersionNumber = Dec(_SwapEndian($SI_VersionNumber),2)
+	$SI_ClassID = StringMid($MFTEntry, $SI_Offset + 136, 8)
+	$SI_ClassID = Dec(_SwapEndian($SI_ClassID),2)
+	$SI_OwnerID = StringMid($MFTEntry, $SI_Offset + 144, 8)
+	$SI_OwnerID = Dec(_SwapEndian($SI_OwnerID),2)
+	$SI_SecurityID = StringMid($MFTEntry, $SI_Offset + 152, 8)
+	$SI_SecurityID = Dec(_SwapEndian($SI_SecurityID),2)
+	$SI_QuotaCharged = StringMid($MFTEntry, $SI_Offset + 160, 16)
+	$SI_QuotaCharged = Dec(_SwapEndian($SI_QuotaCharged),2)
+	$SI_USN = StringMid($MFTEntry, $SI_Offset + 176, 16)
+	$SI_USN = Dec(_SwapEndian($SI_USN),2)
 
-$SIArr[1][$Current_SI_Number] = $SI_HEADER_Flags
-$SIArr[2][$Current_SI_Number] = $SI_CTime
-$SIArr[3][$Current_SI_Number] = $SI_ATime
-$SIArr[4][$Current_SI_Number] = $SI_MTime
-$SIArr[5][$Current_SI_Number] = $SI_RTime
-$SIArr[6][$Current_SI_Number] = $SI_FilePermission
-$SIArr[7][$Current_SI_Number] = $SI_MaxVersions
-$SIArr[8][$Current_SI_Number] = $SI_VersionNumber
-$SIArr[9][$Current_SI_Number] = $SI_ClassID
-$SIArr[10][$Current_SI_Number] = $SI_OwnerID
-$SIArr[11][$Current_SI_Number] = $SI_SecurityID
-$SIArr[12][$Current_SI_Number] = $SI_USN
-
+;	$SIArr[1][$Current_SI_Number] = $SI_HEADER_Flags
+	$SIArr[2][$Current_SI_Number] = $SI_CTime
+	$SIArr[3][$Current_SI_Number] = $SI_ATime
+	$SIArr[4][$Current_SI_Number] = $SI_MTime
+	$SIArr[5][$Current_SI_Number] = $SI_RTime
+	$SIArr[6][$Current_SI_Number] = $SI_FilePermission
+	$SIArr[7][$Current_SI_Number] = $SI_MaxVersions
+	$SIArr[8][$Current_SI_Number] = $SI_VersionNumber
+	$SIArr[9][$Current_SI_Number] = $SI_ClassID
+	$SIArr[10][$Current_SI_Number] = $SI_OwnerID
+	$SIArr[11][$Current_SI_Number] = $SI_SecurityID
+	$SIArr[12][$Current_SI_Number] = $SI_USN
 EndFunc
 
 Func _Get_ObjectID($MFTEntry,$OBJECTID_Offset,$OBJECTID_Size)
@@ -1593,115 +1566,87 @@ EndFunc
 
 Func _Get_FileName($MFTEntry,$FN_Offset,$FN_Size,$FN_Number)
 
-$FN_ParentReferenceNo = StringMid($MFTEntry,$FN_Offset+48,12)
-;ConsoleWrite("$FN_ParentReferenceNo = " & $FN_ParentReferenceNo & @crlf)
-$FN_ParentReferenceNo = Dec(StringMid($FN_ParentReferenceNo,11,2) & StringMid($FN_ParentReferenceNo,9,2) & StringMid($FN_ParentReferenceNo,7,2) & StringMid($FN_ParentReferenceNo,5,2) & StringMid($FN_ParentReferenceNo,3,2) & StringMid($FN_ParentReferenceNo,1,2))
-;$FN_ParentReferenceNo = Dec($FN_ParentReferenceNo)
-;ConsoleWrite("$FN_ParentReferenceNo = " & $FN_ParentReferenceNo & @crlf)
-$FN_ParentSequenceNo = StringMid($MFTEntry,$FN_Offset+60,4)
-;ConsoleWrite("$FN_ParentSequenceNo = " & $FN_ParentSequenceNo & @crlf)
-$FN_ParentSequenceNo = Dec(StringMid($FN_ParentSequenceNo,3,2) & StringMid($FN_ParentSequenceNo,1,2))
-;$FN_ParentSequenceNo = Dec($FN_ParentSequenceNo)
-;ConsoleWrite("$FN_ParentSequenceNo = " & $FN_ParentSequenceNo & @crlf)
-;ConsoleWrite("$FN_Size = " & $FN_Size & @crlf)
-;
-$FN_CTime = StringMid($MFTEntry,$FN_Offset+64,16)
-;ConsoleWrite("$FN_CTime = " & $FN_CTime & @crlf)
-$FN_CTime = StringMid($FN_CTime,15,2) & StringMid($FN_CTime,13,2) & StringMid($FN_CTime,11,2) & StringMid($FN_CTime,9,2) & StringMid($FN_CTime,7,2) & StringMid($FN_CTime,5,2) & StringMid($FN_CTime,3,2) & StringMid($FN_CTime,1,2)
-;$FN_CTime = Dec(StringMid($FN_CTime,15,2) & StringMid($FN_CTime,13,2) & StringMid($FN_CTime,11,2) & StringMid($FN_CTime,9,2) & StringMid($FN_CTime,7,2) & StringMid($FN_CTime,5,2) & StringMid($FN_CTime,3,2) & StringMid($FN_CTime,1,2))
-;ConsoleWrite("$FN_CTime = " & $FN_CTime & @crlf)
-$FN_CTime_tmp = _WinTime_UTCFileTimeToLocalFileTime("0x" & $FN_CTime)
-;ConsoleWrite("$FN_CTime_tmp = " & $FN_CTime_tmp & @crlf)
-$FN_CTime = _WinTime_UTCFileTimeFormat(Dec($FN_CTime)-$tDelta,$DateTimeFormat,2)
-$FN_CTime = $FN_CTime & ":" & _FillZero(StringRight($FN_CTime_tmp,4))
-;ConsoleWrite("$FN_CTime = " & $FN_CTime & @crlf)
-;
-$FN_ATime = StringMid($MFTEntry,$FN_Offset+80,16)
-;ConsoleWrite("$FN_ATime = " & $FN_ATime & @crlf)
-$FN_ATime = StringMid($FN_ATime,15,2) & StringMid($FN_ATime,13,2) & StringMid($FN_ATime,11,2) & StringMid($FN_ATime,9,2) & StringMid($FN_ATime,7,2) & StringMid($FN_ATime,5,2) & StringMid($FN_ATime,3,2) & StringMid($FN_ATime,1,2)
-;$FN_ATime = Dec(StringMid($FN_ATime,15,2) & StringMid($FN_ATime,13,2) & StringMid($FN_ATime,11,2) & StringMid($FN_ATime,9,2) & StringMid($FN_ATime,7,2) & StringMid($FN_ATime,5,2) & StringMid($FN_ATime,3,2) & StringMid($FN_ATime,1,2))
-;ConsoleWrite("$FN_ATime = " & $FN_ATime & @crlf)
-$FN_ATime_tmp = _WinTime_UTCFileTimeToLocalFileTime("0x" & $FN_ATime)
-;ConsoleWrite("$FN_ATime_tmp = " & $FN_ATime_tmp & @crlf)
-$FN_ATime = _WinTime_UTCFileTimeFormat(Dec($FN_ATime)-$tDelta,$DateTimeFormat,2)
-$FN_ATime = $FN_ATime & ":" & _FillZero(StringRight($FN_ATime_tmp,4))
-;ConsoleWrite("$FN_ATime = " & $FN_ATime & @crlf)
-;
-$FN_MTime = StringMid($MFTEntry,$FN_Offset+96,16)
-;ConsoleWrite("$FN_MTime = " & $FN_MTime & @crlf)
-$FN_MTime = StringMid($FN_MTime,15,2) & StringMid($FN_MTime,13,2) & StringMid($FN_MTime,11,2) & StringMid($FN_MTime,9,2) & StringMid($FN_MTime,7,2) & StringMid($FN_MTime,5,2) & StringMid($FN_MTime,3,2) & StringMid($FN_MTime,1,2)
-;$FN_MTime = Dec(StringMid($FN_MTime,15,2) & StringMid($FN_MTime,13,2) & StringMid($FN_MTime,11,2) & StringMid($FN_MTime,9,2) & StringMid($FN_MTime,7,2) & StringMid($FN_MTime,5,2) & StringMid($FN_MTime,3,2) & StringMid($FN_MTime,1,2))
-;ConsoleWrite("$FN_MTime = " & $FN_MTime & @crlf)
-$FN_MTime_tmp = _WinTime_UTCFileTimeToLocalFileTime("0x" & $FN_MTime)
-;ConsoleWrite("$FN_MTime_tmp = " & $FN_MTime_tmp & @crlf)
-$FN_MTime = _WinTime_UTCFileTimeFormat(Dec($FN_MTime)-$tDelta,$DateTimeFormat,2)
-$FN_MTime = $FN_MTime & ":" & _FillZero(StringRight($FN_MTime_tmp,4))
-;ConsoleWrite("$FN_MTime = " & $FN_MTime & @crlf)
-;
-$FN_RTime = StringMid($MFTEntry,$FN_Offset+112,16)
-;ConsoleWrite("$FN_RTime = " & $FN_RTime & @crlf)
-$FN_RTime = StringMid($FN_RTime,15,2) & StringMid($FN_RTime,13,2) & StringMid($FN_RTime,11,2) & StringMid($FN_RTime,9,2) & StringMid($FN_RTime,7,2) & StringMid($FN_RTime,5,2) & StringMid($FN_RTime,3,2) & StringMid($FN_RTime,1,2)
-;$FN_RTime = Dec(StringMid($FN_RTime,15,2) & StringMid($FN_RTime,13,2) & StringMid($FN_RTime,11,2) & StringMid($FN_RTime,9,2) & StringMid($FN_RTime,7,2) & StringMid($FN_RTime,5,2) & StringMid($FN_RTime,3,2) & StringMid($FN_RTime,1,2))
-;ConsoleWrite("$FN_RTime = " & $FN_RTime & @crlf)
-$FN_RTime_tmp = _WinTime_UTCFileTimeToLocalFileTime("0x" & $FN_RTime)
-;ConsoleWrite("$FN_RTime_tmp = " & $FN_RTime_tmp & @crlf)
-$FN_RTime = _WinTime_UTCFileTimeFormat(Dec($FN_RTime)-$tDelta,$DateTimeFormat,2)
-$FN_RTime = $FN_RTime & ":" & _FillZero(StringRight($FN_RTime_tmp,4))
-;ConsoleWrite("$FN_RTime = " & $FN_RTime & @crlf)
-;
-$FN_AllocSize = StringMid($MFTEntry,$FN_Offset+128,16)
-$FN_AllocSize = Dec(StringMid($FN_AllocSize,15,2) & StringMid($FN_AllocSize,13,2) & StringMid($FN_AllocSize,11,2) & StringMid($FN_AllocSize,9,2) & StringMid($FN_AllocSize,7,2) & StringMid($FN_AllocSize,5,2) & StringMid($FN_AllocSize,3,2) & StringMid($FN_AllocSize,1,2))
-;$FN_AllocSize = Dec($FN_AllocSize)
-;ConsoleWrite("$FN_AllocSize = " & $FN_AllocSize & @crlf)
-$FN_RealSize = StringMid($MFTEntry,$FN_Offset+144,16)
-$FN_RealSize = Dec(StringMid($FN_RealSize,15,2) & StringMid($FN_RealSize,13,2) & StringMid($FN_RealSize,11,2) & StringMid($FN_RealSize,9,2) & StringMid($FN_RealSize,7,2) & StringMid($FN_RealSize,5,2) & StringMid($FN_RealSize,3,2) & StringMid($FN_RealSize,1,2))
-;$FN_RealSize = Dec($FN_RealSize)
-;ConsoleWrite("$FN_RealSize = " & $FN_RealSize & @crlf)
-$FN_Flags = StringMid($MFTEntry,$FN_Offset+160,8)
-;ConsoleWrite("$FN_Flags = " & $FN_Flags & @crlf)
-$FN_Flags = StringMid($FN_Flags,7,2) & StringMid($FN_Flags,5,2) & StringMid($FN_Flags,3,2) & StringMid($FN_Flags,1,2)
-;ConsoleWrite("$FN_Flags = " & $FN_Flags & @crlf)
-$FN_Flags = _File_Permissions("0x" & $FN_Flags)
-;ConsoleWrite("$FN_Flags = " & $FN_Flags & @crlf)
-$FN_NameLength = StringMid($MFTEntry,$FN_Offset+176,2)
-$FN_NameLength = Dec($FN_NameLength)
-;ConsoleWrite("$FN_NameLength = " & $FN_NameLength & @crlf)
-$FN_NameType = StringMid($MFTEntry,$FN_Offset+178,2)
-Select
-	Case $FN_NameType = '00'
-		$FN_NameType = 'POSIX'
-	Case $FN_NameType = '01'
-		$FN_NameType = 'WIN32'
-	Case $FN_NameType = '02'
-		$FN_NameType = 'DOS'
-	Case $FN_NameType = '03'
-		$FN_NameType = 'DOS+WIN32'
-	Case $FN_NameType <> '00' AND $FN_NameType <> '01' AND $FN_NameType <> '02' AND $FN_NameType <> '03'
-		$FN_NameType = 'UNKNOWN'
-EndSelect
-;ConsoleWrite("$FN_NameType = " & $FN_NameType & @crlf)
-$FN_NameSpace = $FN_NameLength-1 ;Not really
-;ConsoleWrite("$FN_NameSpace = " & $FN_NameSpace & @crlf)
-$FN_FileName = StringMid($MFTEntry,$FN_Offset+180,($FN_NameLength+$FN_NameSpace)*2)
-;ConsoleWrite("$FN_FileName = " & $FN_FileName & @crlf)
-$FN_FileName = _UnicodeHexToStr($FN_FileName)
-;ConsoleWrite("$FN_FileName = " & $FN_FileName & @crlf)
-If StringLen($FN_FileName) <> $FN_NameLength Then $INVALID_FILENAME = 1
-$FNArr[0][$FN_Number] = "FN Number " & $FN_Number
-$FNArr[13][$FN_Number] = $FN_ParentReferenceNo
-$FNArr[1][$FN_Number] = $FN_ParentSequenceNo
-$FNArr[2][$FN_Number] = $FN_CTime
-$FNArr[3][$FN_Number] = $FN_ATime
-$FNArr[4][$FN_Number] = $FN_MTime
-$FNArr[5][$FN_Number] = $FN_RTime
-$FNArr[6][$FN_Number] = $FN_AllocSize
-$FNArr[7][$FN_Number] = $FN_RealSize
-$FNArr[8][$FN_Number] = $FN_Flags
-$FNArr[9][$FN_Number] = $FN_NameLength
-$FNArr[10][$FN_Number] = $FN_NameType
-$FNArr[11][$FN_Number] = $FN_NameSpace
-$FNArr[12][$FN_Number] = $FN_FileName
-Return
+	$FN_ParentReferenceNo = StringMid($MFTEntry,$FN_Offset+48,12)
+	$FN_ParentReferenceNo = Dec(_SwapEndian($FN_ParentReferenceNo),2)
+	$FN_ParentSequenceNo = StringMid($MFTEntry,$FN_Offset+60,4)
+	$FN_ParentSequenceNo = Dec(_SwapEndian($FN_ParentSequenceNo),2)
+	$FN_CTime = StringMid($MFTEntry, $FN_Offset + 64, 16)
+	$FN_CTime = _SwapEndian($FN_CTime)
+	$FN_CTime_tmp = _WinTime_UTCFileTimeToLocalFileTime("0x" & $FN_CTime)
+	$FN_CTime = _WinTime_UTCFileTimeFormat(Dec($FN_CTime,2) - $tDelta, $DateTimeFormat, 2)
+	If @error Then
+		$FN_CTime = "-"
+	Else
+		$FN_CTime = $FN_CTime & ":" & _FillZero(StringRight($FN_CTime_tmp, 4))
+	EndIf
+	$FN_ATime = StringMid($MFTEntry, $FN_Offset + 80, 16)
+	$FN_ATime = _SwapEndian($FN_ATime)
+	$FN_ATime_tmp = _WinTime_UTCFileTimeToLocalFileTime("0x" & $FN_ATime)
+	$FN_ATime = _WinTime_UTCFileTimeFormat(Dec($FN_ATime,2) - $tDelta, $DateTimeFormat, 2)
+	If @error Then
+		$FN_ATime = "-"
+	Else
+		$FN_ATime = $FN_ATime & ":" & _FillZero(StringRight($FN_ATime_tmp, 4))
+	EndIf
+	$FN_MTime = StringMid($MFTEntry, $FN_Offset + 96, 16)
+	$FN_MTime = _SwapEndian($FN_MTime)
+	$FN_MTime_tmp = _WinTime_UTCFileTimeToLocalFileTime("0x" & $FN_MTime)
+	$FN_MTime = _WinTime_UTCFileTimeFormat(Dec($FN_MTime,2) - $tDelta, $DateTimeFormat, 2)
+	If @error Then
+		$FN_MTime = "-"
+	Else
+		$FN_MTime = $FN_MTime & ":" & _FillZero(StringRight($FN_MTime_tmp, 4))
+	EndIf
+	$FN_RTime = StringMid($MFTEntry, $FN_Offset + 112, 16)
+	$FN_RTime = _SwapEndian($FN_RTime)
+	$FN_RTime_tmp = _WinTime_UTCFileTimeToLocalFileTime("0x" & $FN_RTime)
+	$FN_RTime = _WinTime_UTCFileTimeFormat(Dec($FN_RTime,2) - $tDelta, $DateTimeFormat, 2)
+	If @error Then
+		$FN_RTime = "-"
+	Else
+		$FN_RTime = $FN_RTime & ":" & _FillZero(StringRight($FN_RTime_tmp, 4))
+	EndIf
+	$FN_AllocSize = StringMid($MFTEntry, $FN_Offset + 128, 16)
+	$FN_AllocSize = Dec(_SwapEndian($FN_AllocSize),2)
+	$FN_RealSize = StringMid($MFTEntry, $FN_Offset + 144, 16)
+	$FN_RealSize = Dec(_SwapEndian($FN_RealSize),2)
+	$FN_Flags = StringMid($MFTEntry, $FN_Offset + 160, 8)
+	$FN_Flags = _SwapEndian($FN_Flags)
+	$FN_Flags = _File_Attributes("0x" & $FN_Flags)
+	$FN_NameLength = StringMid($MFTEntry,$FN_Offset+176,2)
+	$FN_NameLength = Dec($FN_NameLength)
+	$FN_NameType = StringMid($MFTEntry,$FN_Offset+178,2)
+	Select
+		Case $FN_NameType = '00'
+			$FN_NameType = 'POSIX'
+		Case $FN_NameType = '01'
+			$FN_NameType = 'WIN32'
+		Case $FN_NameType = '02'
+			$FN_NameType = 'DOS'
+		Case $FN_NameType = '03'
+			$FN_NameType = 'DOS+WIN32'
+		Case $FN_NameType <> '00' AND $FN_NameType <> '01' AND $FN_NameType <> '02' AND $FN_NameType <> '03'
+			$FN_NameType = 'UNKNOWN'
+	EndSelect
+	$FN_NameSpace = $FN_NameLength-1 ;Not really
+	$FN_FileName = StringMid($MFTEntry,$FN_Offset+180,($FN_NameLength+$FN_NameSpace)*2)
+	$FN_FileName = _UnicodeHexToStr($FN_FileName)
+	If StringLen($FN_FileName) <> $FN_NameLength Then $INVALID_FILENAME = 1
+	$FNArr[0][$FN_Number] = "FN Number " & $FN_Number
+	$FNArr[13][$FN_Number] = $FN_ParentReferenceNo
+	$FNArr[1][$FN_Number] = $FN_ParentSequenceNo
+	$FNArr[2][$FN_Number] = $FN_CTime
+	$FNArr[3][$FN_Number] = $FN_ATime
+	$FNArr[4][$FN_Number] = $FN_MTime
+	$FNArr[5][$FN_Number] = $FN_RTime
+	$FNArr[6][$FN_Number] = $FN_AllocSize
+	$FNArr[7][$FN_Number] = $FN_RealSize
+	$FNArr[8][$FN_Number] = $FN_Flags
+	$FNArr[9][$FN_Number] = $FN_NameLength
+	$FNArr[10][$FN_Number] = $FN_NameType
+	$FNArr[11][$FN_Number] = $FN_NameSpace
+	$FNArr[12][$FN_Number] = $FN_FileName
+	Return
 EndFunc
 
 Func _VolInfoFlag($VIFinput)
@@ -1719,28 +1664,29 @@ $VIFoutput = StringTrimRight($VIFoutput,1)
 Return $VIFoutput
 EndFunc
 
-Func _File_Permissions($FPinput)
-Local $FPoutput = ""
-If $FPinput = 0x00000000 Then return 'EMPTY'
-If BitAND($FPinput,0x0001) Then $FPoutput &= 'read_only+'
-If BitAND($FPinput,0x0002) Then $FPoutput &= 'hidden+'
-If BitAND($FPinput,0x0004) Then $FPoutput &= 'system+'
-If BitAND($FPinput,0x0020) Then $FPoutput &= 'archive+'
-If BitAND($FPinput,0x0040) Then $FPoutput &= 'device+'
-If BitAND($FPinput,0x0080) Then $FPoutput &= 'normal+'
-If BitAND($FPinput,0x0100) Then $FPoutput &= 'temporary+'
-If BitAND($FPinput,0x0200) Then $FPoutput &= 'sparse_file+'
-If BitAND($FPinput,0x0400) Then $FPoutput &= 'reparse_point+'
-If BitAND($FPinput,0x0800) Then $FPoutput &= 'compressed+'
-If BitAND($FPinput,0x1000) Then $FPoutput &= 'offline+'
-If BitAND($FPinput,0x2000) Then $FPoutput &= 'not_indexed+'
-If BitAND($FPinput,0x4000) Then $FPoutput &= 'encrypted+'
-If BitAND($FPinput,0x10000000) Then $FPoutput &= 'directory+'
-If BitAND($FPinput,0x20000000) Then $FPoutput &= 'index_view+'
-;$FPoutput = StringMid($FPoutput,1,StringLen($FPoutput)-1)
-$FPoutput = StringTrimRight($FPoutput,1)
-;ConsoleWrite("$FPoutput = " & $FPoutput & @crlf)
-Return $FPoutput
+Func _File_Attributes($FAInput)
+	Local $FAOutput = ""
+	If BitAND($FAInput, 0x0001) Then $FAOutput &= 'read_only+'
+	If BitAND($FAInput, 0x0002) Then $FAOutput &= 'hidden+'
+	If BitAND($FAInput, 0x0004) Then $FAOutput &= 'system+'
+	If BitAND($FAInput, 0x0010) Then $FAOutput &= 'directory+'
+	If BitAND($FAInput, 0x0020) Then $FAOutput &= 'archive+'
+	If BitAND($FAInput, 0x0040) Then $FAOutput &= 'device+'
+	If BitAND($FAInput, 0x0080) Then $FAOutput &= 'normal+'
+	If BitAND($FAInput, 0x0100) Then $FAOutput &= 'temporary+'
+	If BitAND($FAInput, 0x0200) Then $FAOutput &= 'sparse_file+'
+	If BitAND($FAInput, 0x0400) Then $FAOutput &= 'reparse_point+'
+	If BitAND($FAInput, 0x0800) Then $FAOutput &= 'compressed+'
+	If BitAND($FAInput, 0x1000) Then $FAOutput &= 'offline+'
+	If BitAND($FAInput, 0x2000) Then $FAOutput &= 'not_indexed+'
+	If BitAND($FAInput, 0x4000) Then $FAOutput &= 'encrypted+'
+	If BitAND($FAInput, 0x8000) Then $FAOutput &= 'integrity_stream+'
+	If BitAND($FAInput, 0x10000) Then $FAOutput &= 'virtual+'
+	If BitAND($FAInput, 0x20000) Then $FAOutput &= 'no_scrub_data+'
+	If BitAND($FAInput, 0x10000000) Then $FAOutput &= 'directory+'
+	If BitAND($FAInput, 0x20000000) Then $FAOutput &= 'index_view+'
+	$FAOutput = StringTrimRight($FAOutput, 1)
+	Return $FAOutput
 EndFunc
 
 Func _DumpInfo()
@@ -1775,7 +1721,7 @@ If $AttributesArr[1][2] = "TRUE" Then; $STANDARD_INFORMATION
 	For $p = 1 To $SI_Number
 		ConsoleWrite(@CRLF)
 		ConsoleWrite("$STANDARD_INFORMATION " & $p & ":" & @CRLF)
-		For $j = 1 To 12
+		For $j = 2 To 12
 			ConsoleWrite($SIArr[$j][0] & ": " & $SIArr[$j][$p] & @CRLF)
 		Next
 		If $cmdline[2] = "-a" Then
@@ -1963,7 +1909,7 @@ If $AttributesArr[10][2] = "TRUE" Then; $INDEX_ALLOCATION
 				ConsoleWrite($IndxNameSpaceArr[0] & ": " & $IndxNameSpaceArr[$j] & @CRLF)
 				ConsoleWrite($IndxSubNodeVCNArr[0] & ": " & $IndxSubNodeVCNArr[$j] & @CRLF)
 			Next
-			If $cmdline[4] = "indxdump=on" Then
+			If $cmdline[3] = "indxdump=on" Then
 				ConsoleWrite(@CRLF)
 				ConsoleWrite("Dump of resolved and extracted INDX records for $INDEX_ALLOCATION (" & $p & ")" & @crlf)
 				ConsoleWrite(_HexEncode("0x"&$HexDumpIndxRecord[$p]) & @crlf)
@@ -2074,288 +2020,6 @@ If $cmdline[2] = "-a" Then
 	ConsoleWrite("Dump of Record slack for base record" & @crlf)
 	ConsoleWrite(_HexEncode("0x"&$HexDumpRecordSlack[1]) & @crlf)
 EndIf
-EndFunc
-
-Func _GenMftArray($DiskHandle,$TheCounter,$RecNumber)
-If $TheCounter < 65530 Then
-	$TmpOffset = DllCall('kernel32.dll', 'int', 'SetFilePointerEx', 'ptr', $DiskHandle, 'int64', 0, 'int64*', 0, 'dword', 1)
-	$MFTRecordsArr1[$TheCounter][0] = $RecNumber
-	$MFTRecordsArr1[$TheCounter][1] = $TmpOffset[3]
-EndIf
-If $TheCounter >= 65530 and $TheCounter < 131060 Then
-	$ArrOffset = $TheCounter-65530
-	$TmpOffset = DllCall('kernel32.dll', 'int', 'SetFilePointerEx', 'ptr', $DiskHandle, 'int64', 0, 'int64*', 0, 'dword', 1)
-	$MFTRecordsArr2[$ArrOffset][0] = $RecNumber;StringMid($record,91,8)
-	$MFTRecordsArr2[$ArrOffset][1] = $TmpOffset[3]
-EndIf
-If $TheCounter >= 131060 and $TheCounter < 196590 Then
-	$ArrOffset = $TheCounter-131060
-	$TmpOffset = DllCall('kernel32.dll', 'int', 'SetFilePointerEx', 'ptr', $DiskHandle, 'int64', 0, 'int64*', 0, 'dword', 1)
-	$MFTRecordsArr3[$ArrOffset][0] = $RecNumber;StringMid($record,91,8)
-	$MFTRecordsArr3[$ArrOffset][1] = $TmpOffset[3]
-EndIf
-If $TheCounter >= 196590 and $TheCounter < 262120 Then
-	$ArrOffset = $TheCounter-196590
-	$TmpOffset = DllCall('kernel32.dll', 'int', 'SetFilePointerEx', 'ptr', $DiskHandle, 'int64', 0, 'int64*', 0, 'dword', 1)
-	$MFTRecordsArr4[$ArrOffset][0] = $RecNumber;StringMid($record,91,8)
-	$MFTRecordsArr4[$ArrOffset][1] = $TmpOffset[3]
-EndIf
-If $TheCounter >= 262120 and $TheCounter < 327650 Then
-	$ArrOffset = $TheCounter-262120
-	$TmpOffset = DllCall('kernel32.dll', 'int', 'SetFilePointerEx', 'ptr', $DiskHandle, 'int64', 0, 'int64*', 0, 'dword', 1)
-	$MFTRecordsArr5[$ArrOffset][0] = $RecNumber;StringMid($record,91,8)
-	$MFTRecordsArr5[$ArrOffset][1] = $TmpOffset[3]
-EndIf
-If $TheCounter >= 327650 and $TheCounter < 393180 Then
-	$ArrOffset = $TheCounter-327650
-	$TmpOffset = DllCall('kernel32.dll', 'int', 'SetFilePointerEx', 'ptr', $DiskHandle, 'int64', 0, 'int64*', 0, 'dword', 1)
-	$MFTRecordsArr6[$ArrOffset][0] = $RecNumber;StringMid($record,91,8)
-	$MFTRecordsArr6[$ArrOffset][1] = $TmpOffset[3]
-EndIf
-If $TheCounter >= 393180 and $TheCounter < 458710 Then
-	$ArrOffset = $TheCounter-393180
-	$TmpOffset = DllCall('kernel32.dll', 'int', 'SetFilePointerEx', 'ptr', $DiskHandle, 'int64', 0, 'int64*', 0, 'dword', 1)
-	$MFTRecordsArr7[$ArrOffset][0] = $RecNumber;StringMid($record,91,8)
-	$MFTRecordsArr7[$ArrOffset][1] = $TmpOffset[3]
-EndIf
-If $TheCounter >= 458710 and $TheCounter < 524240 Then
-	$ArrOffset = $TheCounter-458710
-	$TmpOffset = DllCall('kernel32.dll', 'int', 'SetFilePointerEx', 'ptr', $DiskHandle, 'int64', 0, 'int64*', 0, 'dword', 1)
-	$MFTRecordsArr8[$ArrOffset][0] = $RecNumber;StringMid($record,91,8)
-	$MFTRecordsArr8[$ArrOffset][1] = $TmpOffset[3]
-EndIf
-If $TheCounter >= 524240 and $TheCounter < 589770 Then
-	$ArrOffset = $TheCounter-524240
-	$TmpOffset = DllCall('kernel32.dll', 'int', 'SetFilePointerEx', 'ptr', $DiskHandle, 'int64', 0, 'int64*', 0, 'dword', 1)
-	$MFTRecordsArr9[$ArrOffset][0] = $RecNumber;StringMid($record,91,8)
-	$MFTRecordsArr9[$ArrOffset][1] = $TmpOffset[3]
-EndIf
-If $TheCounter >= 589770 and $TheCounter < 655300 Then
-	$ArrOffset = $TheCounter-589770
-	$TmpOffset = DllCall('kernel32.dll', 'int', 'SetFilePointerEx', 'ptr', $DiskHandle, 'int64', 0, 'int64*', 0, 'dword', 1)
-	$MFTRecordsArr10[$ArrOffset][0] = $RecNumber;StringMid($record,91,8)
-	$MFTRecordsArr10[$ArrOffset][1] = $TmpOffset[3]
-EndIf
-If $TheCounter >= 655300 and $TheCounter < 720830 Then
-	$ArrOffset = $TheCounter-655300
-	$TmpOffset = DllCall('kernel32.dll', 'int', 'SetFilePointerEx', 'ptr', $DiskHandle, 'int64', 0, 'int64*', 0, 'dword', 1)
-	$MFTRecordsArr11[$ArrOffset][0] = $RecNumber;StringMid($record,91,8)
-	$MFTRecordsArr11[$ArrOffset][1] = $TmpOffset[3]
-EndIf
-If $TheCounter >= 720830 and $TheCounter < 786360 Then
-	$ArrOffset = $TheCounter-720830
-	$TmpOffset = DllCall('kernel32.dll', 'int', 'SetFilePointerEx', 'ptr', $DiskHandle, 'int64', 0, 'int64*', 0, 'dword', 1)
-	$MFTRecordsArr12[$ArrOffset][0] = $RecNumber;StringMid($record,91,8)
-	$MFTRecordsArr12[$ArrOffset][1] = $TmpOffset[3]
-EndIf
-If $TheCounter >= 786360 and $TheCounter < 851890 Then
-	$ArrOffset = $TheCounter-786360
-	$TmpOffset = DllCall('kernel32.dll', 'int', 'SetFilePointerEx', 'ptr', $DiskHandle, 'int64', 0, 'int64*', 0, 'dword', 1)
-	$MFTRecordsArr13[$ArrOffset][0] = $RecNumber;StringMid($record,91,8)
-	$MFTRecordsArr13[$ArrOffset][1] = $TmpOffset[3]
-EndIf
-If $TheCounter >= 851890 and $TheCounter < 917420 Then
-	$ArrOffset = $TheCounter-851890
-	$TmpOffset = DllCall('kernel32.dll', 'int', 'SetFilePointerEx', 'ptr', $DiskHandle, 'int64', 0, 'int64*', 0, 'dword', 1)
-	$MFTRecordsArr14[$ArrOffset][0] = $RecNumber;StringMid($record,91,8)
-	$MFTRecordsArr14[$ArrOffset][1] = $TmpOffset[3]
-EndIf
-If $TheCounter >= 917420 and $TheCounter < 982950 Then
-	$ArrOffset = $TheCounter-917420
-	$TmpOffset = DllCall('kernel32.dll', 'int', 'SetFilePointerEx', 'ptr', $DiskHandle, 'int64', 0, 'int64*', 0, 'dword', 1)
-	$MFTRecordsArr15[$ArrOffset][0] = $RecNumber;StringMid($record,91,8)
-	$MFTRecordsArr15[$ArrOffset][1] = $TmpOffset[3]
-EndIf
-If $TheCounter >= 982950 and $TheCounter < 1048480 Then
-	$ArrOffset = $TheCounter-982950
-	$TmpOffset = DllCall('kernel32.dll', 'int', 'SetFilePointerEx', 'ptr', $DiskHandle, 'int64', 0, 'int64*', 0, 'dword', 1)
-	$MFTRecordsArr16[$ArrOffset][0] = $RecNumber;StringMid($record,91,8)
-	$MFTRecordsArr16[$ArrOffset][1] = $TmpOffset[3]
-EndIf
-If $TheCounter >= 1048480 and $TheCounter < 1114010 Then
-	$ArrOffset = $TheCounter-1048480
-	$TmpOffset = DllCall('kernel32.dll', 'int', 'SetFilePointerEx', 'ptr', $DiskHandle, 'int64', 0, 'int64*', 0, 'dword', 1)
-	$MFTRecordsArr17[$ArrOffset][0] = $RecNumber;StringMid($record,91,8)
-	$MFTRecordsArr17[$ArrOffset][1] = $TmpOffset[3]
-EndIf
-If $TheCounter >= 1114010 and $TheCounter < 1179540 Then
-	$ArrOffset = $TheCounter-1114010
-	$TmpOffset = DllCall('kernel32.dll', 'int', 'SetFilePointerEx', 'ptr', $DiskHandle, 'int64', 0, 'int64*', 0, 'dword', 1)
-	$MFTRecordsArr18[$ArrOffset][0] = $RecNumber;StringMid($record,91,8)
-	$MFTRecordsArr18[$ArrOffset][1] = $TmpOffset[3]
-EndIf
-If $TheCounter >= 1179540 and $TheCounter < 1245070 Then
-	$ArrOffset = $TheCounter-1179540
-	$TmpOffset = DllCall('kernel32.dll', 'int', 'SetFilePointerEx', 'ptr', $DiskHandle, 'int64', 0, 'int64*', 0, 'dword', 1)
-	$MFTRecordsArr19[$ArrOffset][0] = $RecNumber;StringMid($record,91,8)
-	$MFTRecordsArr19[$ArrOffset][1] = $TmpOffset[3]
-EndIf
-If $TheCounter >= 1245070 and $TheCounter < 1310600 Then
-	$ArrOffset = $TheCounter-1245070
-	$TmpOffset = DllCall('kernel32.dll', 'int', 'SetFilePointerEx', 'ptr', $DiskHandle, 'int64', 0, 'int64*', 0, 'dword', 1)
-	$MFTRecordsArr20[$ArrOffset][0] = $RecNumber;StringMid($record,91,8)
-	$MFTRecordsArr20[$ArrOffset][1] = $TmpOffset[3]
-EndIf
-EndFunc
-
-Func _SearchMftArray($TargetMftRecord)
-	$SearchResult = _ArraySearch($MFTRecordsArr1, $TargetMftRecord)
-;	ConsoleWrite("Index: " & $SearchResult & @crlf)
-	If $SearchResult <> -1 Then
-		Return $MFTRecordsArr1[$SearchResult][1]
-	EndIf
-	$SearchResult = _ArraySearch($MFTRecordsArr2, $TargetMftRecord)
-;	ConsoleWrite("Index: " & $SearchResult & @crlf)
-	If $SearchResult <> -1 Then
-		Return $MFTRecordsArr2[$SearchResult][1]
-	EndIf
-	$SearchResult = _ArraySearch($MFTRecordsArr3, $TargetMftRecord)
-;	ConsoleWrite("Index: " & $SearchResult & @crlf)
-	If $SearchResult <> -1 Then
-		Return $MFTRecordsArr3[$SearchResult][1]
-	EndIf
-	$SearchResult = _ArraySearch($MFTRecordsArr4, $TargetMftRecord)
-;	ConsoleWrite("Index: " & $SearchResult & @crlf)
-	If $SearchResult <> -1 Then
-		Return $MFTRecordsArr4[$SearchResult][1]
-	EndIf
-	$SearchResult = _ArraySearch($MFTRecordsArr5, $TargetMftRecord)
-;	ConsoleWrite("Index: " & $SearchResult & @crlf)
-	If $SearchResult <> -1 Then
-		Return $MFTRecordsArr5[$SearchResult][1]
-	EndIf
-	$SearchResult = _ArraySearch($MFTRecordsArr6, $TargetMftRecord)
-;	ConsoleWrite("Index: " & $SearchResult & @crlf)
-	If $SearchResult <> -1 Then
-		Return $MFTRecordsArr6[$SearchResult][1]
-	EndIf
-	$SearchResult = _ArraySearch($MFTRecordsArr7, $TargetMftRecord)
-;	ConsoleWrite("Index: " & $SearchResult & @crlf)
-	If $SearchResult <> -1 Then
-		Return $MFTRecordsArr7[$SearchResult][1]
-	EndIf
-	$SearchResult = _ArraySearch($MFTRecordsArr8, $TargetMftRecord)
-;	ConsoleWrite("Index: " & $SearchResult & @crlf)
-	If $SearchResult <> -1 Then
-		Return $MFTRecordsArr8[$SearchResult][1]
-	EndIf
-	$SearchResult = _ArraySearch($MFTRecordsArr9, $TargetMftRecord)
-;	ConsoleWrite("Index: " & $SearchResult & @crlf)
-	If $SearchResult <> -1 Then
-		Return $MFTRecordsArr9[$SearchResult][1]
-	EndIf
-	$SearchResult = _ArraySearch($MFTRecordsArr10, $TargetMftRecord)
-;	ConsoleWrite("Index: " & $SearchResult & @crlf)
-	If $SearchResult <> -1 Then
-		Return $MFTRecordsArr10[$SearchResult][1]
-	EndIf
-	$SearchResult = _ArraySearch($MFTRecordsArr11, $TargetMftRecord)
-;	ConsoleWrite("Index: " & $SearchResult & @crlf)
-	If $SearchResult <> -1 Then
-		Return $MFTRecordsArr11[$SearchResult][1]
-	EndIf
-	$SearchResult = _ArraySearch($MFTRecordsArr12, $TargetMftRecord)
-;	ConsoleWrite("Index: " & $SearchResult & @crlf)
-	If $SearchResult <> -1 Then
-		Return $MFTRecordsArr12[$SearchResult][1]
-	EndIf
-	$SearchResult = _ArraySearch($MFTRecordsArr13, $TargetMftRecord)
-;	ConsoleWrite("Index: " & $SearchResult & @crlf)
-	If $SearchResult <> -1 Then
-		Return $MFTRecordsArr13[$SearchResult][1]
-	EndIf
-	$SearchResult = _ArraySearch($MFTRecordsArr14, $TargetMftRecord)
-;	ConsoleWrite("Index: " & $SearchResult & @crlf)
-	If $SearchResult <> -1 Then
-		Return $MFTRecordsArr14[$SearchResult][1]
-	EndIf
-	$SearchResult = _ArraySearch($MFTRecordsArr15, $TargetMftRecord)
-;	ConsoleWrite("Index: " & $SearchResult & @crlf)
-	If $SearchResult <> -1 Then
-		Return $MFTRecordsArr15[$SearchResult][1]
-	EndIf
-	$SearchResult = _ArraySearch($MFTRecordsArr16, $TargetMftRecord)
-;	ConsoleWrite("Index: " & $SearchResult & @crlf)
-	If $SearchResult <> -1 Then
-		Return $MFTRecordsArr16[$SearchResult][1]
-	EndIf
-	$SearchResult = _ArraySearch($MFTRecordsArr17, $TargetMftRecord)
-;	ConsoleWrite("Index: " & $SearchResult & @crlf)
-	If $SearchResult <> -1 Then
-		Return $MFTRecordsArr17[$SearchResult][1]
-	EndIf
-	$SearchResult = _ArraySearch($MFTRecordsArr18, $TargetMftRecord)
-;	ConsoleWrite("Index: " & $SearchResult & @crlf)
-	If $SearchResult <> -1 Then
-		Return $MFTRecordsArr18[$SearchResult][1]
-	EndIf
-	$SearchResult = _ArraySearch($MFTRecordsArr19, $TargetMftRecord)
-;	ConsoleWrite("Index: " & $SearchResult & @crlf)
-	If $SearchResult <> -1 Then
-		Return $MFTRecordsArr19[$SearchResult][1]
-	EndIf
-	$SearchResult = _ArraySearch($MFTRecordsArr20, $TargetMftRecord)
-;	ConsoleWrite("Index: " & $SearchResult & @crlf)
-	If $SearchResult <> -1 Then
-		Return $MFTRecordsArr20[$SearchResult][1]
-	EndIf
-	Return SetError(1, 0, 0)
-EndFunc
-
-Func _InitiateMftArray()
-	Local $nBytes, $LocalCounter
-	ConsoleWrite("Processing $MFT..." & @CRLF)
-	$tBuffer = DllStructCreate("byte[" & $MFT_Record_Size & "]")
-	$hFile = _WinAPI_CreateFile("\\.\" & $TargetDrive, 2, 6, 6)
-	If $hFile = 0 Then
-		ConsoleWrite("Error in function _WinAPI_CreateFile when building MFT array." & @CRLF)
-		_WinAPI_CloseHandle($hFile)
-		Return SetError(1, 0, 0)
-	EndIf
-	If $MFTSize > 1342054400 Then
-		ConsoleWrite("Warning: $MFT is too large to fit in the arrays" & @CRLF)
-		Return SetError(1, 0, 0)
-	EndIf
-	$LocalCounter = 0
-	For $r = 1 To Ubound($MFT_RUN_VCN)-1
-		_WinAPI_SetFilePointerEx($hFile, $MFT_RUN_VCN[$r]*$BytesPerCluster, $FILE_BEGIN)
-		For $i = 0 To $MFT_RUN_Clusters[$r]*$BytesPerCluster Step $MFT_Record_Size
-			_WinAPI_ReadFile($hFile, DllStructGetPtr($tBuffer), $MFT_Record_Size, $nBytes)
-			$record = DllStructGetData($tBuffer, 1)
-			_GenMftArray($hFile,$LocalCounter,StringMid($record,91,8))
-			$LocalCounter += 1
-		Next
-	Next
-	_WinAPI_CloseHandle($hFile)
-EndFunc
-
-Func _ProcessMftArray($TargetFile)
-	Local $nBytes
-	$tBuffer = DllStructCreate("byte[" & $MFT_Record_Size & "]")
-	$hFile = _WinAPI_CreateFile("\\.\" & $TargetDrive, 2, 6, 6)
-	If $hFile = 0 Then
-		ConsoleWrite("Error in function _WinAPI_CreateFile when trying to locate target file." & @CRLF)
-		_WinAPI_CloseHandle($hFile)
-		Return ""
-	EndIf
-;	ConsoleWrite("Searching through the $MFT arrays for the selected record number " & $TargetFile & " -> " & _DecToLittleEndian($TargetFile) & @CRLF)
-	$TargetFile = _DecToLittleEndian($TargetFile)
-	$LocalMftSearch = _SearchMftArray($TargetFile)
-	If @error Then
-		ConsoleWrite("Error: could not find target file in the MFT arrays" & @CRLF)
-		Return ""
-	EndIf
-	_WinAPI_SetFilePointerEx($hFile, $LocalMftSearch-1024, $FILE_BEGIN)
-	_WinAPI_ReadFile($hFile, DllStructGetPtr($tBuffer), $MFT_Record_Size, $nBytes)
-	$record = DllStructGetData($tBuffer, 1)
-	If StringMid($record,91,8) = $TargetFile Then ; Also include deleted files
-		$TmpOffset = DllCall('kernel32.dll', 'int', 'SetFilePointerEx', 'ptr', $hFile, 'int64', 0, 'int64*', 0, 'dword', 1)
-		ConsoleWrite("Target record number: " & Dec(_SwapEndian($TargetFile),2) & " found at disk offset: " & $TmpOffset[3] & @CRLF)
-		_WinAPI_CloseHandle($hFile)
-		Return $record		;returns MFT record for file
-	EndIf
-	_WinAPI_CloseHandle($hFile)
-	Return ""
 EndFunc
 
 Func _GetAttributeEntry($Entry)
@@ -2598,13 +2262,10 @@ EndFunc
 
 Func _Get_ReparsePoint($Entry,$Current_Attrib_Number,$CurrentAttributeName)
 	Local $LocalAttributeOffset = 1,$ReparseType,$ReparseDataLength,$ReparsePadding,$ReparseSubstititeNameOffset,$ReparseSubstituteNameLength,$ReparsePrintNameOffset,$ReparsePrintNameLength,$ReparseSubstititeName,$ReparsePrintName
-;	$ReparseTypeTest = StringMid($Entry,1,8)
-;	ConsoleWrite("$ReparseTypeTest = " & $ReparseTypeTest & @crlf)
 	$ReparseType = StringMid($Entry,$LocalAttributeOffset,8)
-;	ConsoleWrite("$ReparseType = " & $ReparseType & @crlf)
 	$ReparseType = "0x"& StringMid($ReparseType,7,2) & StringMid($ReparseType,5,2) & StringMid($ReparseType,3,2) & StringMid($ReparseType,1,2)
-;	ConsoleWrite("$ReparseType = " & $ReparseType & @crlf)
 ;http://msdn.microsoft.com/en-us/library/dd541667(v=prot.10).aspx
+;http://msdn.microsoft.com/en-us/library/windows/desktop/aa365740(v=vs.85).aspx
 	Select
 		Case $ReparseType = '0xA000000C'
 			$ReparseType = 'SYMLINK'
@@ -2624,43 +2285,33 @@ Func _Get_ReparsePoint($Entry,$Current_Attrib_Number,$CurrentAttributeName)
 			$ReparseType = 'HSM'
 		Case $ReparseType = '0xA0000003'
 			$ReparseType = 'MOUNT_POINT'
+		Case $ReparseType = '0x80000009'
+			$ReparseType = 'CSV'
+		Case $ReparseType = '0x80000013'
+			$ReparseType = 'DEDUP'
+		Case $ReparseType = '0x80000014'
+			$ReparseType = 'NFS'
+		Case $ReparseType = '0x80000008'
+			$ReparseType = 'WIM'
 		Case Else
 			$ReparseType = 'UNKNOWN'
 	EndSelect
-;	ConsoleWrite("$ReparseType = " & $ReparseType & @crlf)
 	$ReparseDataLength = StringMid($Entry,$LocalAttributeOffset+8,4)
-;	ConsoleWrite("$ReparseDataLength = " & $ReparseDataLength & @crlf)
 	$ReparseDataLength = Dec(StringMid($ReparseDataLength,3,2) & StringMid($ReparseDataLength,1,2))
-;	ConsoleWrite("$ReparseDataLength = " & $ReparseDataLength & @crlf)
 	$ReparsePadding = StringMid($Entry,$LocalAttributeOffset+12,4)
-;	ConsoleWrite("$ReparsePadding = " & $ReparsePadding & @crlf)
-; Third party implemetation
-;$ReparseGUID =
 	$ReparseData = StringMid($Entry,$LocalAttributeOffset+16,$ReparseDataLength*2)
 	$ReparseSubstititeNameOffset = StringMid($ReparseData,1,4)
-;	ConsoleWrite("$ReparseSubstititeNameOffset = " & $ReparseSubstititeNameOffset & @crlf)
 	$ReparseSubstititeNameOffset = Dec(StringMid($ReparseSubstititeNameOffset,3,2) & StringMid($ReparseSubstititeNameOffset,1,2))
-;	ConsoleWrite("$ReparseSubstititeNameOffset = " & $ReparseSubstititeNameOffset & @crlf)
 	$ReparseSubstituteNameLength = StringMid($ReparseData,5,4)
-;	ConsoleWrite("$ReparseSubstituteNameLength = " & $ReparseSubstituteNameLength & @crlf)
 	$ReparseSubstituteNameLength = Dec(StringMid($ReparseSubstituteNameLength,3,2) & StringMid($ReparseSubstituteNameLength,1,2))
-;	ConsoleWrite("$ReparseSubstituteNameLength = " & $ReparseSubstituteNameLength & @crlf)
 	$ReparsePrintNameOffset = StringMid($ReparseData,9,4)
-;	ConsoleWrite("$ReparsePrintNameOffset = " & $ReparsePrintNameOffset & @crlf)
 	$ReparsePrintNameOffset = Dec(StringMid($ReparsePrintNameOffset,3,2) & StringMid($ReparsePrintNameOffset,1,2))
-;	ConsoleWrite("$ReparsePrintNameOffset = " & $ReparsePrintNameOffset & @crlf)
 	$ReparsePrintNameLength = StringMid($ReparseData,13,4)
-;	ConsoleWrite("$ReparsePrintNameLength = " & $ReparsePrintNameLength & @crlf)
 	$ReparsePrintNameLength = Dec(StringMid($ReparsePrintNameLength,3,2) & StringMid($ReparsePrintNameLength,1,2))
-;	ConsoleWrite("$ReparsePrintNameLength = " & $ReparsePrintNameLength & @crlf)
 	$ReparseSubstititeName = StringMid($Entry,$LocalAttributeOffset+16+16,$ReparseSubstituteNameLength*2)
-;	ConsoleWrite("$ReparseSubstititeName = " & $ReparseSubstititeName & @crlf)
 	$ReparseSubstititeName = _UnicodeHexToStr($ReparseSubstititeName)
-;	ConsoleWrite("$ReparseSubstititeName = " & $ReparseSubstititeName & @crlf)
 	$ReparsePrintName = StringMid($Entry,($LocalAttributeOffset+32)+($ReparsePrintNameOffset*2),$ReparsePrintNameLength*2)
-;	ConsoleWrite("$ReparsePrintName = " & $ReparsePrintName & @crlf)
 	$ReparsePrintName = _UnicodeHexToStr($ReparsePrintName)
-;	ConsoleWrite("$ReparsePrintName = " & $ReparsePrintName & @crlf)
 	$RPArr[0][$Current_Attrib_Number] = "RP Number " & $Current_Attrib_Number
 	$RPArr[1][$Current_Attrib_Number] = $CurrentAttributeName
 	$RPArr[2][$Current_Attrib_Number] = $ReparseType
@@ -2772,38 +2423,20 @@ EndFunc
 
 Func _Get_IndexRoot($Entry,$Current_Attrib_Number,$CurrentAttributeName)
 	Local $LocalAttributeOffset = 1,$AttributeType,$CollationRule,$SizeOfIndexAllocationEntry,$ClustersPerIndexRoot,$IRPadding
-;	ConsoleWrite(_HexEncode("0x"&$Entry) & @crlf)
 	$AttributeType = StringMid($Entry,$LocalAttributeOffset,8)
-;	ConsoleWrite("$AttributeType = " & $AttributeType & @crlf)
-	$AttributeType = StringMid($AttributeType,7,2) & StringMid($AttributeType,5,2) & StringMid($AttributeType,3,2) & StringMid($AttributeType,1,2)
-;	ConsoleWrite("$AttributeType = " & $AttributeType & @crlf)
+;	$AttributeType = _SwapEndian($AttributeType)
 	$CollationRule = StringMid($Entry,$LocalAttributeOffset+8,8)
-;	ConsoleWrite("$CollationRule = " & $CollationRule & @crlf)
-	$CollationRule = StringMid($CollationRule,7,2) & StringMid($CollationRule,5,2) & StringMid($CollationRule,3,2) & StringMid($CollationRule,1,2)
-;	ConsoleWrite("$CollationRule = " & $CollationRule & @crlf)
+	$CollationRule = _SwapEndian($CollationRule)
 	$SizeOfIndexAllocationEntry = StringMid($Entry,$LocalAttributeOffset+16,8)
-;	ConsoleWrite("$SizeOfIndexAllocationEntry = " & $SizeOfIndexAllocationEntry & @crlf)
-	$SizeOfIndexAllocationEntry = StringMid($SizeOfIndexAllocationEntry,7,2) & StringMid($SizeOfIndexAllocationEntry,5,2) & StringMid($SizeOfIndexAllocationEntry,3,2) & StringMid($SizeOfIndexAllocationEntry,1,2)
-;	ConsoleWrite("$SizeOfIndexAllocationEntry = " & $SizeOfIndexAllocationEntry & @crlf)
-	$ClustersPerIndexRoot = StringMid($Entry,$LocalAttributeOffset+24,2)
-;	ConsoleWrite("$ClustersPerIndexRoot = " & $ClustersPerIndexRoot & @crlf)
-	$IRPadding = StringMid($Entry,$LocalAttributeOffset+26,6)
-;	ConsoleWrite("$IRPadding = " & $IRPadding & @crlf)
+	$SizeOfIndexAllocationEntry = Dec(_SwapEndian($SizeOfIndexAllocationEntry),2)
+	$ClustersPerIndexRoot = Dec(StringMid($Entry,$LocalAttributeOffset+24,2))
+;	$IRPadding = StringMid($Entry,$LocalAttributeOffset+26,6)
 	$OffsetToFirstEntry = StringMid($Entry,$LocalAttributeOffset+32,8)
-;	ConsoleWrite("$OffsetToFirstEntry = " & $OffsetToFirstEntry & @crlf)
-	$OffsetToFirstEntry = StringMid($OffsetToFirstEntry,7,2) & StringMid($OffsetToFirstEntry,5,2) & StringMid($OffsetToFirstEntry,3,2) & StringMid($OffsetToFirstEntry,1,2)
-;	ConsoleWrite("$OffsetToFirstEntry = " & $OffsetToFirstEntry & @crlf)
-	$OffsetToFirstEntry = Dec($OffsetToFirstEntry)
+	$OffsetToFirstEntry = Dec(_SwapEndian($OffsetToFirstEntry),2)
 	$TotalSizeOfEntries = StringMid($Entry,$LocalAttributeOffset+40,8)
-;	ConsoleWrite("$TotalSizeOfEntries = " & $TotalSizeOfEntries & @crlf)
-	$TotalSizeOfEntries = Dec(StringMid($TotalSizeOfEntries,7,2) & StringMid($TotalSizeOfEntries,5,2) & StringMid($TotalSizeOfEntries,3,2) & StringMid($TotalSizeOfEntries,1,2))
-;	ConsoleWrite("$TotalSizeOfEntries = " & $TotalSizeOfEntries & @crlf)
-	$TotalSizeOfEntries = Dec($TotalSizeOfEntries)
+	$TotalSizeOfEntries = Dec(_SwapEndian($TotalSizeOfEntries),2)
 	$AllocatedSizeOfEntries = StringMid($Entry,$LocalAttributeOffset+48,8)
-;	ConsoleWrite("$AllocatedSizeOfEntries = " & $AllocatedSizeOfEntries & @crlf)
-	$AllocatedSizeOfEntries = Dec(StringMid($AllocatedSizeOfEntries,7,2) & StringMid($AllocatedSizeOfEntries,5,2) & StringMid($AllocatedSizeOfEntries,3,2) & StringMid($AllocatedSizeOfEntries,1,2))
-;	ConsoleWrite("$AllocatedSizeOfEntries = " & $AllocatedSizeOfEntries & @crlf)
-	$AllocatedSizeOfEntries = Dec($AllocatedSizeOfEntries)
+	$AllocatedSizeOfEntries = Dec(_SwapEndian($AllocatedSizeOfEntries),2)
 	$Flags = StringMid($Entry,$LocalAttributeOffset+56,2)
 	If $Flags = "01" Then
 		$Flags = "01 (Index Allocation needed)"
@@ -2812,22 +2445,20 @@ Func _Get_IndexRoot($Entry,$Current_Attrib_Number,$CurrentAttributeName)
 		$Flags = "00 (Fits in Index Root)"
 		$ResidentIndx = 1
 	EndIf
-;	ConsoleWrite("$Flags = " & $Flags & @crlf)
-	$IRPadding2 = StringMid($Entry,$LocalAttributeOffset+58,6)
-;	ConsoleWrite("$IRPadding2 = " & $IRPadding2 & @crlf)
+;	$IRPadding2 = StringMid($Entry,$LocalAttributeOffset+58,6)
 	$IRArr[0][$Current_Attrib_Number] = "IndexRoot Number " & $Current_Attrib_Number
 	$IRArr[1][$Current_Attrib_Number] = $CurrentAttributeName
 	$IRArr[2][$Current_Attrib_Number] = $AttributeType
 	$IRArr[3][$Current_Attrib_Number] = $CollationRule
 	$IRArr[4][$Current_Attrib_Number] = $SizeOfIndexAllocationEntry
 	$IRArr[5][$Current_Attrib_Number] = $ClustersPerIndexRoot
-	$IRArr[6][$Current_Attrib_Number] = $IRPadding
+;	$IRArr[6][$Current_Attrib_Number] = $IRPadding
 	$IRArr[7][$Current_Attrib_Number] = $OffsetToFirstEntry
 	$IRArr[8][$Current_Attrib_Number] = $TotalSizeOfEntries
 	$IRArr[9][$Current_Attrib_Number] = $AllocatedSizeOfEntries
 	$IRArr[10][$Current_Attrib_Number] = $Flags
-	$IRArr[11][$Current_Attrib_Number] = $IRPadding2
-	If $ResidentIndx Then
+;	$IRArr[11][$Current_Attrib_Number] = $IRPadding2
+	If $ResidentIndx And $AttributeType=$FILE_NAME Then
 		$TheResidentIndexEntry = StringMid($Entry,$LocalAttributeOffset+64)
 		_DecodeIndxEntries($TheResidentIndexEntry,$Current_Attrib_Number,$CurrentAttributeName)
 	EndIf
@@ -2916,82 +2547,69 @@ Func _DecodeIndxEntries($Entry,$Current_Attrib_Number,$CurrentAttributeName)
 	Local $IndxHdrFlag,$IndxHdrPadding,$IndxHdrUpdateSequence,$IndxHdrUpdSeqArr,$IndxHdrUpdSeqArrPart0,$IndxHdrUpdSeqArrPart1,$IndxHdrUpdSeqArrPart2,$IndxHdrUpdSeqArrPart3,$IndxRecordEnd4,$IndxRecordEnd1,$IndxRecordEnd2,$IndxRecordEnd3,$IndxRecordEnd4
 	Local $FileReference,$IndexEntryLength,$StreamLength,$Flags,$Stream,$SubNodeVCN,$tmp0=0,$tmp1=0,$tmp2=0,$tmp3=0,$EntryCounter=1,$Padding2,$EntryCounter=1
 	$NewLocalAttributeOffset = 1
-;	ConsoleWrite("$NewLocalAttributeOffset = " & $NewLocalAttributeOffset & @crlf)
 	$MFTReference = StringMid($Entry,$NewLocalAttributeOffset,12)
-;	ConsoleWrite("$MFTReference = " & $MFTReference & @crlf)
 	$MFTReference = StringMid($MFTReference,7,2)&StringMid($MFTReference,5,2)&StringMid($MFTReference,3,2)&StringMid($MFTReference,1,2)
-;	$MFTReference = StringMid($MFTReference,15,2)&StringMid($MFTReference,13,2)&StringMid($MFTReference,11,2)&StringMid($MFTReference,9,2)&StringMid($MFTReference,7,2)&StringMid($MFTReference,5,2)&StringMid($MFTReference,3,2)&StringMid($MFTReference,1,2)
-;	ConsoleWrite("$MFTReference = " & $MFTReference & @crlf)
 	$MFTReference = Dec($MFTReference)
 	$MFTReferenceSeqNo = StringMid($Entry,$NewLocalAttributeOffset+12,4)
 	$MFTReferenceSeqNo = Dec(StringMid($MFTReferenceSeqNo,3,2)&StringMid($MFTReferenceSeqNo,1,2))
 	$IndexEntryLength = StringMid($Entry,$NewLocalAttributeOffset+16,4)
-;	ConsoleWrite("$IndexEntryLength = " & $IndexEntryLength & @crlf)
 	$IndexEntryLength = Dec(StringMid($IndexEntryLength,3,2)&StringMid($IndexEntryLength,3,2))
-;	ConsoleWrite("$IndexEntryLength = " & $IndexEntryLength & @crlf)
 	$OffsetToFileName = StringMid($Entry,$NewLocalAttributeOffset+20,4)
-;	ConsoleWrite("$OffsetToFileName = " & $OffsetToFileName & @crlf)
 	$OffsetToFileName = Dec(StringMid($OffsetToFileName,3,2)&StringMid($OffsetToFileName,3,2))
-;	ConsoleWrite("$OffsetToFileName = " & $OffsetToFileName & @crlf)
 	$IndexFlags = StringMid($Entry,$NewLocalAttributeOffset+24,4)
-;	ConsoleWrite("$IndexFlags = " & $IndexFlags & @crlf)
-	$Padding = StringMid($Entry,$NewLocalAttributeOffset+28,4)
-;	ConsoleWrite("$Padding = " & $Padding & @crlf)
+;	$Padding = StringMid($Entry,$NewLocalAttributeOffset+28,4)
 	$MFTReferenceOfParent = StringMid($Entry,$NewLocalAttributeOffset+32,12)
-;	ConsoleWrite("$MFTReferenceOfParent = " & $MFTReferenceOfParent & @crlf)
 	$MFTReferenceOfParent = StringMid($MFTReferenceOfParent,7,2)&StringMid($MFTReferenceOfParent,5,2)&StringMid($MFTReferenceOfParent,3,2)&StringMid($MFTReferenceOfParent,1,2)
-;	$MFTReferenceOfParent = StringMid($MFTReferenceOfParent,15,2)&StringMid($MFTReferenceOfParent,13,2)&StringMid($MFTReferenceOfParent,11,2)&StringMid($MFTReferenceOfParent,9,2)&StringMid($MFTReferenceOfParent,7,2)&StringMid($MFTReferenceOfParent,5,2)&StringMid($MFTReferenceOfParent,3,2)&StringMid($MFTReferenceOfParent,1,2)
 	$MFTReferenceOfParent = Dec($MFTReferenceOfParent)
-;	ConsoleWrite("$MFTReferenceOfParent = " & $MFTReferenceOfParent & @crlf)
 	$MFTReferenceOfParentSeqNo = StringMid($Entry,$NewLocalAttributeOffset+44,4)
 	$MFTReferenceOfParentSeqNo = Dec(StringMid($MFTReferenceOfParentSeqNo,3,2) & StringMid($MFTReferenceOfParentSeqNo,3,2))
-
 	$Indx_CTime = StringMid($Entry,$NewLocalAttributeOffset+48,16)
 	$Indx_CTime = StringMid($Indx_CTime,15,2) & StringMid($Indx_CTime,13,2) & StringMid($Indx_CTime,11,2) & StringMid($Indx_CTime,9,2) & StringMid($Indx_CTime,7,2) & StringMid($Indx_CTime,5,2) & StringMid($Indx_CTime,3,2) & StringMid($Indx_CTime,1,2)
 	$Indx_CTime_tmp = _WinTime_UTCFileTimeToLocalFileTime("0x" & $Indx_CTime)
 	$Indx_CTime = _WinTime_UTCFileTimeFormat(Dec($Indx_CTime)-$tDelta,$DateTimeFormat,2)
-	$Indx_CTime = $Indx_CTime & ":" & _FillZero(StringRight($Indx_CTime_tmp,4))
-;	ConsoleWrite("$Indx_CTime = " & $Indx_CTime & @crlf)
-;
+	If @error Then
+		$Indx_CTime = "-"
+	Else
+		$Indx_CTime = $Indx_CTime & ":" & _FillZero(StringRight($Indx_CTime_tmp,4))
+	EndIf
 	$Indx_ATime = StringMid($Entry,$NewLocalAttributeOffset+64,16)
 	$Indx_ATime = StringMid($Indx_ATime,15,2) & StringMid($Indx_ATime,13,2) & StringMid($Indx_ATime,11,2) & StringMid($Indx_ATime,9,2) & StringMid($Indx_ATime,7,2) & StringMid($Indx_ATime,5,2) & StringMid($Indx_ATime,3,2) & StringMid($Indx_ATime,1,2)
 	$Indx_ATime_tmp = _WinTime_UTCFileTimeToLocalFileTime("0x" & $Indx_ATime)
 	$Indx_ATime = _WinTime_UTCFileTimeFormat(Dec($Indx_ATime)-$tDelta,$DateTimeFormat,2)
-	$Indx_ATime = $Indx_ATime & ":" & _FillZero(StringRight($Indx_ATime_tmp,4))
-;	ConsoleWrite("$Indx_ATime = " & $Indx_ATime & @crlf)
-;
+	If @error Then
+		$Indx_ATime = "-"
+	Else
+		$Indx_ATime = $Indx_ATime & ":" & _FillZero(StringRight($Indx_ATime_tmp,4))
+	EndIf
 	$Indx_MTime = StringMid($Entry,$NewLocalAttributeOffset+80,16)
 	$Indx_MTime = StringMid($Indx_MTime,15,2) & StringMid($Indx_MTime,13,2) & StringMid($Indx_MTime,11,2) & StringMid($Indx_MTime,9,2) & StringMid($Indx_MTime,7,2) & StringMid($Indx_MTime,5,2) & StringMid($Indx_MTime,3,2) & StringMid($Indx_MTime,1,2)
 	$Indx_MTime_tmp = _WinTime_UTCFileTimeToLocalFileTime("0x" & $Indx_MTime)
 	$Indx_MTime = _WinTime_UTCFileTimeFormat(Dec($Indx_MTime)-$tDelta,$DateTimeFormat,2)
-	$Indx_MTime = $Indx_MTime & ":" & _FillZero(StringRight($Indx_MTime_tmp,4))
-;	ConsoleWrite("$Indx_MTime = " & $Indx_MTime & @crlf)
-;
+	If @error Then
+		$Indx_MTime = "-"
+	Else
+		$Indx_MTime = $Indx_MTime & ":" & _FillZero(StringRight($Indx_MTime_tmp,4))
+	EndIf
 	$Indx_RTime = StringMid($Entry,$NewLocalAttributeOffset+96,16)
 	$Indx_RTime = StringMid($Indx_RTime,15,2) & StringMid($Indx_RTime,13,2) & StringMid($Indx_RTime,11,2) & StringMid($Indx_RTime,9,2) & StringMid($Indx_RTime,7,2) & StringMid($Indx_RTime,5,2) & StringMid($Indx_RTime,3,2) & StringMid($Indx_RTime,1,2)
 	$Indx_RTime_tmp = _WinTime_UTCFileTimeToLocalFileTime("0x" & $Indx_RTime)
 	$Indx_RTime = _WinTime_UTCFileTimeFormat(Dec($Indx_RTime)-$tDelta,$DateTimeFormat,2)
-	$Indx_RTime = $Indx_RTime & ":" & _FillZero(StringRight($Indx_RTime_tmp,4))
-;	ConsoleWrite("$Indx_RTime = " & $Indx_RTime & @crlf)
-;
+	If @error Then
+		$Indx_RTime = "-"
+	Else
+		$Indx_RTime = $Indx_RTime & ":" & _FillZero(StringRight($Indx_RTime_tmp,4))
+	EndIf
 	$Indx_AllocSize = StringMid($Entry,$NewLocalAttributeOffset+112,16)
 	$Indx_AllocSize = Dec(StringMid($Indx_AllocSize,15,2) & StringMid($Indx_AllocSize,13,2) & StringMid($Indx_AllocSize,11,2) & StringMid($Indx_AllocSize,9,2) & StringMid($Indx_AllocSize,7,2) & StringMid($Indx_AllocSize,5,2) & StringMid($Indx_AllocSize,3,2) & StringMid($Indx_AllocSize,1,2))
-;	ConsoleWrite("$Indx_AllocSize = " & $Indx_AllocSize & @crlf)
 	$Indx_RealSize = StringMid($Entry,$NewLocalAttributeOffset+128,16)
 	$Indx_RealSize = Dec(StringMid($Indx_RealSize,15,2) & StringMid($Indx_RealSize,13,2) & StringMid($Indx_RealSize,11,2) & StringMid($Indx_RealSize,9,2) & StringMid($Indx_RealSize,7,2) & StringMid($Indx_RealSize,5,2) & StringMid($Indx_RealSize,3,2) & StringMid($Indx_RealSize,1,2))
-;	ConsoleWrite("$Indx_RealSize = " & $Indx_RealSize & @crlf)
 	$Indx_File_Flags = StringMid($Entry,$NewLocalAttributeOffset+144,16)
-;	ConsoleWrite("$Indx_File_Flags = " & $Indx_File_Flags & @crlf)
 	$Indx_File_Flags = StringMid($Indx_File_Flags,15,2) & StringMid($Indx_File_Flags,13,2) & StringMid($Indx_File_Flags,11,2) & StringMid($Indx_File_Flags,9,2)&StringMid($Indx_File_Flags,7,2) & StringMid($Indx_File_Flags,5,2) & StringMid($Indx_File_Flags,3,2) & StringMid($Indx_File_Flags,1,2)
-;	ConsoleWrite("$Indx_File_Flags = " & $Indx_File_Flags & @crlf)
 	$Indx_File_Flags = StringMid($Indx_File_Flags,13,8)
-	$Indx_File_Flags = _File_Permissions("0x" & $Indx_File_Flags)
-;	ConsoleWrite("$Indx_File_Flags = " & $Indx_File_Flags & @crlf)
+	$Indx_File_Flags = _File_Attributes("0x" & $Indx_File_Flags)
 	$Indx_NameLength = StringMid($Entry,$NewLocalAttributeOffset+160,2)
 	$Indx_NameLength = Dec($Indx_NameLength)
-;	ConsoleWrite("$Indx_NameLength = " & $Indx_NameLength & @crlf)
 	$Indx_NameSpace = StringMid($Entry,$NewLocalAttributeOffset+162,2)
-;	ConsoleWrite("$Indx_NameSpace = " & $Indx_NameSpace & @crlf)
 	Select
 		Case $Indx_NameSpace = "00"	;POSIX
 			$Indx_NameSpace = "POSIX"
@@ -3003,9 +2621,7 @@ Func _DecodeIndxEntries($Entry,$Current_Attrib_Number,$CurrentAttributeName)
 			$Indx_NameSpace = "DOS+WIN32"
 	EndSelect
 	$Indx_FileName = StringMid($Entry,$NewLocalAttributeOffset+164,$Indx_NameLength*2*2)
-;	ConsoleWrite("$Indx_FileName = " & $Indx_FileName & @crlf)
 	$Indx_FileName = _UnicodeHexToStr($Indx_FileName)
-;	ConsoleWrite("$Indx_FileName = " & $Indx_FileName & @crlf)
 	$tmp1 = 164+($Indx_NameLength*2*2)
 	Do ; Calculate the length of the padding - 8 byte aligned
 		$tmp2 = $tmp1/16
@@ -3016,9 +2632,7 @@ Func _DecodeIndxEntries($Entry,$Current_Attrib_Number,$CurrentAttributeName)
 		EndIf
 	Until IsInt($tmp2)
 	$PaddingLength = $tmp3
-;	ConsoleWrite("$PaddingLength = " & $PaddingLength & @crlf)
-	$Padding2 = StringMid($Entry,$NewLocalAttributeOffset+164+($Indx_NameLength*2*2),$PaddingLength)
-;	ConsoleWrite("$Padding2 = " & $Padding2 & @crlf)
+;	$Padding2 = StringMid($Entry,$NewLocalAttributeOffset+164+($Indx_NameLength*2*2),$PaddingLength)
 	If $IndexFlags <> "0000" Then
 		$SubNodeVCN = StringMid($Entry,$NewLocalAttributeOffset+164+($Indx_NameLength*2*2)+$PaddingLength,16)
 		$SubNodeVCNLength = 16
@@ -3026,7 +2640,6 @@ Func _DecodeIndxEntries($Entry,$Current_Attrib_Number,$CurrentAttributeName)
 		$SubNodeVCN = ""
 		$SubNodeVCNLength = 0
 	EndIf
-;	ConsoleWrite("$SubNodeVCN = " & $SubNodeVCN & @crlf)
 	ReDim $IndxEntryNumberArr[1+$EntryCounter]
 	ReDim $IndxMFTReferenceArr[1+$EntryCounter]
 	ReDim $IndxMFTRefSeqNoArr[1+$EntryCounter]
@@ -3133,7 +2746,7 @@ Func _DecodeIndxEntries($Entry,$Current_Attrib_Number,$CurrentAttributeName)
 		$Indx_File_Flags = StringMid($Indx_File_Flags,15,2) & StringMid($Indx_File_Flags,13,2) & StringMid($Indx_File_Flags,11,2) & StringMid($Indx_File_Flags,9,2)&StringMid($Indx_File_Flags,7,2) & StringMid($Indx_File_Flags,5,2) & StringMid($Indx_File_Flags,3,2) & StringMid($Indx_File_Flags,1,2)
 ;		ConsoleWrite("$Indx_File_Flags = " & $Indx_File_Flags & @crlf)
 		$Indx_File_Flags = StringMid($Indx_File_Flags,13,8)
-		$Indx_File_Flags = _File_Permissions("0x" & $Indx_File_Flags)
+		$Indx_File_Flags = _File_Attributes("0x" & $Indx_File_Flags)
 ;		ConsoleWrite("$Indx_File_Flags = " & $Indx_File_Flags & @crlf)
 		$Indx_NameLength = StringMid($Entry,$NextEntryOffset+160,2)
 		$Indx_NameLength = Dec($Indx_NameLength)
@@ -3242,3 +2855,180 @@ Func _End($begin)
 ;	Exit
 EndFunc
 
+; start: by Ascend4nt -----------------------------
+Func _WinTime_GetUTCToLocalFileTimeDelta()
+	Local $iUTCFileTime=864000000000		; exactly 24 hours from the origin (although 12 hours would be more appropriate (max variance = 12))
+	$iLocalFileTime=_WinTime_UTCFileTimeToLocalFileTime($iUTCFileTime)
+	If @error Then Return SetError(@error,@extended,-1)
+	Return $iLocalFileTime-$iUTCFileTime	; /36000000000 = # hours delta (effectively giving the offset in hours from UTC/GMT)
+EndFunc
+
+Func _WinTime_UTCFileTimeToLocalFileTime($iUTCFileTime)
+	If $iUTCFileTime<0 Then Return SetError(1,0,-1)
+	Local $aRet=DllCall($_COMMON_KERNEL32DLL,"bool","FileTimeToLocalFileTime","uint64*",$iUTCFileTime,"uint64*",0)
+	If @error Then Return SetError(2,@error,-1)
+	If Not $aRet[0] Then Return SetError(3,0,-1)
+	Return $aRet[2]
+EndFunc
+
+Func _WinTime_UTCFileTimeFormat($iUTCFileTime,$iFormat=4,$iPrecision=0,$bAMPMConversion=False)
+;~ 	If $iUTCFileTime<0 Then Return SetError(1,0,"")	; checked in below call
+
+	; First convert file time (UTC-based file time) to 'local file time'
+	Local $iLocalFileTime=_WinTime_UTCFileTimeToLocalFileTime($iUTCFileTime)
+	If @error Then Return SetError(@error,@extended,"")
+	; Rare occassion: a filetime near the origin (January 1, 1601!!) is used,
+	;	causing a negative result (for some timezones). Return as invalid param.
+	If $iLocalFileTime<0 Then Return SetError(1,0,"")
+
+	; Then convert file time to a system time array & format & return it
+	Local $vReturn=_WinTime_LocalFileTimeFormat($iLocalFileTime,$iFormat,$iPrecision,$bAMPMConversion)
+	Return SetError(@error,@extended,$vReturn)
+EndFunc
+
+Func _WinTime_LocalFileTimeFormat($iLocalFileTime,$iFormat=4,$iPrecision=0,$bAMPMConversion=False)
+;~ 	If $iLocalFileTime<0 Then Return SetError(1,0,"")	; checked in below call
+
+	; Convert file time to a system time array & return result
+	Local $aSysTime=_WinTime_LocalFileTimeToSystemTime($iLocalFileTime)
+	If @error Then Return SetError(@error,@extended,"")
+
+	; Return only the SystemTime array?
+	If $iFormat=0 Then Return $aSysTime
+
+	Local $vReturn=_WinTime_FormatTime($aSysTime[0],$aSysTime[1],$aSysTime[2],$aSysTime[3], _
+		$aSysTime[4],$aSysTime[5],$aSysTime[6],$aSysTime[7],$iFormat,$iPrecision,$bAMPMConversion)
+	Return SetError(@error,@extended,$vReturn)
+EndFunc
+
+Func _WinTime_LocalFileTimeToSystemTime($iLocalFileTime)
+	Local $aRet,$stSysTime,$aSysTime[8]=[-1,-1,-1,-1,-1,-1,-1,-1]
+
+	; Negative values unacceptable
+	If $iLocalFileTime<0 Then Return SetError(1,0,$aSysTime)
+
+	; SYSTEMTIME structure [Year,Month,DayOfWeek,Day,Hour,Min,Sec,Milliseconds]
+	$stSysTime=DllStructCreate("ushort[8]")
+
+	$aRet=DllCall($_COMMON_KERNEL32DLL,"bool","FileTimeToSystemTime","uint64*",$iLocalFileTime,"ptr",DllStructGetPtr($stSysTime))
+	If @error Then Return SetError(2,@error,$aSysTime)
+	If Not $aRet[0] Then Return SetError(3,0,$aSysTime)
+	Dim $aSysTime[8]=[DllStructGetData($stSysTime,1,1),DllStructGetData($stSysTime,1,2),DllStructGetData($stSysTime,1,4),DllStructGetData($stSysTime,1,5), _
+		DllStructGetData($stSysTime,1,6),DllStructGetData($stSysTime,1,7),DllStructGetData($stSysTime,1,8),DllStructGetData($stSysTime,1,3)]
+	Return $aSysTime
+EndFunc
+
+Func _WinTime_FormatTime($iYear,$iMonth,$iDay,$iHour,$iMin,$iSec,$iMilSec,$iDayOfWeek,$iFormat=4,$iPrecision=0,$bAMPMConversion=False)
+	Local Static $_WT_aMonths[12]=["January","February","March","April","May","June","July","August","September","October","November","December"]
+	Local Static $_WT_aDays[7]=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"]
+
+	If Not $iFormat Or $iMonth<1 Or $iMonth>12 Or $iDayOfWeek>6 Then Return SetError(1,0,"")
+
+	; Pad MM,DD,HH,MM,SS,MSMSMSMS as necessary
+	Local $sMM=StringRight(0&$iMonth,2),$sDD=StringRight(0&$iDay,2),$sMin=StringRight(0&$iMin,2)
+	; $sYY = $iYear	; (no padding)
+	;	[technically Year can be 1-x chars - but this is generally used for 4-digit years. And SystemTime only goes up to 30827/30828]
+	Local $sHH,$sSS,$sMS,$sAMPM
+
+	; 'Extra precision 1': +SS (Seconds)
+	If $iPrecision Then
+		$sSS=StringRight(0&$iSec,2)
+		; 'Extra precision 2': +MSMSMSMS (Milliseconds)
+		If $iPrecision>1 Then
+;			$sMS=StringRight('000'&$iMilSec,4)
+			$sMS=StringRight('000'&$iMilSec,3);Fixed an erronous 0 in front of the milliseconds
+		Else
+			$sMS=""
+		EndIf
+	Else
+		$sSS=""
+		$sMS=""
+	EndIf
+	If $bAMPMConversion Then
+		If $iHour>11 Then
+			$sAMPM=" PM"
+			; 12 PM will cause 12-12 to equal 0, so avoid the calculation:
+			If $iHour=12 Then
+				$sHH="12"
+			Else
+				$sHH=StringRight(0&($iHour-12),2)
+			EndIf
+		Else
+			$sAMPM=" AM"
+			If $iHour Then
+				$sHH=StringRight(0&$iHour,2)
+			Else
+			; 00 military = 12 AM
+				$sHH="12"
+			EndIf
+		EndIf
+	Else
+		$sAMPM=""
+		$sHH=StringRight(0 & $iHour,2)
+	EndIf
+
+	Local $sDateTimeStr,$aReturnArray[3]
+
+	; Return an array? [formatted string + "Month" + "DayOfWeek"]
+	If BitAND($iFormat,0x10) Then
+		$aReturnArray[1]=$_WT_aMonths[$iMonth-1]
+		If $iDayOfWeek>=0 Then
+			$aReturnArray[2]=$_WT_aDays[$iDayOfWeek]
+		Else
+			$aReturnArray[2]=""
+		EndIf
+		; Strip the 'array' bit off (array[1] will now indicate if an array is to be returned)
+		$iFormat=BitAND($iFormat,0xF)
+	Else
+		; Signal to below that the array isn't to be returned
+		$aReturnArray[1]=""
+	EndIf
+
+	; Prefix with "DayOfWeek "?
+	If BitAND($iFormat,8) Then
+		If $iDayOfWeek<0 Then Return SetError(1,0,"")	; invalid
+		$sDateTimeStr=$_WT_aDays[$iDayOfWeek]&', '
+		; Strip the 'DayOfWeek' bit off
+		$iFormat=BitAND($iFormat,0x7)
+	Else
+		$sDateTimeStr=""
+	EndIf
+
+	If $iFormat<2 Then
+		; Basic String format: YYYYMMDDHHMM[SS[MSMSMSMS[ AM/PM]]]
+		$sDateTimeStr&=$iYear&$sMM&$sDD&$sHH&$sMin&$sSS&$sMS&$sAMPM
+	Else
+		; one of 4 formats which ends with " HH:MM[:SS[:MSMSMSMS[ AM/PM]]]"
+		Switch $iFormat
+			; /, : Format - MM/DD/YYYY
+			Case 2
+				$sDateTimeStr&=$sMM&'/'&$sDD&'/'
+			; /, : alt. Format - DD/MM/YYYY
+			Case 3
+				$sDateTimeStr&=$sDD&'/'&$sMM&'/'
+			; "Month DD, YYYY" format
+			Case 4
+				$sDateTimeStr&=$_WT_aMonths[$iMonth-1]&' '&$sDD&', '
+			; "DD Month YYYY" format
+			Case 5
+				$sDateTimeStr&=$sDD&' '&$_WT_aMonths[$iMonth-1]&' '
+			Case 6
+				$sDateTimeStr&=$iYear&'-'&$sMM&'-'&$sDD
+				$iYear=''
+			Case Else
+				Return SetError(1,0,"")
+		EndSwitch
+		$sDateTimeStr&=$iYear&' '&$sHH&':'&$sMin
+		If $iPrecision Then
+			$sDateTimeStr&=':'&$sSS
+			If $iPrecision>1 Then $sDateTimeStr&=':'&$sMS
+		EndIf
+		$sDateTimeStr&=$sAMPM
+	EndIf
+	If $aReturnArray[1]<>"" Then
+		$aReturnArray[0]=$sDateTimeStr
+		Return $aReturnArray
+	EndIf
+	Return $sDateTimeStr
+EndFunc
+; end: by Ascend4nt ----------------------------
