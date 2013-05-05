@@ -62,7 +62,7 @@ MFTRCRD C:5 -d indxdump=on
 
 === Example for decoding what is found at offset 3246809088 on the c drive: ===
 
-MFTRCRD C?3246809088 -a attriblist=off indxdump=off
+MFTRCRD C?3246809088 -a indxdump=off
 
 (Offset specified in hex must be prefixed with "0x", ie C?0xC1866000)
 
