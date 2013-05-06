@@ -1,9 +1,10 @@
 #RequireAdmin
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
+#AutoIt3Wrapper_UseX64=y
 #AutoIt3Wrapper_Change2CUI=y
 #AutoIt3Wrapper_Res_Comment=Quick $MFT record dump
 #AutoIt3Wrapper_Res_Description=Decode a file's attributes from $MFT
-#AutoIt3Wrapper_Res_Fileversion=1.0.0.24
+#AutoIt3Wrapper_Res_Fileversion=1.0.0.25
 #AutoIt3Wrapper_Res_LegalCopyright=Joakim Schicht
 #AutoIt3Wrapper_Res_requestedExecutionLevel=asInvoker
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
@@ -28,7 +29,7 @@ Global $DATA_AllocatedSize,$DATA_RealSize,$DATA_InitializedStreamSize,$RunListOf
 Global $RUN_VCN[1],$RUN_Clusters[1],$MFT_RUN_Clusters[1],$MFT_RUN_VCN[1],$NameQ[5],$DataQ[1],$sBuffer,$AttrQ[1], $RUN_Sparse[1], $MFT_RUN_Sparse[1], $RUN_Complete[1][4], $MFT_RUN_Complete[1][4], $RUN_Sectors, $MFT_RUN_Sectors
 Global $SI_CTime,$SI_ATime,$SI_MTime,$SI_RTime,$SI_FilePermission,$SI_USN,$Errors,$RecordSlackSpace
 Global $IndxEntryNumberArr[1],$IndxMFTReferenceArr[1],$IndxMFTRefSeqNoArr[1],$IndxIndexFlagsArr[1],$IndxMFTReferenceOfParentArr[1],$IndxMFTParentRefSeqNoArr[1],$IndxCTimeArr[1],$IndxATimeArr[1],$IndxMTimeArr[1],$IndxRTimeArr[1],$IndxAllocSizeArr[1],$IndxRealSizeArr[1],$IndxFileFlagsArr[1],$IndxFileNameArr[1],$IndxSubNodeVCNArr[1],$IndxNameSpaceArr[1]
-Global $IsDirectory = 0, $AttributesArr[18][4], $SIArr[13][2], $FNArr[14][1], $RecordHdrArr[16][2], $ObjectIDArr[5][2], $DataArr[20][2], $AttribListArr[9][2],$VolumeNameArr[2][2],$VolumeInformationArr[3][2],$RPArr[11][2],$LUSArr[3][2],$EAInfoArr[5][2],$EAArr[8][2],$IRArr[12][2],$IndxArr[20][2]
+Global $IsDirectory = 0, $AttributesArr[18][4], $SIArr[13][2], $FNArr[14][1], $RecordHdrArr[16][2], $ObjectIDArr[5][2], $DataArr[21][2], $AttribListArr[9][2],$VolumeNameArr[2][2],$VolumeInformationArr[3][2],$RPArr[11][2],$LUSArr[3][2],$EAInfoArr[5][2],$EAArr[8][2],$IRArr[12][2],$IndxArr[20][2]
 Global $HexDumpRecordSlack[1],$HexDumpRecord[1],$HexDumpHeader[1],$HexDumpStandardInformation[1],$HexDumpAttributeList[1],$HexDumpFileName[1],$HexDumpObjectId[1],$HexDumpSecurityDescriptor[1],$HexDumpVolumeName[1],$HexDumpVolumeInformation[1],$HexDumpData[1],$HexDumpIndexRoot[1],$HexDumpIndexAllocation[1],$HexDumpBitmap[1],$HexDumpReparsePoint[1],$HexDumpEaInformation[1],$HexDumpEa[1],$HexDumpPropertySet[1],$HexDumpLoggedUtilityStream[1],$HexDumpIndxRecord[1]
 Global $FN_Number,$DATA_Number,$SI_Number,$ATTRIBLIST_Number,$OBJID_Number,$SECURITY_Number,$VOLNAME_Number,$VOLINFO_Number,$INDEXROOT_Number,$INDEXALLOC_Number,$BITMAP_Number,$REPARSEPOINT_Number,$EAINFO_Number,$EA_Number,$PROPERTYSET_Number,$LOGGEDUTILSTREAM_Number
 Global $STANDARD_INFORMATION_ON,$ATTRIBUTE_LIST_ON,$FILE_NAME_ON,$OBJECT_ID_ON,$SECURITY_DESCRIPTOR_ON,$VOLUME_NAME_ON,$VOLUME_INFORMATION_ON,$DATA_ON,$INDEX_ROOT_ON,$INDEX_ALLOCATION_ON,$BITMAP_ON,$REPARSE_POINT_ON,$EA_INFORMATION_ON,$EA_ON,$PROPERTY_SET_ON,$LOGGED_UTILITY_STREAM_ON,$ATTRIBUTE_END_MARKER_ON
@@ -89,7 +90,7 @@ Global $FormattedTimestamp
 Global $Timerstart = TimerInit()
 ConsoleWrite("" & @CRLF)
 ConsoleWrite("Starting MFTRCRD by Joakim Schicht" & @CRLF)
-ConsoleWrite("Version 1.0.0.24" & @CRLF)
+ConsoleWrite("Version 1.0.0.25" & @CRLF)
 ConsoleWrite("" & @CRLF)
 _validate_parameters()
 $TargetDrive = StringMid($cmdline[1],1,1)&":"
@@ -290,7 +291,7 @@ Func _ExtractSystemfile($TargetFile)
 	_DecodeMFTRecord($MFTEntry)
 	_DecodeDataQEntry($DataQ[1])
 	$MFTSize = $DATA_RealSize
-	_SetDataInfo(1)
+;	_SetDataInfo(1)
 	Global $RUN_VCN[1], $RUN_Clusters[1]
 	_ExtractDataRuns()
 	$MFT_RUN_VCN = $RUN_VCN
@@ -333,7 +334,7 @@ Func _ExtractSingleFile($MFTReferenceNumber)
 	EndIf
 	For $i = 1 To UBound($DataQ) - 1
 		_DecodeDataQEntry($DataQ[$i])
-		_SetDataInfo($i)
+;		_SetDataInfo($i)
 		If $DATA_NonResidentFlag = '00' Then
 ;			_ExtractResidentFile($DATA_Name, $DATA_LengthOfAttribute)
 		Else
@@ -814,7 +815,8 @@ While 1
 		Case $AttributeType = $DATA
 			$DATA_ON = "TRUE"
 			$DATA_Number += 1
-			ReDim $DataArr[20][$DATA_Number+1]
+			ReDim $DataArr[21][$DATA_Number+1]
+			_Get_Data($MFTEntry,$AttributeOffset,$AttributeSize,$DATA_Number)
 			_ArrayAdd($DataQ, StringMid($MFTEntry,$AttributeOffset,$AttributeSize*2))
 			ReDim $HexDumpData[$DATA_Number]
 			_Arrayadd($HexDumpData,StringMid($MFTEntry,$AttributeOffset,$AttributeSize*2))
@@ -846,7 +848,7 @@ While 1
 			$CoreBitmap = _GetAttributeEntry(StringMid($MFTEntry,$AttributeOffset,$AttributeSize*2))
 			$CoreBitmapChunk = $CoreBitmap[0]
 			$CoreBitmapName = $CoreBitmap[1]
-			_Get_Bitmap($CoreBitmapChunk,$REPARSEPOINT_Number,$CoreBitmapName)
+			_Get_Bitmap($CoreBitmapChunk,$BITMAP_Number,$CoreBitmapName)
 			ReDim $HexDumpBitmap[$BITMAP_Number]
 			_Arrayadd($HexDumpBitmap,StringMid($MFTEntry,$AttributeOffset,$AttributeSize*2))
 		Case $AttributeType = $REPARSE_POINT
@@ -1180,7 +1182,7 @@ Func _ReadBootSector($TargetDrive)
 EndFunc
 
 Func _SetArrays()
-Global $AttributesArr[18][4], $SIArr[13][4], $FNArr[14][1], $RecordHdrArr[16][2], $ObjectIDArr[5][2], $DataArr[20][2], $AttribListArr[9][2], $VolumeNameArr[2][2], $VolumeInformationArr[3][2]
+Global $AttributesArr[18][4], $SIArr[13][4], $FNArr[14][1], $RecordHdrArr[16][2], $ObjectIDArr[5][2], $DataArr[21][2], $AttribListArr[9][2], $VolumeNameArr[2][2], $VolumeInformationArr[3][2]
 $AttributesArr[0][0] = "Attribute name:"
 $AttributesArr[1][0] = "STANDARD_INFORMATION"
 $AttributesArr[2][0] = "ATTRIBUTE_LIST"
@@ -1270,7 +1272,8 @@ $DataArr[15][0] = "Non-Resident - Padding"
 $DataArr[16][0] = "Non-Resident - Allocated size of the attribute"
 $DataArr[17][0] = "Non-Resident - Real size of the attribute"
 $DataArr[18][0] = "Non-Resident - Initialized data size of the stream"
-$DataArr[19][0] = "The Attribute's Name"
+$DataArr[19][0] = "Non-Resident - DataRuns"
+$DataArr[20][0] = "The Attribute's Name"
 $AttribListArr[0][0] = "Description:"
 $AttribListArr[1][0] = "Type"
 $AttribListArr[2][0] = "Record Lenght"
@@ -1518,10 +1521,50 @@ $VolumeInformationArr[2][$Current_VI_Number] = $VOL_INFO_FLAGS
 Return
 EndFunc
 
-Func _SetDataInfo($Current_DATA_Number)
+Func _Get_Data($MFTEntry, $DATA_Offset, $DATA_Size, $Current_DATA_Number)
+	Local $DATA_NameLength, $DATA_NameRelativeOffset, $DATA_VCNs, $DATA_LengthOfAttribute, $DATA_OffsetToAttribute, $DATA_IndexedFlag, $DATA_Name
+	$DATA_NonResidentFlag = StringMid($MFTEntry, $DATA_Offset + 16, 2)
+	$DATA_NameLength = Dec(StringMid($MFTEntry, $DATA_Offset + 18, 2))
+	$DATA_NameRelativeOffset = StringMid($MFTEntry, $DATA_Offset + 20, 4)
+	$DATA_NameRelativeOffset = Dec(_SwapEndian($DATA_NameRelativeOffset),2)
+	$DATA_Flags = StringMid($MFTEntry, $DATA_Offset + 24, 4)
+	$DATA_Flags = _SwapEndian($DATA_Flags)
+	$DATA_Flags = _AttribHeaderFlags("0x" & $DATA_Flags)
+	$DATA_AttributeID = StringMid($MFTEntry, $DATA_Offset + 28, 4)
+	$DATA_AttributeID = _SwapEndian($DATA_AttributeID)
+	If $DATA_NameLength > 0 Then
+		$DATA_NameSpace = $DATA_NameLength - 1
+		$DATA_Name = StringMid($MFTEntry, $DATA_Offset + ($DATA_NameRelativeOffset * 2), ($DATA_NameLength + $DATA_NameSpace) * 2)
+		$DATA_Name = _UnicodeHexToStr($DATA_Name)
+	EndIf
+	If $DATA_NonResidentFlag = '01' Then
+		$DATA_StartVCN = StringMid($MFTEntry, $DATA_Offset + 32, 16)
+		$DATA_StartVCN = Dec(_SwapEndian($DATA_StartVCN),2)
+		$DATA_LastVCN = StringMid($MFTEntry, $DATA_Offset + 48, 16)
+		$DATA_LastVCN = Dec(_SwapEndian($DATA_LastVCN),2)
+;		$DATA_VCNs = $DATA_LastVCN - $DATA_StartVCN
+		$DATA_OffsetToDataRuns = StringMid($MFTEntry, $DATA_Offset + 64, 4)
+		$DATA_OffsetToDataRuns = Dec(_SwapEndian($DATA_OffsetToDataRuns),2)
+		$DATA_ComprUnitSize = StringMid($MFTEntry, $DATA_Offset + 68, 4)
+		$DATA_ComprUnitSize = Dec(_SwapEndian($DATA_ComprUnitSize),2)
+		$DATA_AllocatedSize = StringMid($MFTEntry, $DATA_Offset + 80, 16)
+		$DATA_AllocatedSize = Dec(_SwapEndian($DATA_AllocatedSize),2)
+		$DATA_RealSize = StringMid($MFTEntry, $DATA_Offset + 96, 16)
+		$DATA_RealSize = Dec(_SwapEndian($DATA_RealSize),2)
+;		$FileSizeBytes = $DATA_RealSize
+		$DATA_InitializedStreamSize = StringMid($MFTEntry, $DATA_Offset + 112, 16)
+		$DATA_InitializedStreamSize = Dec(_SwapEndian($DATA_InitializedStreamSize),2)
+		$DATA_DataRuns = StringMid($MFTEntry,$DATA_Offset+($DATA_OffsetToDataRuns*2),($DATA_Size-$DATA_OffsetToDataRuns)*2)
+	ElseIf $DATA_NonResidentFlag = '00' Then
+		$DATA_LengthOfAttribute = StringMid($MFTEntry, $DATA_Offset + 32, 8)
+		$DATA_LengthOfAttribute = Dec(_SwapEndian($DATA_LengthOfAttribute),2)
+		$DATA_OffsetToAttribute = StringMid($MFTEntry, $DATA_Offset + 40, 4)
+		$DATA_OffsetToAttribute = Dec(_SwapEndian($DATA_OffsetToAttribute),2)
+		$DATA_IndexedFlag = Dec(StringMid($MFTEntry, $DATA_Offset + 44, 2))
+	EndIf
 If $DATA_NonResidentFlag = '01' Then
 	$DataArr[0][$Current_DATA_Number] = "Data value " & $Current_DATA_Number
-	$DataArr[1][$Current_DATA_Number] = $DATA_Length
+	$DataArr[1][$Current_DATA_Number] = $DATA_Size
 	$DataArr[2][$Current_DATA_Number] = $DATA_NonResidentFlag
 	$DataArr[3][$Current_DATA_Number] = $DATA_NameLength
 	$DataArr[4][$Current_DATA_Number] = $DATA_NameRelativeOffset
@@ -1539,10 +1582,11 @@ If $DATA_NonResidentFlag = '01' Then
 	$DataArr[16][$Current_DATA_Number] = $DATA_AllocatedSize
 	$DataArr[17][$Current_DATA_Number] = $DATA_RealSize
 	$DataArr[18][$Current_DATA_Number] = $DATA_InitializedStreamSize
-	$DataArr[19][$Current_DATA_Number] = $DATA_Name_Core
+	$DataArr[19][$Current_DATA_Number] = $DATA_DataRuns
+	$DataArr[20][$Current_DATA_Number] = $DATA_Name
 ElseIf $DATA_NonResidentFlag = '00' Then
 	$DataArr[0][$Current_DATA_Number] = "Data value " & $Current_DATA_Number
-	$DataArr[1][$Current_DATA_Number] = $DATA_Length
+	$DataArr[1][$Current_DATA_Number] = $DATA_Size
 	$DataArr[2][$Current_DATA_Number] = $DATA_NonResidentFlag
 	$DataArr[3][$Current_DATA_Number] = $DATA_NameLength
 	$DataArr[4][$Current_DATA_Number] = $DATA_NameRelativeOffset
@@ -1560,7 +1604,8 @@ ElseIf $DATA_NonResidentFlag = '00' Then
 	$DataArr[16][$Current_DATA_Number] = ""
 	$DataArr[17][$Current_DATA_Number] = ""
 	$DataArr[18][$Current_DATA_Number] = ""
-	$DataArr[19][$Current_DATA_Number] = $DATA_Name_Core
+	$DataArr[19][$Current_DATA_Number] = ""
+	$DataArr[20][$Current_DATA_Number] = $DATA_Name
 EndIf
 EndFunc
 
@@ -1830,9 +1875,17 @@ If $AttributesArr[8][2] = "TRUE" Then; $DATA
 	For $p = 1 To $DATA_Number
 		ConsoleWrite(@CRLF)
 		ConsoleWrite("$DATA " & $p & ":" & @CRLF)
-		For $j = 1 To 19
-			ConsoleWrite($DataArr[$j][0] & ": " & $DataArr[$j][$p] & @CRLF)
-		Next
+		If $DataArr[2][$p] = "01" Then
+			For $j = 1 To 20
+				If $j = 1 Or $j = 4 Or $j = 10 Or $j = 15 Or ($j > 6 And $j < 11)Then ContinueLoop
+				ConsoleWrite($DataArr[$j][0] & ": " & $DataArr[$j][$p] & @CRLF)
+			Next
+		ElseIf $DataArr[2][$p] = "00" Then
+			For $j = 1 To 20
+				If $j = 1 Or $j = 4 Or $j = 10 Or $j = 15 Or ($j > 10 And $j < 20)Then ContinueLoop
+				ConsoleWrite($DataArr[$j][0] & ": " & $DataArr[$j][$p] & @CRLF)
+			Next
+		EndIf
 		If $cmdline[2] = "-a" Then
 			ConsoleWrite(@CRLF)
 			ConsoleWrite("Dump of $DATA (" & $p & ")" & @crlf)
