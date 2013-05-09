@@ -2,16 +2,20 @@
 
 = Description =
 This tool will extract files from an NTFS volume. It supports resident, non-resident, compressed, sparse, normal, alternate data streams (ADS). It has several different methods/modes to choose from.  In short the choices are:
- * Mounted volume, image file or directly at \\.\PhysicalDriveN.
+ * Mounted volume, image file, direct access to \\.\PhysicalDriveN, detect and access shadow copies
  * Active files, deleted files, or all files.
  * Choose individual files based on their index number.
 
-At program start all mounted NTFS volumes are populated in the second combobox at the top. You can also rescan for volumes by pressing the button 'Rescan Mounted Drives'. All attached disk will also be visible in the first combo by their PhysicalDrive number.
+At program start all mounted NTFS volumes are populated in the second combobox at the top. You can also rescan for volumes by pressing the button 'Rescan Mounted Drives'. 
+
+To scan \\.\PhysicalDrive for attached disks press the button "Scan Physical". The detected drives will be visible in the first combo at the top. Select a drive and press the button "Test it". The detected NTFS volumes on the drive will be displayed in the second combo. Select what files to extract and press "Start Extraction" to start extracting the files.
+
+To scan for shadow copies press the button "Scan Shadows". The detected shadow copies will be visible in the first combo at the top. Select a shadow copy and press the button "Test it" to get detected NTFS volumes. The result is displayed in the second combo. Select what files to extract and press "Start Extraction" to start extracting the files.
 
 By default the output directory is set to the directory the program is executed from. In order to set it differently, press the button 'Choose Output'.
 
 Selecting the target volume is done by choosing the right one in the combobox. When using image file, the detected volumes in the image are populated into the combobox, where you can choose the right one.
-The support for image files are for disk and partition iamges. For disk images both MBR and GPT style are supported.  
+The support for image files are for disk and partition images. For disk images both MBR and GPT style are supported.  
 
 When choosing which files to extract from target volume, choose right selection on the left side from:
  * All (both active and deleted)
@@ -40,9 +44,11 @@ The tools have been tested on almost all recent Windows version, from 32-bit XP 
 
 = Latest Version =
 
-v4.0.0.1
+v4.0.0.2
 
 = Changelog =
+v4.0.0.2 Added support for extracting from shadow copies.
+
 v4.0.0.1 Fixed the flag filter to also include 0x04/0x05 (deactivated/active $UsnJrnl). Added support for accessing \\.\PhysicalDriveN, and thus completely removing the requirement of having a mounted volume to extract from.
 
 v4.0.0.0 Merged together the data recovery tool. Added full native support for reparse points. Option to choose between Active files, deleted files, and All files. Option to choose individual files. Support for image files. Added nice progress bars.
