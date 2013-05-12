@@ -124,6 +124,12 @@ What we have achieved with this is to recover fragmented files which have their 
   * Implement logging of the attributes $REPARSE_POINT, $EA_INFORMATION, $EA AND $LOGGED_UTILITY_STREAM, which is already decoded but not yet logged.
   * Find a way to handle partial field information, for instance with UpdateResidentValue in certain cases. And also partial index records (very hard without knowledge of the original INDX).
 
+= Latest version =
+v1.0.0.5
+
+= Changelog =
+v1.0.0.5. Added missing reparse types. Added filtering on attribute type for index decoding ($FILE_NAME -> $I30). Removed program exit when import of indx csv failed. Fixed serious bug when loading the sqlite3 dll. The dll is now included. Added more error checking with the sqlite3 stuff.
+
 = References =
   # Windows Internals 6th Edition
   # http://www.opensource.apple.com/source/ntfs/ntfs-80/kext/ntfs_logfile.h
