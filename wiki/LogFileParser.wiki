@@ -111,6 +111,9 @@ http://i1100.photobucket.com/albums/g407/joakimschicht/ExtractFromDataRuns_zps5d
 
 What we have achieved with this is to recover fragmented files which have their MFT record overwritten. Since we have reconstructed partial/complete datarun history, we can with certainty (at least if full history is reconstructed) determine whether file slack data have belonged to the given file or not.
 
+= $LogFile in Volume Shadow Copies =
+You can use the NTFS file extractor; http://code.google.com/p/mft2csv/wiki/NTFS_File_Extracter which supports extraction directly from Volume Shadow Copies. Go with the "User Select" option which will present you with an input box, after pressing "Start Extraction". Then you can type in a comma separated list of MFT reference numbers you want to extract. This can be handy, to get previous versions of $MFT and $LogFile.
+
 = Limitation =
   # Partial updates to IndexRecords (IndexRoot/IndexAllocation) are very hard to interpret, as we likely do not have knowledge of the original index. Complete records are OK though.
   # Circularity of a 65 MB file poses inherent and absolute restriction on how many historical FS transtions. Systemdrives thus have limited history in $LogFile, whereas external/secondary drives have more histrocal transtions stored. Can increase size of $LogFile with chkdsk (chkdsk c: /L:262144).
