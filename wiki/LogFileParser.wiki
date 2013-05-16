@@ -107,9 +107,16 @@ To simplify recovery of a file based on a datarun, one can use the attached PoC 
 
 The separate download package "SampleTinyNtfsVolume.zip" have a partition image with a small NTFS volume to test it on. On the volume there are 2 deleted non-resident files which both have their MFT record overwritten by new files. Any decent recovery software based on data carving (signature or magic number searching) should be able to recover the jpg file (Tulips.jpg), because it is contigous. However, they most likely will not identify its filename, or anything other about the file. The second file will likely not be recoverable using standard tools, because it is fragmented (compressed), and by having its MFT record overwritten, resoving the file without the datarun list is impossible. Using the PoC we can identify the filename (suspicious.zip) and extract it into perfect shape (don't worry it only contains the 7-zip installer). Read the file readme.DataRunsResolved.txt for the details about the sample image and how to interpret output and recover the files.
 
+This is what a sample report for reconstructed dataruns may look like;
+
+http://i1100.photobucket.com/albums/g407/joakimschicht/SampleReportDataRuns_zps00c072e4.png
+
+The utility to extract from dataruns;
+
 http://i1100.photobucket.com/albums/g407/joakimschicht/ExtractFromDataruns1002_zpse1c723b8.png
 
 What we have achieved with this is to recover fragmented files which have their MFT record overwritten. Since we have reconstructed partial/complete datarun history, we can with certainty (at least if full history is reconstructed) determine whether file slack data have belonged to the given file or not.
+
 
 = $LogFile in Volume Shadow Copies =
 You can use the NTFS file extractor; http://code.google.com/p/mft2csv/wiki/NTFS_File_Extracter which supports extraction directly from Volume Shadow Copies. Click "Scan Shadows" to get a listing, then select one and click "Test it" to check if volume appears valid. Go with the "User Select" option which will present you with an input box, after pressing "Start Extraction". Then you can type in a comma separated list of MFT reference numbers you want to extract. This can be handy, to get previous versions of $MFT and $LogFile.
