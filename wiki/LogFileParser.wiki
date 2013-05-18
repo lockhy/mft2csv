@@ -127,6 +127,7 @@ http://i1100.photobucket.com/albums/g407/joakimschicht/NTFSFileExtractor402_zpse
   # Partial updates to IndexRecords (IndexRoot/IndexAllocation) are very hard to interpret, as we likely do not have knowledge of the original index. Complete records are OK though.
   # Circularity of a 65 MB file poses inherent and absolute restriction on how many historical FS transtions. Systemdrives thus have limited history in $LogFile, whereas external/secondary drives have more histrocal transtions stored. Can increase size of $LogFile with chkdsk (chkdsk c: /L:262144).
   # Changes to the data of resident files are not stored within $LogFile, only information that a change was done is stored.
+  # If the volume originates from a nix based system, chances are that the $LogFile will contain very little information, which makes parsing much less helpful.
 
 = Note =
   * The $UsnJrnl contains information in a more human friendly way. For instance each record contains fileref, filename, timestamp and explanation of what occurred. It also contains far more historical information than $LogFile, though without a lot of details.
