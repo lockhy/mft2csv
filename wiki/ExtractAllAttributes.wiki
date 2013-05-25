@@ -27,7 +27,7 @@ MFTRef + attribute type + stream name + attribute type counter + bin extension
 
 *Example 1:*
 
-"1_$DATA__1.bin"
+"1__$DATA___1.bin"
 
 Explanation:
   * MFT reference number = 1
