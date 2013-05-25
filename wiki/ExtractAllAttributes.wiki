@@ -22,7 +22,7 @@ Features:
   * Supports compression and fragmentation.
   * Handles attribute lists.
 
-The tool can thus in theory extract an unlimited amount of attributes of any kind for a given file.
+*The tool can thus in theory extract an unlimited amount of attributes of any kind for a given file.*
 
 Default output directory is current directory.
 
