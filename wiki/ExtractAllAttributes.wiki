@@ -26,7 +26,8 @@ The format of the output files are:
 MFTRef + attribute type + stream name + attribute type counter + bin extension
 
 *Example 1:*
- 1_$DATA__1.bin
+
+'1_$DATA__1.bin'
 
 Explanation:
   * MFT reference number = 1
@@ -35,7 +36,8 @@ Explanation:
   * Attribute counter = 1 (meaning it is the first $DATA attribute for that particular file.
 
 *Example 2:*
- 9_$INDEX_ALLOCATION_$SII_2.bin
+
+'9_$INDEX_ALLOCATION_$SII_2.bin'
 
 Explanation:
   * MFT reference number = 9
