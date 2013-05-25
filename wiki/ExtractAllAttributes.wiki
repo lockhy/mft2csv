@@ -4,6 +4,8 @@
 
 This another specialized tool for NTFS. It extracts all attributes for a given MFT reference. Normally when extracting files off an NTFS volume, you are extracting the $DATA attribute. With this tool you can extract all attributes in one go.
 
+http://i1100.photobucket.com/albums/g407/joakimschicht/ExtractAllAttributes_zpsd148c66b.png
+
 
 = Details =
 
@@ -25,9 +27,13 @@ Default output directory is current directory.
 The format of the output files are:
 MFTRef + attribute type + stream name + attribute type counter + bin extension
 
+This is how output looked like after extracting the atributes for MFT ref 9 ($Secure):
+
+http://i1100.photobucket.com/albums/g407/joakimschicht/AllAttributesOutput_zps6c8cea54.png
+
 *Example 1:*
 
-"1__$DATA___1.bin"
+"1_$DATA__1.bin"
 
 Explanation:
   * MFT reference number = 1
