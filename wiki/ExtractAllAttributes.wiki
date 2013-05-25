@@ -11,7 +11,7 @@ http://i1100.photobucket.com/albums/g407/joakimschicht/ExtractAllAttributes_zpsd
 
 Just like with the $DATA attribute, there is an attribute header, and the core attribute content (think of it as the data), can be resident or non-resident. The attribute can be named too (not the same as the attribute type). Ie, the $FILE_NAME is an attribute type that contains the name of a file as displayed on the filesystem. However, the attribute itself, is un-named. Take Alternate Data Streams as an example. They are named $DATA attributes. Another example is INDX records, which can be of different types. Maybe the most familiar one is the $I30. Here, $I30 is the name of the stream and the attribute type is $INDEX_ALLOCATION. As an exercise you can extract MFT reference 5 and 9, and see what gets extracted.
 
-Supported modes:
+Features:
   * Partition and disk images.
   * Disk images can be of either MBR or GPT style.
   * Direct access into Volume Shadow Copies.
@@ -19,8 +19,10 @@ Supported modes:
   * Mounted volumes.
   * Browse to target file on mounted volumes.
   * Specify MFT reference number in all other modes than "Browse".
+  * Supports compression and fragmentation.
+  * Handles attribute lists.
 
-Supports compression and fragmentation too.
+The tool can thus in theory extract an unlimited amount of attributes of any kind for a given file.
 
 Default output directory is current directory.
 
@@ -51,6 +53,9 @@ Explanation:
   * Attribute type = $INDEX_ALLOCATION
   * Stream name = $SII
   * Attribute counter = 2 (the second $INDEX_ALLOCATION attribute)
+
+= ToDo =
+Option to extract only particular attributes.
 
 = Current Version =
 v1.0.0.0
