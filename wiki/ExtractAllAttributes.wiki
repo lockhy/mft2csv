@@ -25,7 +25,8 @@ Supports compression and fragmentation too.
 Default output directory is current directory.
 
 The format of the output files are:
-MFTRef + attribute type + stream name + attribute type counter + bin extension
+
+*MFTRef + "_" + attribute type + "_" + stream name + "_" + attribute type counter + bin extension*
 
 This is how output looked like after extracting the atributes for MFT ref 9 ($Secure):
 
