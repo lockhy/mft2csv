@@ -26,7 +26,7 @@ Default output directory is current directory.
 
 The format of the output files are:
 
-MFTRef + "_" + attribute type + "_" + stream name + "_" + attribute type counter + bin extension
+MFTRef + underscore + attribute type + underscore + stream name + underscore + attribute type counter + bin extension
 
 This is how output looked like after extracting the atributes for MFT ref 9 ($Secure):
 
