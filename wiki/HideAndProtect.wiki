@@ -13,13 +13,13 @@ What we do is we take a copy of the original MFT record and write it to the loca
 = Usage =
 
 Example using path to source file and target IndexNumber 12:
-*HideAndProtect C:\bootmgr 12*
+  * HideAndProtect C:\bootmgr 12*
 
 Example using IndexNumber of source file (33) on volume C: and target IndexNumber 13:
-*HideAndProtect C:33 13*
+  * HideAndProtect C:33 13*
 
 Example to wipe the record of MFT reference number 14 on volume C:
-*HideAndProtect C:W 14*
+  * HideAndProtect C:W 14
 
 
 = Practical Use =
