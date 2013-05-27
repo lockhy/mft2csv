@@ -49,6 +49,7 @@ v1.0.0.1
 
 = Changelog =
 v1.0.0.1. Added option to wipe/delete previous hack. Added help/usage printed to console. More understandable and direct information for how to and when to use chkdsk after modification.
+
 v1.0.0.0. First version.
 
 = Credits =
