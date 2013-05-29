@@ -11,7 +11,7 @@ The application has 2 mandatory parameters, target file and output path:
   * param1 is full path to the target file to extract. Also supports IndexNumber instead of file path.
   * param2 is a valid path to output directory.
 
-In addition there is an option to also extract metafiles by supplying the -MetaFiles switch as third parameter.
+In addition there is an option to also extract all attributes, not just $DATA, by supplying the -AllAttr switch as third parameter.
 
 This tool will let you copy files that usually is not accessible because the system has locked them. For instance the registry hives like SYSTEM and SAM. Or files inside the "SYSTEM VOLUME INFORMATION". Or any file on the volume. 
 
@@ -32,15 +32,17 @@ So how do you get the index number of a given file. That can be retrived by usin
 === Example for extracting the $MFT by specifying its index number ===
 "RawCopy.exe C:0 E:\output"
 
-=== Example for extracting MFT reference number 30224 and all its metafiles and dumping it into C:\tmp: ===
-"RawCopy.exe C:30224 C:\tmp -MetaFiles"
+=== Example for extracting MFT reference number 30224 and all attributes including $DATA, and dumping it into C:\tmp: ===
+"RawCopy.exe C:30224 C:\tmp -AllAttr"
 
 
 = Latest version =
 
-v.1.0.0.4
+v.1.0.0.5
 
 = Changelog =
+
+v1.0.0.5: Changed third optional parameter as it was incorrectly named and described.
 
 v1.0.0.4: Large part of the code base has been updated. Now there is also an option to extract all metafiles too.
 
