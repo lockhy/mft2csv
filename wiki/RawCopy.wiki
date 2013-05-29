@@ -38,9 +38,11 @@ So how do you get the index number of a given file. That can be retrived by usin
 
 = Latest version =
 
-v.1.0.0.5
+v.1.0.0.6
 
 = Changelog =
+
+v1.0.0.6: Fixed bug that produced files with just 00's when specifying source file by its IndexNumber.
 
 v1.0.0.5: Changed third optional parameter as it was incorrectly named and described.
 
