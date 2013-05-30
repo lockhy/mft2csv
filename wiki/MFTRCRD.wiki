@@ -71,9 +71,11 @@ Running the tool without any parameter will display help information.
 
 
 = Latest version =
-v1.0.0.25
+v1.0.0.26
 
 = Changelog =
+
+v1.0.0.26: Fixed a bug that caused incorrect decode of file flag for entries inside INDX records. Added the allocated flag to header decode.
 
 v1.0.0.25: Reorganized output of the $DATA attribute. Added dataruns as separate output variable. Removed limitation on how many $DATA attributes to decode (now virtually unlimited to support heavy attribute lists).
 
