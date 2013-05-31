@@ -71,9 +71,11 @@ Running the tool without any parameter will display help information.
 
 
 = Latest version =
-v1.0.0.26
+v1.0.0.27
 
 = Changelog =
+
+v1.0.0.27: Fixed small "cosmetic bug" with INDX records where zero'ed timestamps showed a strange ":0000". Now it simply displays "-".
 
 v1.0.0.26: Fixed a bug that caused incorrect decode of file flag for entries inside INDX records. Added the allocated flag to header decode.
 
