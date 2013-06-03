@@ -19,7 +19,7 @@ MftRef2Name Target
   * MftRef2Name C:3366
 
 = Limitation =
-Actually it can resolve any reference number present in $MFT. However if the target has been marked as deleted, resolving the path is aborted.
+If the target has been marked as deleted, resolving the path is aborted, as it may turn incorrect.
 
 = Current version =
 v1.0.0.0
