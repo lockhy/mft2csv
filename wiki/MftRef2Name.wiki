@@ -10,7 +10,7 @@ A simpel tool that just converts MFT reference number to file name and path, or 
 MftRef2Name Target
 
 *Example resolving the USN journal file C:\$Extend\$UsnJrnl*
-  * MftRef2Name C:\WINDOWS\explorer.exe
+  * MftRef2Name C:\$Extend\$UsnJrnl
 
 *Example resolving the directory C:\WINDOWS*
   * MftRef2Name C:\WINDOWS
