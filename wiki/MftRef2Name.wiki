@@ -7,16 +7,16 @@ A simpel tool that just converts MFT reference number to file name and path, or 
 
 = Syntax =
 
-MftRef2Name Target
+MftRef2Name.exe Target
 
 *Example resolving the USN journal file C:\$Extend\$UsnJrnl*
-  * MftRef2Name C:\$Extend\$UsnJrnl
+  * MftRef2Name.exe C:\$Extend\$UsnJrnl
 
 *Example resolving the directory C:\WINDOWS*
-  * MftRef2Name C:\WINDOWS
+  * MftRef2Name.exe C:\WINDOWS
 
 *Example resolving MFT reference number 3366 on the C: volume*
-  * MftRef2Name C:3366
+  * MftRef2Name.exe C:3366
 
 = Limitation =
 If the target has been marked as deleted, resolving the path is aborted, as it may turn incorrect.
