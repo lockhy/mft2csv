@@ -35,28 +35,36 @@ The FILE_FULL_EA_INFORMATION structure holds the relevant data.
 = Usage examples EaInject =
 
 *Hiding a small file (10 kB) inside an existing file, and naming the EA "TEST":*
+
 EaInject.exe /Payload:C:\program.exe /Container:C:\tmp\file.txt /Mode:0 /Identifier:TEST
 
 *Hiding a bigger file above 65 kB and spreading the output across existing files inside the directory "C:\temp", naming the EA "something" and searching in non-recursive mode:*
+
 EaInject.exe /Payload:C:\bigfile.bin /Container:C:\temp /Mode:1 /Identifier:something /Filter:* /Recurse:0
 
 *Hiding a bigger file above 65 kB and spreading the out across existing txt files in the directory "C:\temp", naming the EA "testname", and searching in recursive mode:*
+
 EaInject.exe /Payload:C:\bigfile.bin /Container:C:\temp /Mode:1 /Identifier:testname /Filter:*.txt /Recurse:1
 
 *Hiding a bigger file above 65 kB and spreading the output into newly created files with random md5 names in the output directory C:\tmp, giving the EA name of "joke"*
+
 EaInject.exe /Payload:C:\bigfile.bin /Container:C:\tmp /Mode:2 /Identifier:joke
 
 
 = Usage examples EaQuery =
 
 *Scanning the current directory for $EA of any name in non-recursive mode in files by any extension, and verbose output on:*
+
 EaQuery.exe /Target:"%CD%" /Mode:0 /Verbose:1 /Identifier:* /Filter:* /Recurse:0
 
 *Scanning the directory "C:\Program Files" recursively for files by extension .exe and .dll, searching any EA name and displaying result to console in super verbose mode:*
+
 EaQuery.exe /Target:"C:\Program Files" /Mode:0 /Verbose:2 /Identifier:* /Filter:*.exe;*.dll /Recurse:1
 
 *Scanning the directory C:\WINDOWS\System32 recursively any file extension, extracting EA's detected to current directory, show no verbose output, and filter EA by name "something":*
+
 EaQuery.exe /Target:C:\WINDOWS\System32 /Mode:1 /Verbose:0 /Identifier:something /Filter:* /Recurse:1
 
 *Scan 1 file, C:\testfile.txt, extract any found EA and display super verbose output, including the EA data content in console:*
+
 EaQuery.exe /Target:C:\testfile.txt /Mode:2 /Verbose:2 /Identifier:* /Filter:* /Recurse:0
