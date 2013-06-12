@@ -26,8 +26,8 @@ Some malware, like ZeroAccess, has got some attention lately due to data hiding 
   * FILE_EA_INFORMATION structure: http://msdn.microsoft.com/en-us/library/windows/hardware/ff545773(v=vs.85).aspx
 
 As source code reveils, there are 2 ways of writing $EA:
-  * NtCreateFile and simpel as that.
-  * NtOpenFile and subsequent NtSetEaFile.
+  # NtCreateFile and simpel as that.
+  # NtOpenFile and subsequent NtSetEaFile.
 
 The FILE_FULL_EA_INFORMATION structure holds the relevant data.
 
@@ -36,19 +36,19 @@ The FILE_FULL_EA_INFORMATION structure holds the relevant data.
 
 *Hiding a small file (10 kB) inside an existing file, and naming the EA "TEST":*
 
-EaInject.exe /Payload:C:\program.exe /Container:C:\tmp\file.txt /Mode:0 /Identifier:TEST
+  * EaInject.exe /Payload:C:\program.exe /Container:C:\tmp\file.txt /Mode:0 /Identifier:TEST
 
 *Hiding a bigger file above 65 kB and spreading the output across existing files inside the directory "C:\temp", naming the EA "something" and searching in non-recursive mode:*
 
-EaInject.exe /Payload:C:\bigfile.bin /Container:C:\temp /Mode:1 /Identifier:something /Filter:* /Recurse:0
+  * EaInject.exe /Payload:C:\bigfile.bin /Container:C:\temp /Mode:1 /Identifier:something /Filter:''*'' /Recurse:0
 
 *Hiding a bigger file above 65 kB and spreading the out across existing txt files in the directory "C:\temp", naming the EA "testname", and searching in recursive mode:*
 
-EaInject.exe /Payload:C:\bigfile.bin /Container:C:\temp /Mode:1 /Identifier:testname /Filter:*.txt /Recurse:1
+  * EaInject.exe /Payload:C:\bigfile.bin /Container:C:\temp /Mode:1 /Identifier:testname /Filter:'*'.txt /Recurse:1
 
 *Hiding a bigger file above 65 kB and spreading the output into newly created files with random md5 names in the output directory C:\tmp, giving the EA name of "joke"*
 
-EaInject.exe /Payload:C:\bigfile.bin /Container:C:\tmp /Mode:2 /Identifier:joke
+  * EaInject.exe /Payload:C:\bigfile.bin /Container:C:\tmp /Mode:2 /Identifier:joke
 
 
 = Usage examples EaQuery =
