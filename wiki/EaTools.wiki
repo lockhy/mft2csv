@@ -55,16 +55,16 @@ The FILE_FULL_EA_INFORMATION structure holds the relevant data.
 
 *Scanning the current directory for $EA of any name in non-recursive mode in files by any extension, and verbose output on:*
 
-EaQuery.exe /Target:"%CD%" /Mode:0 /Verbose:1 /Identifier:* /Filter:* /Recurse:0
+`EaQuery.exe /Target:"%CD%" /Mode:0 /Verbose:1 /Identifier:* /Filter:* /Recurse:0`
 
 *Scanning the directory "C:\Program Files" recursively for files by extension .exe and .dll, searching any EA name and displaying result to console in super verbose mode:*
 
-EaQuery.exe /Target:"C:\Program Files" /Mode:0 /Verbose:2 /Identifier:* /Filter:*.exe;*.dll /Recurse:1
+`EaQuery.exe /Target:"C:\Program Files" /Mode:0 /Verbose:2 /Identifier:* /Filter:*.exe;*.dll /Recurse:1`
 
 *Scanning the directory C:\WINDOWS\System32 recursively any file extension, extracting EA's detected to current directory, show no verbose output, and filter EA by name "something":*
 
-EaQuery.exe /Target:C:\WINDOWS\System32 /Mode:1 /Verbose:0 /Identifier:something /Filter:* /Recurse:1
+`EaQuery.exe /Target:C:\WINDOWS\System32 /Mode:1 /Verbose:0 /Identifier:something /Filter:* /Recurse:1`
 
 *Scan 1 file, C:\testfile.txt, extract any found EA and display super verbose output, including the EA data content in console:*
 
-EaQuery.exe /Target:C:\testfile.txt /Mode:2 /Verbose:2 /Identifier:* /Filter:* /Recurse:0
+`EaQuery.exe /Target:C:\testfile.txt /Mode:2 /Verbose:2 /Identifier:* /Filter:* /Recurse:0`
