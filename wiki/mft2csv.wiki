@@ -181,9 +181,11 @@ See the readme included in the download package.
 
 = Latest Version =
 
-v2.0.0.8
+v2.0.0.10
 
 = Changelog =
+
+v2.0.0.10. Fixed bug when resolving certain filepaths from an extracted MFT file, when MFT had been fragmented. Changed default separator to | (pipe), which is invalid for filenames. Removed quotes on as default. Removed annoying UTC comment information at the top of csv.
 
 v2.0.0.8. Fixed a bug that caused file paths to be resolved incorrectly with certain fragmented MFT's. Slightly changed how the header flags are interpreted. Added support for accessing \\PhysicalDriveN directly, and thus removed any requirement for having volumes mounted.
 
