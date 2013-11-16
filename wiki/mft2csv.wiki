@@ -169,7 +169,7 @@ These streams can be identified in the second $DATA attribute. That is under tho
 
 = Timestamps =
 
-The timestamps are now at the precision of nanoseconds. Prior to processing, there is also an option to set how timestamps will be presented in the csv. That is in which UTC region the target system had. The configured setting is visible in the csv header, as well as in the logfile. The current format of the timestamp is April 19, 2009 03:45:57:140:2244. I recently created a new format like YYYY-MM-DD HH:MM:SS:MSMSMS:NSNSNSNS, which is more filter friendly in Excel. Options for more formats is also on the todo list, and I'm open for suggestions. The timestamps generated are corrected for any time bias on the investigating machine, which means the timezone configuration on the machine where mft2csv is run, should not affect output. There's also an option to directly adjust timestamps for any known timezone bias for images or $MFT taken from a different system. That means with a disk image from a system confgured at UTC -9.30 for instance, can be directly adjusted, so that timestamps are displayed in UTC 0.00.
+The timestamps are now at the precision of nanoseconds. Prior to processing, there is also an option to set how timestamps will be presented in the csv. That is in which UTC region the target system had. The configured setting is visible in the csv header, as well as in the logfile. There are several options for format of the timestamps as well as the precision. The GUI will display the different examples. The timestamps generated are corrected for any time bias on the investigating machine, which means the timezone configuration on the machine where mft2csv is run, should not affect output. There's also an option to directly adjust timestamps for any known timezone bias for images or $MFT taken from a different system. That means with a disk image from a system confgured at UTC -9.30 for instance, can be directly adjusted, so that timestamps are displayed in UTC 0.00.
 
 = Note =
 
@@ -181,9 +181,11 @@ See the readme included in the download package.
 
 = Latest Version =
 
-v2.0.0.10
+v2.0.0.11
 
 = Changelog =
+
+v2.0.0.11. Fixed bug when handling old NT Style records. Added separate variable to indicate the old NT Style recordss, and put a predicted MFT ref into the original MFT record number variable. Added options to specify timestamp formats and level of precision. Was added for easier working/sorting of data in spreadsheets. Added sample output in gui to show what the timestamp format would look like. All timestamp variables are now split into 3. 1 original, and then 1 core containing the timestamp without precision, and 1 timestamp precision variable conatining only the precision depending on the configuration chosen (None, MilliSec, or MilliSec+NanoSec). Added an option to dump these new split timestamp variables to a separate csv, by ticking off the "split csv" option. Removed option to set csv, and replaced with a standard one in current directory identified with a timestamp in the csv file name.
 
 v2.0.0.10. Fixed bug when resolving certain filepaths from an extracted MFT file, when MFT had been fragmented. Changed default separator to | (pipe), which is invalid for filenames. Removed quotes on as default. Removed annoying UTC comment information at the top of csv.
 
