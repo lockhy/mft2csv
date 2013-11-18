@@ -140,6 +140,9 @@ http://i1100.photobucket.com/albums/g407/joakimschicht/NTFSFileExtractor402_zpse
 = ToDo =
   * Implement more analysis of data present in the generated database file ntfs.db.
 
+= Known issues =
+  * The 64-bit version seems to sometimes have issues with sqlite3, so better stick to 32-bit which is stable.
+
 = Latest version =
 v1.0.0.11
 
