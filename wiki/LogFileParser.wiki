@@ -141,6 +141,7 @@ http://i1100.photobucket.com/albums/g407/joakimschicht/NTFSFileExtractor402_zpse
   * Implement more analysis of data present in the generated database file ntfs.db.
 
 = Known issues =
+  * Reconstruction of dataruns is broken in latest version (1.0.0.11).
   * The 64-bit version seems to sometimes have issues with sqlite3, so better stick to 32-bit which is stable.
 
 = Latest version =
