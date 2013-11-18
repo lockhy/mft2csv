@@ -6,10 +6,14 @@
   * Decode many attribute changes.
   * Recreate a dummy $MFT
   * Decode all index related transaction (from IndexRoot/IndexAllocation).
-  * Resolve all datarun list information available in $LogFile.
+  * Optionally resolve all datarun list information available in $LogFile.
   * Configurable verbose mode (does not affect logging).
   * Optionally decode $UsnJrnl.
   * Logs to csv and imports to sqlite database with several tables (read included readme for details on each csv / table).
+  * Optionally import csv output of mft2csv into db.
+  * Choose timestamp format and precision.
+  * Choose region adjustment for timestamps. Default is UTC 0.0.
+  * Choose separator.
 
 
 = Background =
@@ -40,6 +44,7 @@ The currently handled Redo transaction types are:
   * DeleteIndexEntryAllocation
   * SetNewAttributeSizes
   * UpdateMappingPairs
+  * OpenNonresidentAttribute
 
 The list of currently supported attributes:
   * $STANDARD_INFORMATION
@@ -62,7 +67,7 @@ Explanation of the different output generated:
   * LogFile_DataRuns.csv (The input information needed for reconstructing dataruns)
   * LogFile_DataRunsResolved.csv (The final output of reconstructed dataruns)
   * LogFile_INDX.csv (All dumped and decoded index records (IndexRoot(IndexAllocation))
-  * LogFileJoined.csv (Same as LogFile.csv, but have filename information joined in from the $UsnJrnl)
+  * LogFileJoined.csv (Same as LogFile.csv, but have filename information joined in from the $UsnJrnl) or csv of mft2csv.
   * UsnJrnl.csv (The output of the $UsnJrnl parser module. File will not be created if not the USN journal is to be analyzed)
   * MFTRecords.bin (Dummy $MFT recreated based on found MFT records in InitializeFileRecordSegment transactions. Can use mft2csv on this one (remember to configure "broken MFT" and "Fixups" properly))
 
@@ -74,7 +79,7 @@ Ntfs.db (An sqlite database file with tables almost equivalent to the above csv'
   * UsnJrnl
 
 = Timestamps =
-Are presented in UTC 0.00, and with nanosecond precision. The format is currently YYYY-MM-DD HH:MM:SS:MSMSMS:NSNSNSNS. The different timestamps refer to:
+Defaults are presented in UTC 0.00, and with nanosecond precision. The default format is YYYY-MM-DD HH:MM:SS:MSMSMS:NSNSNSNS. These can be configured. The different timestamps refer to:
   * CTime means File Create Time. 
   * ATime means File Modified Time. 
   * MTime means MFT Entry modified Time. 
@@ -131,16 +136,16 @@ http://i1100.photobucket.com/albums/g407/joakimschicht/NTFSFileExtractor402_zpse
 
 = Note =
   * The $UsnJrnl contains information in a more human friendly way. For instance each record contains fileref, filename, timestamp and explanation of what occurred. It also contains far more historical information than $LogFile, though without a lot of details.
-  * Because of restrictions in how sqlite imports data (all commas are interpreted as separators), I have replaced all commas in any name columns (file name, data name, names in indexes, etc) with "pipe" (|). Related to that is a column called FileNameChanged that will tell how many commas has been replaced in the name.
 
 = ToDo =
-  * Implement logging of the attributes $REPARSE_POINT, $EA_INFORMATION, $EA AND $LOGGED_UTILITY_STREAM, which is already decoded but not yet logged.
-  * Find a way to handle partial field information, for instance with UpdateResidentValue in certain cases. And also partial index records (very hard without knowledge of the original INDX).
+  * Implement more analysis of data present in the generated database file ntfs.db.
 
 = Latest version =
-v1.0.0.5
+v1.0.0.11
 
 = Changelog =
+v1.0.0.11. Implemented GUI with configurable options, progressbar etc. Fixed a lot of issues when resolving MFT references. Fixed bug that incorrectly updated CurrentAttribute when redo operation was UpdateResidentValue. Added decoding of OpenNonresidentAttribute. Added 3 columns in output: TextInformation, RedoChunkSize and UndoChunkSize. Added more updating of CurrentAttribute. Using undo operations to aid in interpreting data. Changed default separator to "|" to minimize chances for hitting filenames that needed to be changed. Added importing to db of the resolved dataruns csv. Added option to import csv of decoded MFT (mft2csv), and joining file paths. Added option to choose timestamp format and precision, with example displayed in gui. Option to split extra timestamps into separate csv (will slow down processing!).
+
 v1.0.0.5. Added missing reparse types. Added filtering on attribute type for index decoding ($FILE_NAME -> $I30). Removed program exit when import of indx csv failed. Fixed serious bug when loading the sqlite3 dll. The dll is now included. Added more error checking with the sqlite3 stuff.
 
 = References =
