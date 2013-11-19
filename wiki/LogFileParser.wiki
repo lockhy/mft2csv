@@ -141,13 +141,13 @@ http://i1100.photobucket.com/albums/g407/joakimschicht/NTFSFileExtractor402_zpse
   * Implement more analysis of data present in the generated database file ntfs.db.
 
 = Known issues =
-  * Reconstruction of dataruns is broken in latest version (1.0.0.11).
   * The 64-bit version seems to sometimes have issues with sqlite3, so better stick to 32-bit which is stable.
 
 = Latest version =
-v1.0.0.11
+v1.0.0.12
 
 = Changelog =
+v1.0.0.12. Fixed a new bug in the reconstruction of dataruns that was introduced in previous version.
 v1.0.0.11. Implemented GUI with configurable options, progressbar etc. Fixed a lot of issues when resolving MFT references. Fixed bug that incorrectly updated CurrentAttribute when redo operation was UpdateResidentValue. Added decoding of OpenNonresidentAttribute. Added 3 columns in output: TextInformation, RedoChunkSize and UndoChunkSize. Added more updating of CurrentAttribute. Using undo operations to aid in interpreting data. Changed default separator to "|" to minimize chances for hitting filenames that needed to be changed. Added importing to db of the resolved dataruns csv. Added option to import csv of decoded MFT (mft2csv), and joining file paths. Added option to choose timestamp format and precision, with example displayed in gui. Option to split extra timestamps into separate csv (will slow down processing!).
 
 v1.0.0.5. Added missing reparse types. Added filtering on attribute type for index decoding ($FILE_NAME -> $I30). Removed program exit when import of indx csv failed. Fixed serious bug when loading the sqlite3 dll. The dll is now included. Added more error checking with the sqlite3 stuff.
