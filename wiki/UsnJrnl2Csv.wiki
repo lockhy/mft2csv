@@ -20,7 +20,7 @@ The tool in the current form, writes all the variables in the structure with the
 
 I have found these to be of insignificant value, however if there is a special need for it to be included, let me know and I may consider activating it.
 
-Timestamps are written UTC 0.00.
+Timestamps are written UTC 0.00 by default, but can be configured to anything. The format and precision of the timestamps can also cofigured. See displayed examples in the gui.
 
 = Requirements =
 The journal must have been extracted beforehand by another tool. If you know the MFT reference number of the file, you can use the NTFS File Extractor to get the file; http://code.google.com/p/mft2csv/wiki/NTFS_File_Extracter
@@ -29,7 +29,8 @@ The journal must have been extracted beforehand by another tool. If you know the
 Add support for output format in log2timeline and bodyformat.
 
 = Latest version =
-v1.0.0.0
+v1.0.0.1
 
 = Changelog =
+v1.0.0.1. Fixed a bug with the quotes around values. Added nicer GUI with progressbar. Added more options for outputted timestamps, like UTC region, timestamp format and precision. And configurable separator.
 v1.0.0.0. Initial version.
