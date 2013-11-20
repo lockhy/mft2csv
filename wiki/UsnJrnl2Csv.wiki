@@ -32,5 +32,5 @@ Add support for output format in log2timeline and bodyformat.
 v1.0.0.1
 
 = Changelog =
-v1.0.0.1. Fixed a bug with the quotes around values. Added nicer GUI with progressbar. Added more options for outputted timestamps, like UTC region, timestamp format and precision. And configurable separator.
-v1.0.0.0. Initial version.
+  * v1.0.0.1. Fixed a bug with the quotes around values. Added nicer GUI with progressbar. Added more options for outputted timestamps, like UTC region, timestamp format and precision. And configurable separator.
+  * v1.0.0.0. Initial version.
