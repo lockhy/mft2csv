@@ -54,7 +54,7 @@ When will version 1007 not work?
 
 *Parameter 4* determines if $STANDARD_INFORMATION or $FILE_NAME attribute or both should be modified.
   * "-si" will only update timestamps in $STANDARD_INFORMATION (4 timestamps), or just LastWriteTime, LastAccessTime and CreationTime (3 timestamps) for non-NTFS.
-  * "-fn" will only update timestamps in $FILE_NAME (4 timestamps for short names and 8 timestamps for long names), and only for NTFS.
+  * "-fn" will only update timestamps in $FILE_NAME (4 timestamps for short names and 8 timestamps for long names).
   * "-x" will update timestamps in both $FILE_NAME and $STANDARD_INFORMATION (8 or 12 timestamps depending on filename length).
 
 
