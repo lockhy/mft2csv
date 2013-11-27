@@ -181,9 +181,11 @@ See the readme included in the download package.
 
 = Latest Version =
 
-v2.0.0.11
+v2.0.0.12
 
 = Changelog =
+
+v2.0.0.12. Added support for parsing $MFT directly from within shadow copies. Fixed tiny bug that caused FilePath to have 1 erronous character prefixed for all values.
 
 v2.0.0.11. Fixed bug when handling old NT Style records. Added separate variable to indicate the old NT Style recordss, and put a predicted MFT ref into the original MFT record number variable. Added options to specify timestamp formats and level of precision. Was added for easier working/sorting of data in spreadsheets. Added sample output in gui to show what the timestamp format would look like. All timestamp variables are now split into 3. 1 original, and then 1 core containing the timestamp without precision, and 1 timestamp precision variable conatining only the precision depending on the configuration chosen (None, MilliSec, or MilliSec+NanoSec). Added an option to dump these new split timestamp variables to a separate csv, by ticking off the "split csv" option. Removed option to set csv, and replaced with a standard one in current directory identified with a timestamp in the csv file name.
 
