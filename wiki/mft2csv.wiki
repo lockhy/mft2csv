@@ -12,6 +12,7 @@ Input can be any of the following:
   * $MFT extracted file
   * Reading of $MFT directly from a live system
   * Reading of $MFT by accessing \\.\PhysicalDriveN directly (no mount point needed).
+  * Reading of $MFT directly from within shadow copies.
   * $MFT fragments extracted off memory dumps (see MFTCarver)
 
 There is an option to choose which UTC region to decode for. For instance you have a disk image and the target system had a timezone configuration of UTC -9.30, then you can configure it like that and get the timestamps directly into UTC 0.00. Default is UTC 0.00, and if running on a live system, there is no need to do anything as timestamps are automatically set to UTC 0.00. 
