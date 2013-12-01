@@ -81,3 +81,9 @@ setmace.exe C:\file.txt -d
 
 = ToDo =
 Open for suggestions.
+
+= Latest version =
+v1.0.0.8
+
+= Changelog=
+v.1.0.0.8. Fixed mixup up of mapping for LastAccessTime, LastWriteTime and ChangeTime(MFT). Fixed bug in logic for lock/dismount handling of external drives and nt5.x vs nt6.x. Fixed a bug that caused only last $FILE_NAME timestamps to be displayed/written, instead of for all $FILE_NAME attributes. 
