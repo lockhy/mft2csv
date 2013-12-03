@@ -86,7 +86,9 @@ setmace.exe D:\tmp -z "2000:01:01:00:00:00:789:1234" -si
 
 ===Dumping all timestamps for $MFT itself:===
 setmace.exe C:\$MFT -d
+
 or
+
 setmace.exe C:0 -d
 
 
@@ -98,4 +100,5 @@ v1.0.0.9
 
 = Changelog=
 v1.0.0.9. Added support for dumping timestamp information also from within shadow copies with the -d switch.
+
 v1.0.0.8. Fixed mixup up of mapping for LastAccessTime, LastWriteTime and ChangeTime(MFT). Fixed bug in logic for lock/dismount handling of external drives and nt5.x vs nt6.x. Fixed a bug that caused only last $FILE_NAME timestamps to be displayed/written, instead of for all $FILE_NAME attributes. 
