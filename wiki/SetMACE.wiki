@@ -27,6 +27,11 @@ Interestingly, and only after writing v1006 of SetMACE, I truly realized how imp
   * Both $FILE_NAME and $STANDARD_INFORMATION timestamps.
   * Supports both files and directories.
   * Clone timestamps from a second file (removed in v1007).
+  * Dump timestamps of files from within shadow copies.
+
+= Dumping information with the -d switch =
+From version 1.0.0.9 the -d switch will also dump timestamp information from the target volume, as well as from present any shadow copies of that volume. So if the volume that the target file resides on, also have shadow copies, the -d switch will also dump information for the same MFT reference for every relevant shadow copy. Matching shadow copies are identified by the volume name and serial number. The dumped information includes filename, parent ref, sequence number and hardlink number to help identify if the same file actually holds a particular MFT ref across shadow copies.
+
 
 You may find it handy to use MFTRCRD to dump the file record and see if your new timestamps are present.
 
