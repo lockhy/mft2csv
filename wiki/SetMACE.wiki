@@ -2,7 +2,7 @@
 
 = Introduction =
 
-The SetMACE tool is a timestomp re-invention, and more like a timestomp on steriods. It is basically a tool to manipulate file timestamps on NTFS volumes. Thought it would fit nicely into this project page. 
+The SetMACE tool is a timestomp re-invention, and more like a timestomp on steriods. It is basically a tool to manipulate/dump timestamps on NTFS volumes. 
 
 
 = Details =
@@ -32,7 +32,7 @@ You may find it handy to use MFTRCRD to dump the file record and see if your new
 
 = Limitations =
 
-When will version 1007 not work?
+When will version 1007 or later not work?
   * Tweaking files off the systemdrive in Vista - Windows 8 when the OS is running.
   * Tweaking files on a volume where a pagefile is located (if OS is Vista - Windows 8).
   * Tweaking files on the same volume as setmace is located on (if OS is Vista - Windows 8).
@@ -60,6 +60,18 @@ When will version 1007 not work?
 
 = Examples =
 
+===Setting the CreationTime in the $STANDARD_INFORMATION attribute:===
+setmace.exe C:\file.txt -c "2000:01:01:00:00:00:789:1234" -si
+
+===Setting the LastAccessTime in the $STANDARD_INFORMATION attribute:===
+setmace.exe C:\file.txt -a "2000:01:01:00:00:00:789:1234" -si
+
+===Setting the LastWriteTime in the $FILE_NAME attribute:===
+setmace.exe C:\file.txt -m "2000:01:01:00:00:00:789:1234" -fn
+
+===Setting the ChangeTime(MFT) in the $FILE_NAME attribute:===
+setmace.exe C:\file.txt -e "2000:01:01:00:00:00:789:1234" -fn
+
 ===Setting all 4 timestamps in both $FILE_NAME and $STANDARD_INFORMATION attributes:===
 setmace.exe C:\file.txt -z "2000:01:01:00:00:00:789:1234" -x
 
@@ -72,18 +84,18 @@ setmace.exe "C:\alongfilename.txt" -e "2000:01:01:00:00:00:789:1234" -fn
 ===Setting all 4 timestamps in $STANDARD_INFORMATION attribute for a directory:===
 setmace.exe D:\tmp -z "2000:01:01:00:00:00:789:1234" -si
 
-===Setting the LastWriteTime in the $STANDARD_INFORMATION attribute:===
-setmace.exe C:\file.txt -m "2000:01:01:00:00:00:789:1234" -si
-
-===Dumping all timestamps for a file:===
-setmace.exe C:\file.txt -d
+===Dumping all timestamps for $MFT itself:===
+setmace.exe C:\$MFT -d
+or
+setmace.exe C:0 -d
 
 
 = ToDo =
 Open for suggestions.
 
 = Latest version =
-v1.0.0.8
+v1.0.0.9
 
 = Changelog=
-v.1.0.0.8. Fixed mixup up of mapping for LastAccessTime, LastWriteTime and ChangeTime(MFT). Fixed bug in logic for lock/dismount handling of external drives and nt5.x vs nt6.x. Fixed a bug that caused only last $FILE_NAME timestamps to be displayed/written, instead of for all $FILE_NAME attributes. 
+v1.0.0.9. Added support for dumping timestamp information also from within shadow copies with the -d switch.
+v1.0.0.8. Fixed mixup up of mapping for LastAccessTime, LastWriteTime and ChangeTime(MFT). Fixed bug in logic for lock/dismount handling of external drives and nt5.x vs nt6.x. Fixed a bug that caused only last $FILE_NAME timestamps to be displayed/written, instead of for all $FILE_NAME attributes. 
