@@ -71,9 +71,11 @@ Running the tool without any parameter will display help information.
 
 
 = Latest version =
-v1.0.0.27
+v1.0.0.28
 
 = Changelog =
+
+v1.0.0.28: Fixed the displayed offset of found record which was 1024 bytes off.
 
 v1.0.0.27: Fixed small "cosmetic bug" with INDX records where zero'ed timestamps showed a strange ":0000". Now it simply displays "-".
 
