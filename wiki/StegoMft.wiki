@@ -1,0 +1,35 @@
+#summary Hiding data within $MFT.
+
+= Introduction =
+
+This is a simple PoC showing how it is possible to hide data within $MFT. The tool utilizes the record slack, which is the leftover in record after the header and the attributes are defined. Usually a record is 1024 bytes, but in the later nt6.2 (Windows 8/2012) you have an option to define it as higher. The end marker of a given record is always FFFFFFFF and can easily be spotted. The data beyond that are ignored, with the exception of the fixup values (the last 2 bytes of every sector within a record). So this unused space can be used to store data.
+
+
+= Details =
+
+The amount of data that can be stored within $MFT is very limited. A very rough estimate is around 40% of its total size, and this obviously varies from volume to volume. The type or content of a record does not matter at all. Record slack is still unused and ignored by the system. However, if a file gets deleted, and a new file takes over a given record, then depending on its size, the record slack may be higher or lower, depending on the number of attributes and the content of the attributes. So data hidden in record slack, may become overwritten if the new file takes up more space in the record than the previous file did.
+
+You can run the tool with the -check switch to retrieve the exact MB value for how much record slack there is in the $MFT of a volume.
+
+For now it is required that the volume is mounted.
+
+Since it is very limited how much data can be hidden in 1 record, the tool supports spreading data across records. To aid in the re-assembly of the data, there is a special header prepended to the hidden data fragments. It is 14 bytes like this:
+
+  *4 byte signature of choice
+  *4 byte value indicating the fragment number
+  *2 byte value indicating the current fragment size
+  *4 byte value indicating the total size of the hidden data with this signature
+
+This is a minimum header in order to distinguish fragments of different files, and in order to detect if all fragments are found. No fancy integrity check is performed.
+
+In order to be able to hide any data in a record, there must be a minimum of 15 bytes of record slack, since the header takes 14 bytes. The -check switch accounts for the header size, so the value you get is the true number of what can be hidden with this tool. On one of my test machines, Windows 7 x64 and a volume with 592640 records, the tool identified 280 MB of record slack in 176 seconds.
+
+The hiding of the data is currently very slow, for many reasons. Even hiding a 10 MB file may take more than 10 minutes, so preferrably don't test a large sized files unless you have plenty of time. When hiding data with the -hide switch you need to specify inputfile, target volume, start ref and signature. The start ref is the first record number that will hold the hidden data. The lowest is 0 which is $MFT itself. The signature is 4 bytes of hex values. If a record without any record slack is hit, it will be ignored and just print an innocent error message, although it is really just a verbose message.
+
+Likewise the -extract switch will need as parameters an outputfile, target volume, start ref and signature. The start ref, is just to speed up extraction by skipping the parsing of certain records. If you forgot the start ref, just specify 0 and scanning will start from record 0. The signature is needed to identify the correct data.
+
+Testing has so far only been performed on Windows 7 x64.
+
+
+= Current version =
+v1.0.0.0
