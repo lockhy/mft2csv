@@ -15,10 +15,10 @@ For now it is required that the volume is mounted.
 
 Since it is very limited how much data can be hidden in 1 record, the tool supports spreading data across records. To aid in the re-assembly of the data, there is a special header prepended to the hidden data fragments. It is 14 bytes like this:
 
-  *4 byte signature of choice
-  *4 byte value indicating the fragment number
-  *2 byte value indicating the current fragment size
-  *4 byte value indicating the total size of the hidden data with this signature
+  * 4 byte signature of choice
+  * 4 byte value indicating the fragment number
+  * 2 byte value indicating the current fragment size
+  * 4 byte value indicating the total size of the hidden data with this signature
 
 This is a minimum header in order to distinguish fragments of different files, and in order to detect if all fragments are found. No fancy integrity check is performed.
 
