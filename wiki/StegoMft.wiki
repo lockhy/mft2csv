@@ -36,6 +36,18 @@ Testing has so far only been performed on Windows 7 x64.
 Because of the way the tool works it should be regarded as highly experimental and provided for educational purposes. The tool writes a modifed record back to disk, and will internally resolve the layout of $MFT, and how a record should be modified. It thus bypasses security imposed by the filesystem, and does very risky write operations on the disk. With the introduction of Vista/nt6.x new security measures where implemented to restrict such direct disk writes to the filesystem, and it became needed to lock/dismount the volume before any such writes could occur. For that reason it obviously is not possible to perform direct writes the system volume on nt6.x when the system is live. Other attached disks don't have this restriction. Writing to such a system volume could in theory be performed if system was booted to WinPE. Other than that you would need a special driver to achieve it.
 
 
+= Sample commands =
+
+Hiding inputfile.ext in $MFT from record number 666 at volume D: with signature 11223344:
+StegoMft.exe -hide c:\inputfile.ext D: 666 11223344
+
+Extracting hidden data from volume D: starting from record number 777 and signature 88888888 to outputfile.ext:
+StegoMft.exe -extract c:\outputfile D: 777 88888888
+
+Check number of empty bytes in $MFT at volume D:
+StegoMft.exe -check D:
+
+
 = Current version =
 v1.0.0.1
 
