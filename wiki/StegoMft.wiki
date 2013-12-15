@@ -69,6 +69,7 @@ In certain of the NTFS system files, the record slack is actually evaluated when
   * StartRef is the first MFT record to start from. 0 is always the lowest.
   * EndRef is the last MFT record to process. The absolute last record number varies from volume to volume. Putting "-" will tell the program to process until the end. 
   * StartByte is the byte offset within the record slack. A value of 0 means at the very beginning of record slack. A value of 10 means the first 10 bytes of the original record slack will not be touched.
+  * TargetVolume is volume to perform operation on.
 
 
 = Sample commands =
@@ -99,5 +100,7 @@ Dump to console the slack data in record 50 at volume D:
 v1.0.0.2
 
 = Changelog =
+
 v1.0.0.2. Added options to wipe record slack, as well as dumping it. Added option to specify byte offset within record slack to perform operation on. Fixed few minior issues.
+
 v1.0.0.1. Speed improvement for both hiding and extraction.
