@@ -66,10 +66,12 @@ Explanation of the different output generated:
   * LogFile.csv (The main csv generated from the parser)
   * LogFile_DataRuns.csv (The input information needed for reconstructing dataruns)
   * LogFile_DataRunsResolved.csv (The final output of reconstructed dataruns)
-  * LogFile_INDX.csv (All dumped and decoded index records (IndexRoot(IndexAllocation))
+  * LogFile_INDX.csv (All dumped and decoded index records (IndexRoot(IndexAllocation), redo operations)
   * LogFileJoined.csv (Same as LogFile.csv, but have filename information joined in from the $UsnJrnl) or csv of mft2csv.
   * UsnJrnl.csv (The output of the $UsnJrnl parser module. File will not be created if not the USN journal is to be analyzed)
   * MFTRecords.bin (Dummy $MFT recreated based on found MFT records in InitializeFileRecordSegment transactions. Can use mft2csv on this one (remember to configure "broken MFT" and "Fixups" properly))
+  * LogFile_lfUsnJrnl.csv (records for the $UsnJrnl that has been decoded within $LogFile)
+  * LogFile_UndoWipe_INDX.csv (All undo operations for clearing of directory indexes (INDX))
 
 Ntfs.db (An sqlite database file with tables almost equivalent to the above csv's. The database contains 5 tables:
   * DataRuns
@@ -144,9 +146,10 @@ http://i1100.photobucket.com/albums/g407/joakimschicht/NTFSFileExtractor402_zpse
   * The 64-bit version seems to sometimes have issues with sqlite3, so better stick to 32-bit which is stable.
 
 = Latest version =
-v1.0.0.12
+v1.0.0.13
 
 = Changelog =
+v1.0.0.13. Fixed decode of OpenNonresidentAttribute, which may appear differently in certain scenarios. Fixed bug in the integrated UsnJrnl parser. Fixed mapping of MFT ref for SetIndexEntryVcnAllocation operations. Added more decoding to UpdateNonResidentValue operations. Added decode of operation code 1000, which is a clearing of an index. Specifically the redo operation is just a reset, while the undo operation is a complete INDX record (without header) of the original content. With this information it is now possible to start building a history of changes to directory content/indexes.
 v1.0.0.12. Fixed a new bug in the reconstruction of dataruns that was introduced in previous version.
 v1.0.0.11. Implemented GUI with configurable options, progressbar etc. Fixed a lot of issues when resolving MFT references. Fixed bug that incorrectly updated CurrentAttribute when redo operation was UpdateResidentValue. Added decoding of OpenNonresidentAttribute. Added 3 columns in output: TextInformation, RedoChunkSize and UndoChunkSize. Added more updating of CurrentAttribute. Using undo operations to aid in interpreting data. Changed default separator to "|" to minimize chances for hitting filenames that needed to be changed. Added importing to db of the resolved dataruns csv. Added option to import csv of decoded MFT (mft2csv), and joining file paths. Added option to choose timestamp format and precision, with example displayed in gui. Option to split extra timestamps into separate csv (will slow down processing!).
 
