@@ -146,9 +146,10 @@ http://i1100.photobucket.com/albums/g407/joakimschicht/NTFSFileExtractor402_zpse
   * The 64-bit version seems to sometimes have issues with sqlite3, so better stick to 32-bit which is stable.
 
 = Latest version =
-v1.0.0.14
+v1.0.0.15
 
 = Changelog =
+v1.0.0.15. Fixed CurrentAttribute when $UsnJrnl is writing zeros to align the initialized data to page boundary. Added reference to LogFile_INDX.csv in column lf_TextInformation where due. Corrected CurrentAttribute for both UpdateFileNameRoot and UpdateFileNameAllocation, and changed their timestamps from being FN to SI. Changed interpreted meaning of op code 1000 = ResetAllocation, and 1100 = ResetRoot.
 v1.0.0.14. More fixes to the OpenNonresidentAttribute. Now current attribute is displayed even more detailed like this: $DATA:$SDS, $INDEX_ALLOCATION:$I30, $INDEX_ALLOCATION:$O. Added decode information for DeleteAttribute operations. Fixed a bug that caused certain corrupted values to be displayed as decoded UsnJrnl record values. Added more mapping to filename for transactions. Some minor adjustments on the logic/prediction of reference numbers. Added new column for namespace, and real reference. The new column lf_RealMFTReference facilitated the addition of a lot more decode output into the core LogFile csv. 
 v1.0.0.13. Fixed decode of OpenNonresidentAttribute, which may appear differently in certain scenarios. Fixed bug in the integrated UsnJrnl parser. Fixed mapping of MFT ref for SetIndexEntryVcnAllocation operations. Added more decoding to UpdateNonResidentValue operations. Added decode of operation code 1000, which is a clearing of an index. Specifically the redo operation is just a reset, while the undo operation is a complete INDX record (without header) of the original content. With this information it is now possible to start building a history of changes to directory content/indexes.
 v1.0.0.12. Fixed a new bug in the reconstruction of dataruns that was introduced in previous version.
