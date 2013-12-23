@@ -31,19 +31,22 @@ However it is possble by patching untfs.dll: http://code.google.com/p/mft2csv/wi
 = Introduction =
 This parser will decode and dump lots of transaction information from the $LogFile on NTFS. There are several csv's generated as well as an sqlite database named ntfs.db containing all relevant information.
 
-The currently handled Redo transaction types are:
+The currently decoded transaction types are:
   * InitializeFileRecordSegment
-  * UpdateFileNameAllocation
-  * UpdateResidentValue
   * CreateAttribute
-  * UpdateFileNameRoot
+  * DeleteAttribute
+  * UpdateResidentValue
   * UpdateNonResidentValue
+  * UpdateMappingPairs
+  * SetNewAttributeSizes
   * AddindexEntryRoot
   * DeleteindexEntryRoot
   * AddIndexEntryAllocation
   * DeleteIndexEntryAllocation
-  * SetNewAttributeSizes
-  * UpdateMappingPairs
+  * ResetAllocation
+  * ResetRoot
+  * SetIndexEntryVcnAllocation
+  * UpdateFileNameRoot
   * OpenNonresidentAttribute
 
 The list of currently supported attributes:
