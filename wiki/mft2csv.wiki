@@ -176,15 +176,17 @@ The timestamps are now at the precision of nanoseconds. Prior to processing, the
 
 Resolved paths may not be correct for deleted files/folders. That is because its parent ref (or parents parents ref, etc) may have been overwritten with a new entry.
 
-= Usage and examples=
+= Usage and examples =
 
 See the readme included in the download package.
 
 = Latest Version =
 
-v2.0.0.12
+v2.0.0.13
 
 = Changelog =
+
+v2.0.0.13. Fixed bug that prevented single records containing $ATTRIBUTE_LIST (Broken $MFT configured) to be decoded.
 
 v2.0.0.12. Added support for parsing $MFT directly from within shadow copies. Fixed tiny bug that caused FilePath to have 1 erronous character prefixed for all values.
 
