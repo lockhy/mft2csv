@@ -149,9 +149,11 @@ http://i1100.photobucket.com/albums/g407/joakimschicht/NTFSFileExtractor402_zpse
   * The 64-bit version seems to sometimes have issues with sqlite3, so better stick to 32-bit which is stable.
 
 = Latest version =
-v1.0.0.16
+v1.0.0.17
 
 = Changelog =
+v1.0.0.17. Another major improvement in the identification of the current attribute.
+
 v1.0.0.16. Fixed bug that caused $UsnJrnl to sometimes be incorrectly displayed in the lf_TextInformation column.
 
 v1.0.0.15. Fixed CurrentAttribute when $UsnJrnl is writing zeros to align the initialized data to page boundary. Added reference to LogFile_INDX.csv in column lf_TextInformation where due. Corrected CurrentAttribute for both UpdateFileNameRoot and UpdateFileNameAllocation, and changed their timestamps from being FN to SI. Changed interpreted meaning of op code 1000 = ResetAllocation, and 1100 = ResetRoot.
