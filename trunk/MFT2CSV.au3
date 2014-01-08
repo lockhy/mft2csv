@@ -3,7 +3,7 @@
 #AutoIt3Wrapper_UseX64=y
 #AutoIt3Wrapper_Res_Comment=Decode $MFT and write to CSV
 #AutoIt3Wrapper_Res_Description=Decode $MFT and write to CSV
-#AutoIt3Wrapper_Res_Fileversion=2.0.0.8
+#AutoIt3Wrapper_Res_Fileversion=2.0.0.13
 #AutoIt3Wrapper_Res_requestedExecutionLevel=asInvoker
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
 
@@ -15,14 +15,19 @@
 ; by Joakim Schicht & Ddan
 ; parts by trancexxx, Ascend4nt & others
 
-Global $_COMMON_KERNEL32DLL=DllOpen("kernel32.dll"), $separator=",", $DTPrecision, $dol2t=False, $DoDefaultAll=False, $DoBodyfile=False, $SkipFixups=False, $MftIsBroken=False, $ExtractResident=False, $ExtractionPath
+Global $_COMMON_KERNEL32DLL=DllOpen("kernel32.dll"), $separator="|", $DTPrecision, $dol2t=False, $DoDefaultAll=False, $DoBodyfile=False, $SkipFixups=False, $MftIsBroken=False, $ExtractResident=False, $ExtractionPath, $DoSplitCsv=False, $csvextra, $style, $TimestampStart
 Global $csv, $csvfile, $RecordOffset, $Signature, $ADS, $FN_NamePath, $UTCconfig, $de=",", $MftFileSize, $FN_FileName;, $DATA_Clusters, $DATA_InitSize
 Global $HDR_LSN, $HDR_SequenceNo, $HDR_Flags, $HDR_RecRealSize, $HDR_RecAllocSize, $HDR_BaseRecord, $HDR_NextAttribID, $HDR_MFTREcordNumber, $HDR_HardLinkCount, $HDR_BaseRecSeqNo
 Global $SI_CTime, $SI_ATime, $SI_MTime, $SI_RTime, $SI_FilePermission, $SI_USN, $Errors, $DT_AllocSize, $DT_RealSize, $DT_InitStreamSize, $RecordSlackSpace
+Global $SI_CTime_Core,$SI_ATime_Core,$SI_MTime_Core,$SI_RTime_Core,$SI_CTime_Precision,$SI_ATime_Precision,$SI_MTime_Precision,$SI_RTime_Precision
 Global $FN_CTime, $FN_ATime, $FN_MTime, $FN_RTime, $FN_AllocSize, $FN_RealSize, $FN_Flags, $FN_Name, $DT_VCNs, $DT_NonResidentFlag, $FN_NameType
+Global $FN_CTime_Core,$FN_ATime_Core,$FN_MTime_Core,$FN_RTime_Core,$FN_CTime_Precision,$FN_ATime_Precision,$FN_MTime_Precision,$FN_RTime_Precision
 Global $FN_CTime_2, $FN_ATime_2, $FN_MTime_2, $FN_RTime_2, $FN_AllocSize_2, $FN_RealSize_2, $FN_Flags_2, $FN_NameLen_2, $FN_NameSpace_2, $FN_Name_2, $FN_NameType_2
+Global $FN_CTime_2_Core,$FN_ATime_2_Core,$FN_MTime_2_Core,$FN_RTime_2_Core,$FN_CTime_2_Precision,$FN_ATime_2_Precision,$FN_MTime_2_Precision,$FN_RTime_2_Precision
 Global $FN_CTime_3, $FN_ATime_3, $FN_MTime_3, $FN_RTime_3, $FN_AllocSize_3, $FN_RealSize_3, $FN_Flags_3, $FN_NameLen_3, $FN_NameSpace_3, $FN_Name_3, $FN_NameType_3
+Global $FN_CTime_3_Core,$FN_ATime_3_Core,$FN_MTime_3_Core,$FN_RTime_3_Core,$FN_CTime_3_Precision,$FN_ATime_3_Precision,$FN_MTime_3_Precision,$FN_RTime_3_Precision
 Global $FN_CTime_4, $FN_ATime_4, $FN_MTime_4, $FN_RTime_4, $FN_AllocSize_4, $FN_RealSize_4, $FN_Flags_4, $FN_NameLen_4, $FN_NameSpace_4, $FN_Name_4, $FN_NameType_4
+Global $FN_CTime_4_Core,$FN_ATime_4_Core,$FN_MTime_4_Core,$FN_RTime_4_Core,$FN_CTime_4_Precision,$FN_ATime_4_Precision,$FN_MTime_4_Precision,$FN_RTime_4_Precision
 Global $DT_NameLength, $DT_NameRelativeOffset, $DT_Flags, $DT_NameSpace, $DT_Name, $RecordActive, $DT_ComprUnitSize, $DT_ComprUnitSize_2, $DT_ComprUnitSize_3
 Global $DT_NonResidentFlag_2, $DT_NameLength_2, $DT_NameRelativeOffset_2, $DT_Flags_2, $DT_NameSpace_2, $DT_Name_2, $DT_StartVCN_2, $DT_LastVCN_2, $DT_VCNs_2, $DT_AllocSize_2, $DT_RealSize_2, $DT_InitStreamSize_2
 Global $DT_NonResidentFlag_3, $DT_NameLength_3, $DT_NameRelativeOffset_3, $DT_Flags_3, $DT_NameSpace_3, $DT_Name_3, $DT_StartVCN_3, $DT_LastVCN_3, $DT_VCNs_3, $DT_AllocSize_3, $DT_RealSize_3, $DT_InitStreamSize_3
@@ -30,7 +35,7 @@ Global $FN_ParentRefNo, $FN_ParentSeqNo, $FN_ParentRefNo_2, $FN_ParentSeqNo_2, $
 Global $DT_LengthOfAttribute, $DT_OffsetToAttribute, $DT_IndexedFlag, $DT_LengthOfAttribute_2, $DT_OffsetToAttribute_2, $DT_IndexedFlag_2, $DT_LengthOfAttribute_3, $DT_OffsetToAttribute_3, $DT_IndexedFlag_3
 Global $hFile, $nBytes, $MSecTest, $CTimeTest, $SI_MaxVersions, $SI_VersionNumber, $SI_ClassID, $SI_OwnerID, $SI_SecurityID, $SI_HEADER_Flags, $SI_ON, $AL_ON, $FN_ON, $OI_ON, $SD_ON, $VN_ON, $VI_ON, $DT_ON, $IR_ON, $IA_ON, $BITMAP_ON, $RP_ON, $EAI_ON, $EA_ON, $PS_ON, $LUS_ON
 Global $GUID_ObjectID, $GUID_BirthVolumeID, $GUID_BirthObjectID, $GUID_BirthDomainID, $VOLUME_NAME_NAME, $VOL_INFO_NTFS_VERSION, $VOL_INFO_FLAGS, $INV_FNAME, $INV_FNAME_2, $INV_FNAME_3, $DT_Number
-Global $FileSizeBytes, $IntegrityCheck, $ComboPhysicalDrives, $IsPhysicalDrive=False
+Global $FileSizeBytes, $IntegrityCheck, $ComboPhysicalDrives, $IsPhysicalDrive=False,$GlobalRefCounter=0,$IsShadowCopy=False
 Global Const $RecordSignatureBad = '42414144' ; BAAD signature
 Global Const $STANDARD_INFORMATION = '10000000'; Standard Information
 Global Const $ATTRIBUTE_LIST = '20000000'
@@ -75,8 +80,8 @@ Global Const $FILE_RECORD_FLAG_DIRECTORY = 0x0003
 Global Const $FILE_RECORD_FLAG_DIRECTORY_DELETE = 0x0002
 Global Const $FILE_RECORD_FLAG_UNKNOWN1 = 0x0004
 Global Const $FILE_RECORD_FLAG_UNKNOWN2 = 0x0008
-Global $DateTimeFormat; = 6 ; YYYY-MM-DD HH:MM:SS:MSMSMS:NSNSNSNS = 2007-08-18 08:15:37:733:1234
-Global $tDelta = _WinTime_GetUTCToLocalFileTimeDelta() ; in offline mode we must read the values off the registry..
+Global $DateTimeFormat,$ExampleTimestampVal = "01CD74B3150770B8",$TimestampPrecision
+Global $tDelta = _WinTime_GetUTCToLocalFileTimeDelta()
 
 Global Const $GUI_EVENT_CLOSE = -3
 Global Const $GUI_CHECKED = 1
@@ -100,14 +105,16 @@ Global Const $RecordSignature = '46494C45' ; FILE signature
 
 Opt("GUIOnEventMode", 1)  ; Change to OnEvent mode
 
-$Form = GUICreate("MFT2CSV", 560, 450, -1, -1)
+$Form = GUICreate("MFT2CSV 2.0.0.13", 560, 450, -1, -1)
 GUISetOnEvent($GUI_EVENT_CLOSE, "_HandleExit", $Form)
 
-$Combo = GUICtrlCreateCombo("", 20, 25, 390, 20)
-$ComboPhysicalDrives = GUICtrlCreateCombo("", 190, 0, 220, 20)
-$buttonScanPhysicalDrives = GUICtrlCreateButton("Rescan PhysicalDrive", 20, 0, 120, 20)
+$Combo = GUICtrlCreateCombo("", 20, 30, 390, 20)
+$ComboPhysicalDrives = GUICtrlCreateCombo("", 180, 3, 305, 20)
+$buttonScanPhysicalDrives = GUICtrlCreateButton("Scan Physical", 5, 3, 80, 20)
 GUICtrlSetOnEvent($buttonScanPhysicalDrives, "_HandleEvent")
-$buttonTestPhysicalDrive = GUICtrlCreateButton("Check physical drive", 425, 0, 130, 20)
+$buttonScanShadowCopies = GUICtrlCreateButton("Scan Shadows", 90, 3, 80, 20)
+GUICtrlSetOnEvent($buttonScanShadowCopies, "_HandleEvent")
+$buttonTestPhysicalDrive = GUICtrlCreateButton("<-- Test it", 495, 3, 60, 20)
 GUICtrlSetOnEvent($buttonTestPhysicalDrive, "_HandleEvent")
 $buttonDrive = GUICtrlCreateButton("Rescan Mounted Drives", 425, 25, 130, 20)
 GUICtrlSetOnEvent($buttonDrive, "_HandleEvent")
@@ -116,15 +123,15 @@ $checkBrokenMFT = GUICtrlCreateCheckbox("Broken $MFT", 335, 75, 95, 20)
 $checkExtractResident = GUICtrlCreateCheckbox("Extract Resident", 335, 100, 95, 20)
 $buttonImage = GUICtrlCreateButton("Choose Image", 440, 50, 100, 20)
 GUICtrlSetOnEvent($buttonImage, "_HandleEvent")
-$buttonMftFile = GUICtrlCreateButton("Choose $MFT", 440, 80, 100, 20)
+$buttonMftFile = GUICtrlCreateButton("Choose $MFT", 440, 75, 100, 20)
 GUICtrlSetOnEvent($buttonMftFile, "_HandleEvent")
-$buttonOutput = GUICtrlCreateButton("Choose CSV", 440, 110, 100, 20)
-GUICtrlSetOnEvent($buttonOutput, "_HandleEvent")
-$buttonExtractedOut = GUICtrlCreateButton("Set Extract Path", 440, 140, 100, 20)
+;$buttonOutput = GUICtrlCreateButton("Choose CSV", 440, 100, 100, 20)
+;GUICtrlSetOnEvent($buttonOutput, "_HandleEvent")
+$buttonExtractedOut = GUICtrlCreateButton("Set Extract Path", 440, 100, 100, 20)
 GUICtrlSetOnEvent($buttonExtractedOut, "_HandleEvent")
-$buttonStart = GUICtrlCreateButton("Start Processing", 290, 120, 120, 40)
+$buttonStart = GUICtrlCreateButton("Start Processing", 430, 125, 120, 40)
 GUICtrlSetOnEvent($buttonStart, "_HandleEvent")
-$Label1 = GUICtrlCreateLabel("Adjust timestamps to specific region:",20,50,180,20)
+$Label1 = GUICtrlCreateLabel("Set decoded timestamps to specific region:",20,50,230,20)
 $Combo2 = GUICtrlCreateCombo("", 230, 50, 90, 25)
 GUICtrlCreateLabel("Set output format:",20,70,100,20)
 $checkl2t = GUICtrlCreateCheckbox("log2timeline", 120, 70, 130, 20)
@@ -134,15 +141,26 @@ GUICtrlSetState($checkbodyfile, $GUI_UNCHECKED)
 $checkdefaultall = GUICtrlCreateCheckbox("dump everything", 120, 110, 130, 20)
 GUICtrlSetState($checkdefaultall, $GUI_CHECKED)
 $LabelSeparator = GUICtrlCreateLabel("Set separator:",20,135,70,20)
-$SaparatorInput = GUICtrlCreateInput(",",90,135,20,20)
-$SaparatorInput2 = GUICtrlCreateInput(",",120,135,30,20)
+$SaparatorInput = GUICtrlCreateInput($separator,90,135,20,20)
+$SaparatorInput2 = GUICtrlCreateInput($separator,120,135,30,20)
 GUICtrlSetState($SaparatorInput2, $GUI_DISABLE)
 $checkquotes = GUICtrlCreateCheckbox("Quotation mark", 170, 135, 100, 20)
-GUICtrlSetState($checkquotes, $GUI_CHECKED)
-$myctredit = GUICtrlCreateEdit("Extracting files from NTFS formatted volume" & @CRLF, 0, 165, 560, 115, $ES_AUTOVSCROLL + $WS_VSCROLL)
-_GetPhysicalDrives()
+GUICtrlSetState($checkquotes, $GUI_UNCHECKED)
+$LabelTimestampFormat = GUICtrlCreateLabel("Timestamp format:",20,168,90,20)
+$ComboTimestampFormat = GUICtrlCreateCombo("", 110, 168, 30, 25)
+$LabelTimestampPrecision = GUICtrlCreateLabel("Precision:",150,168,50,20)
+$ComboTimestampPrecision = GUICtrlCreateCombo("", 200, 168, 70, 25)
+$CheckCsvSplit = GUICtrlCreateCheckbox("split csv", 280, 168, 60, 20)
+GUICtrlSetState($CheckCsvSplit, $GUI_UNCHECKED)
+$InputExampleTimestamp = GUICtrlCreateInput("",350,168,200,20)
+GUICtrlSetState($InputExampleTimestamp, $GUI_DISABLE)
+$myctredit = GUICtrlCreateEdit("Extracting files from NTFS formatted volume" & @CRLF, 0, 195, 560, 85, $ES_AUTOVSCROLL + $WS_VSCROLL)
+_GetPhysicalDrives("PhysicalDrive")
 _GetMountedDrivesInfo()
 _InjectTimeZoneInfo()
+_InjectTimestampFormat()
+_InjectTimestampPrecision()
+_TranslateTimestamp()
 
 $LogState = True
 GUISetState(@SW_SHOW, $Form)
@@ -150,6 +168,7 @@ GUISetState(@SW_SHOW, $Form)
 While Not $active
    Sleep(1000)	;Wait for event
    _TranslateSeparator()
+   _TranslateTimestamp()
 WEnd
 
 $tDelta = _GetUTCRegion()-$tDelta
@@ -164,30 +183,39 @@ $TimestampStart = @YEAR & "-" & @MON & "-" & @MDAY & "_" & @HOUR & "-" & @MIN & 
 $logfile = FileOpen(@ScriptDir & "\" & $TimestampStart & ".log",2)
 $subset = 0
 
-If $IsImage Then
-   $ImageOffset = Int(StringMid(GUICtrlRead($Combo),10),2)
-   _DisplayInfo(@CRLF & "Target is: " & GUICtrlRead($Combo) & @CRLF)
-   _DebugOut("Target image file: " & $TargetImageFile)
-   $hDisk = _WinAPI_CreateFile("\\.\" & $TargetImageFile,2,2,7)
-   If $hDisk = 0 Then _DebugOut("CreateFile: " & _WinAPI_GetLastErrorMessage())
-ElseIf $IsMftFile Then
-   _DebugOut("Target $MFT file: " & $TargetMftFile)
-   $hDisk = _WinAPI_CreateFile("\\.\" & $TargetMftFile,2,2,7)
-   If $hDisk = 0 Then _DebugOut("CreateFile: " & _WinAPI_GetLastErrorMessage())
-   $MftFileSize = _WinAPI_GetFileSizeEx($hDisk)
-ElseIf $IsPhysicalDrive=False Then
-   $TargetDrive = StringMid(GUICtrlRead($Combo),1,2)
-   _DebugOut("Target volume: " & $TargetDrive)
-   $hDisk = _WinAPI_CreateFile("\\.\" & $TargetDrive,2,2,7)
-   If $hDisk = 0 Then _DebugOut("CreateFile: " & _WinAPI_GetLastErrorMessage())
-ElseIf $IsPhysicalDrive=True Then
-   $ImageOffset = Int(StringMid(GUICtrlRead($Combo),10),2)
-   _DebugOut("Target is: \\.\" & $TargetImageFile)
-   $hDisk = _WinAPI_CreateFile("\\.\" & $TargetImageFile,2,2,7)
-   If $hDisk = 0 Then _DebugOut("CreateFile: " & _WinAPI_GetLastErrorMessage())
-EndIf
+Select
+	Case $IsImage
+		$ImageOffset = Int(StringMid(GUICtrlRead($Combo),10),2)
+		_DisplayInfo(@CRLF & "Target is: " & GUICtrlRead($Combo) & @CRLF)
+		_DebugOut("Target image file: " & $TargetImageFile)
+		$hDisk = _WinAPI_CreateFile("\\.\" & $TargetImageFile,2,2,7)
+		If $hDisk = 0 Then _DebugOut("CreateFile: " & _WinAPI_GetLastErrorMessage())
+	Case $IsMftFile
+		_DebugOut("Target $MFT file: " & $TargetMftFile)
+		$hDisk = _WinAPI_CreateFile("\\.\" & $TargetMftFile,2,2,7)
+		If $hDisk = 0 Then _DebugOut("CreateFile: " & _WinAPI_GetLastErrorMessage())
+		$MftFileSize = _WinAPI_GetFileSizeEx($hDisk)
+	Case $IsPhysicalDrive=True
+		$ImageOffset = Int(StringMid(GUICtrlRead($Combo),10),2)
+		_DebugOut("Target is: \\.\" & $TargetImageFile)
+		$hDisk = _WinAPI_CreateFile("\\.\" & $TargetImageFile,2,2,7)
+		If $hDisk = 0 Then _DebugOut("CreateFile: " & _WinAPI_GetLastErrorMessage())
+	Case $IsShadowCopy = True
+		$TargetDrive = "SC"&StringMid($TargetImageFile,47)
+		$ImageOffset = Int(StringMid(GUICtrlRead($Combo),10),2)
+		_DebugOut("Target drive is: " & $TargetImageFile)
+		_DebugOut("Volume at offset: " & $ImageOffset)
+		$hDisk = _WinAPI_CreateFile("\\.\" & $TargetImageFile,2,2,7)
+		If $hDisk = 0 Then _DebugOut("CreateFile: " & _WinAPI_GetLastErrorMessage())
+	Case Else
+;	Case $IsPhysicalDrive=False
+		$TargetDrive = StringMid(GUICtrlRead($Combo),1,2)
+		_DebugOut("Target volume: " & $TargetDrive)
+		$hDisk = _WinAPI_CreateFile("\\.\" & $TargetDrive,2,2,7)
+		If $hDisk = 0 Then _DebugOut("CreateFile: " & _WinAPI_GetLastErrorMessage())
+EndSelect
+
 _DebugOut("Timestamps presented in UTC " & $UTCconfig)
-_DebugOut("Output CSV file: " & $csvfile)
 _DebugOut("Operation started: " & $TimestampStart)
 $begin1 = TimerInit()
 _ExtractSystemfile()
@@ -202,21 +230,25 @@ Func _HandleEvent()
 		Switch @GUI_CTRLID
 			Case $buttonDrive
 				_GetMountedDrivesInfo()
+				$IsImage = False
+				$IsShadowCopy = False
+				$IsPhysicalDrive = False
 			Case $buttonImage
 				_ProcessImage()
 				$IsImage = True
-				$IsMftFile = False
+				$IsShadowCopy = False
+				$IsPhysicalDrive = False
 			Case $buttonMftFile
 				_SelectMftFile()
 				$IsMftFile = True
 				$IsImage = False
-			Case $buttonOutput
-				_SelectCsv()
+;			Case $buttonOutput
+;				_SelectCsv()
 			Case $buttonStart
-				If $csv = "" Then
-					_DisplayInfo("Error: Output CSV not set " & @CRLF)
-					Return
-				EndIf
+;				If $csv = "" Then
+;					_DisplayInfo("Error: Output CSV not set " & @CRLF)
+;					Return
+;				EndIf
 				If GUICtrlRead($checkExtractResident) = 1 Then
 					$ExtractResident = True
 					If $ExtractionPath="" Then
@@ -230,7 +262,15 @@ Func _HandleEvent()
 				_SetExtractionPath()
 ;				If $ExtractionPath="" Then Return
 			Case $buttonScanPhysicalDrives
-				_GetPhysicalDrives()
+				_GetPhysicalDrives("PhysicalDrive")
+				$IsShadowCopy = False
+				$IsPhysicalDrive = True
+				$IsImage = False
+			Case $buttonScanShadowCopies
+				_GetPhysicalDrives("GLOBALROOT\Device\HarddiskVolumeShadowCopy")
+				$IsShadowCopy = True
+				$IsPhysicalDrive = False
+				$IsImage = False
 			Case $buttonTestPhysicalDrive
 				_TestPhysicalDrive()
 		EndSwitch
@@ -246,9 +286,16 @@ EndFunc
 Func _ExtractSystemfile()
 	Local $nBytes
 	Global $DataQ[1], $RUN_VCN[1], $RUN_Clusters[1]
+	$TimestampStart = @YEAR & "-" & @MON & "-" & @MDAY & "_" & @HOUR & "-" & @MIN & "-" & @SEC
+	_SelectCsv()
+	_TranslateTimestamp()
 	If Int(GUICtrlRead($checkl2t) + GUICtrlRead($checkbodyfile) + GUICtrlRead($checkdefaultall)) <> 9 Then
 		_DebugOut("Error: Output format can only be one of the options (not more than 1).")
 		Return
+	EndIf
+	If GUICtrlRead($CheckCsvSplit) = 1 Then
+		$DoSplitCsv = True
+		_DebugOut("Splitting csv")
 	EndIf
 	If GUICtrlRead($checkFixups) = 1 Then
 		$SkipFixups = True
@@ -289,7 +336,8 @@ Func _ExtractSystemfile()
 	EndIf
 
 	_WriteCSVHeader()
-	If (Not $IsImage and Not $IsMftFile) Then
+	If $DoSplitCsv Then _WriteCSVExtraHeader()
+	If (Not $IsImage and Not $IsMftFile and Not $IsShadowCopy) Then
 		If DriveGetFileSystem($TargetDrive) <> "NTFS" Then		;read boot sector and extract $MFT data
 			_DisplayInfo("Error: Target volume " & $TargetDrive & " is not NTFS" & @crlf)
 			Return
@@ -309,11 +357,11 @@ Func _ExtractSystemfile()
 	If $MFT = "" Then Return		;something wrong with record for $MFT
 	$MFT = _DecodeMFTRecord($MFT, 0)        ;produces DataQ for $MFT, record 0
 	If $MFT = "" Then Return
-
+;	_ArrayDisplay($DataQ,"$DataQ")
 	_DecodeDataQEntry($DataQ[1])         ;produces datarun for $MFT
 	$MFT_Size = $DT_RealSize
 	_ExtractDataRuns()                   ;converts datarun to RUN_VCN[] and RUN_Clusters[]
-	If $IsMftFile And $MftIsBroken Then
+	If ($IsMftFile And $MftIsBroken) Then
 		$RUN_VCN[1] = 1
 		$RUN_Clusters[1] = Int(((512+$MftFileSize-Mod($MftFileSize,512))/512/8))
 	EndIf
@@ -330,6 +378,7 @@ Func _ExtractSystemfile()
 		$Total = ($MftFileSize/$MFT_Record_Size)
 		Redim $FileTree[$Total]
 	EndIf
+;	_ArrayDisplay($MFTTree,"$MFTTree")
 	$ProgressFileName = GUICtrlCreateLabel("", 10,  390, 540, 20, $DT_END_ELLIPSIS)
 	$FileProgress = GUICtrlCreateProgress(10, 415, 540, 30)
 	AdlibRegister("_ExtractionProgress", 500)
@@ -360,8 +409,10 @@ Func _ExtractSystemfile()
 			If $DoDefaultAll Then
 				If GUICtrlRead($checkquotes) = 1 Then
 					_WriteCSVwithQuotes()
+					If $DoSplitCsv Then _WriteCSVExtraWithQuotes()
 				Else
 					_WriteCSV()
+					If $DoSplitCsv Then _WriteCSVExtra()
 				Endif
 			Else
 				If GUICtrlRead($checkquotes) = 1 Then
@@ -379,8 +430,10 @@ Func _ExtractSystemfile()
 			If $DoDefaultAll Then
 				If GUICtrlRead($checkquotes) = 1 Then
 					_WriteCSVwithQuotes()
+					If $DoSplitCsv Then _WriteCSVExtraWithQuotes()
 				Else
 					_WriteCSV()
+					If $DoSplitCsv Then _WriteCSVExtra()
 				Endif
 			Else
 				If GUICtrlRead($checkquotes) = 1 Then
@@ -403,8 +456,10 @@ Func _ExtractSystemfile()
 		If $DoDefaultAll Then
 			If GUICtrlRead($checkquotes) = 1 Then
 				_WriteCSVwithQuotes()
+				If $DoSplitCsv Then _WriteCSVExtraWithQuotes()
 			Else
 				_WriteCSV()
+				If $DoSplitCsv Then _WriteCSVExtra()
 			Endif
 		Else
 			If GUICtrlRead($checkquotes) = 1 Then
@@ -423,11 +478,13 @@ Func _ExtractSystemfile()
 EndFunc
 
 Func _DoFileTree()
-   Local $nBytes, $ParentRef, $FileRef, $BaseRef, $tag, $PrintName
+   Local $nBytes, $ParentRef, $FileRef, $BaseRef, $tag, $PrintName, $testvar=0
    $Total = Int($MFT_Size/$MFT_Record_Size)
    Global $FileTree[$Total]
    Global $MFTTree[$Total]
    $ref = -1
+   $Pos=0
+	if $IsMftFile Then _WinAPI_SetFilePointerEx($hDisk, $Pos, $FILE_BEGIN)
    AdlibRegister("_DoFileTreeProgress", 500)
    $begin = TimerInit()
    For $r = 1 To Ubound($MFT_RUN_VCN)-1
@@ -435,11 +492,11 @@ Func _DoFileTree()
 			$Pos = $MFT_RUN_VCN[$r]*$BytesPerCluster
 			_WinAPI_SetFilePointerEx($hDisk, $ImageOffset+$Pos, $FILE_BEGIN)
 		Else
-			$Pos=0
-			_WinAPI_SetFilePointerEx($hDisk, $Pos, $FILE_BEGIN)
+			$Pos = $testvar*1024
 		EndIf
       For $i = 0 To $MFT_RUN_Clusters[$r]*$BytesPerCluster-$MFT_Record_Size Step $MFT_Record_Size
          $ref += 1
+		 $testvar += 1
 		 $CurrentProgress = $ref
 		 _WinAPI_ReadFile($hDisk, DllStructGetPtr($rBuffer), $MFT_Record_Size, $nBytes)
          $record = DllStructGetData($rBuffer, 1)
@@ -494,7 +551,7 @@ Func _DoFileTree()
       Next
    Next
    AdlibUnRegister()
-   $FileTree[5] = StringMid($TargetDrive,1,1)
+	$FileTree[5] = ""
    $begin = TimerInit()
    AdlibRegister("_FolderStrucProgress", 500)
    For $i = 0 to UBound($FileTree)-1
@@ -558,7 +615,6 @@ EndFunc
 
 Func _StripMftRecord($record, $FileRef)
    If Not $SkipFixups Then $record = _DoFixup($record, $FileRef)
-;   $record = _DoFixup($record, $FileRef)
    If $record = "" then Return ""  ;corrupt, failed fixup
    $RecordSize = Dec(_SwapEndian(StringMid($record,51,8)),2)
    $HeaderSize = Dec(_SwapEndian(StringMid($record,43,4)),2)
@@ -649,8 +705,8 @@ Func _DecodeMFTRecord($record, $FileRef)      ;produces DataQ
 		If $AttributeOffset > 2040 Then Exitloop
 		$Flags = Dec(StringMid($record,47,4))
 		$AttributeSize = Dec(_SwapEndian(StringMid($record,$AttributeOffset+8,8)),2)
-		If $Type = 32 Then
-			If $SkipFixups And $MftIsBroken Then Return "" ;Skip attribute lists because it simply will not work under this condition
+		If $Type = 32 And $MftIsBroken = 0 Then
+;			If $SkipFixups And $MftIsBroken Then Return "" ;Skip attribute lists because it simply will not work under this condition
 			$AttrList = StringMid($record,$AttributeOffset,$AttributeSize*2)	;whole attribute
 			$AttrList = _DecodeAttrList($FileRef, $AttrList)		;produces $AttrQ - extra record list
 			If $AttrList = "" Then
@@ -740,7 +796,8 @@ Func _ReadMFT()
 	EndIf
    _WinAPI_ReadFile($hDisk, DllStructGetPtr($rBuffer), $MFT_Record_Size, $nBytes)
    $record = DllStructGetData($rBuffer, 1)
-   If StringMid($record,3,8) = $RecordSignature And StringMid($record,47,4) = "0100" Then Return $record		;returns record for MFT
+;   If StringMid($record,3,8) = $RecordSignature And StringMid($record,47,4) = "0100" Then Return $record		;returns record for MFT
+   If StringMid($record,3,8) = $RecordSignature Then Return $record		;returns record for MFT  (also works for NT style records)
    If $MftIsBroken Then Return $record
    _DebugOut("Check record for $MFT", $record)	;bad $MFT record
    Return ""
@@ -765,7 +822,7 @@ Func _GetDiskConstants()
 	EndIf
 	If $IsMftFile Then
 		Global $MFT_Record_Size = 1024
-		Global $BytesPerCluster = 512
+		Global $BytesPerCluster = 512*8
 		Global $MFT_Offset = 0
 	EndIf
    Return $record
@@ -896,6 +953,7 @@ EndFunc
 Func _ProcessImage()
 	$TargetImageFile = FileOpenDialog("Select image file",@ScriptDir,"All (*.*)")
 	If @error then Return
+	$TargetImageFile = "\\.\"&$TargetImageFile
 	_DisplayInfo("Selected disk image file: " & $TargetImageFile & @CRLF)
 	GUICtrlSetData($Combo,"","")
 	$Entries = ''
@@ -907,7 +965,7 @@ EndFunc   ;==>_ProcessImage
 Func _CheckMBR()
 	Local $nbytes, $PartitionNumber, $PartitionEntry,$FilesystemDescriptor
 	Local $StartingSector,$NumberOfSectors
-	Local $hImage = _WinAPI_CreateFile("\\.\" & $TargetImageFile,2,2,7)
+	Local $hImage = _WinAPI_CreateFile($TargetImageFile,2,2,7)
 	$tBuffer = DllStructCreate("byte[512]")
 	Local $read = _WinAPI_ReadFile($hImage, DllStructGetPtr($tBuffer), 512, $nBytes)
 	If $read = 0 Then Return ""
@@ -927,10 +985,8 @@ Func _CheckMBR()
 		EndIf
     Next
 	If $Entries = "" Then ;Also check if pure partition image (without mbr)
-		If _TestNTFS($hImage, 0) Then
-			$ImageSize = _WinAPI_GetFileSizeEx($hImage)
-			If not @error Then $Entries = _GenComboDescription(0,$ImageSize/512)
-		EndIf
+		$NtfsVolumeSize = _TestNTFS($hImage, 0)
+		If $NtfsVolumeSize Then $Entries = _GenComboDescription(0,$NtfsVolumeSize)
 	EndIf
 	_WinAPI_CloseHandle($hImage)
 EndFunc   ;==>_CheckMBR
@@ -983,7 +1039,7 @@ Func _CheckExtendedPartition($StartSector, $hImage)	;Extended partitions can onl
 	  $NextEntry = Dec(_SwapEndian(StringMid($PartitionTable,49,8)),2)
    WEnd
 EndFunc   ;==>_CheckExtendedPartition
-
+#cs
 Func _TestNTFS($hImage, $PartitionStartSector)
 	Local $nbytes
 	If $PartitionStartSector <> 0 Then
@@ -999,6 +1055,25 @@ Func _TestNTFS($hImage, $PartitionStartSector)
 	$TestSig = StringMid($sector,9,8)
 	If $TestSig = "4E544653" Then Return 1		; Volume is NTFS
 ;	_DebugOut("Could not find NTFS:", StringMid($sector,3))		; Volume is not NTFS
+	_DebugOut("Could not find NTFS:", $sector)		; Volume is not NTFS
+    Return 0
+EndFunc   ;==>_TestNTFS
+#ce
+Func _TestNTFS($hImage, $PartitionStartSector)
+	Local $nbytes, $TotalSectors
+	If $PartitionStartSector <> 0 Then
+		_WinAPI_SetFilePointerEx($hImage, $PartitionStartSector*512, $FILE_BEGIN)
+	Else
+		_WinAPI_CloseHandle($hImage)
+		$hImage = _WinAPI_CreateFile($TargetImageFile,2,2,7)
+	EndIf
+	$tBuffer = DllStructCreate("byte[512]")
+	$read = _WinAPI_ReadFile($hImage, DllStructGetPtr($tBuffer), 512, $nBytes)
+	If $read = 0 Then Return ""
+	$sector = DllStructGetData($tBuffer, 1)
+	$TestSig = StringMid($sector,9,8)
+	$TotalSectors = Dec(_SwapEndian(StringMid($sector,83,8)),2)
+	If $TestSig = "4E544653" Then Return $TotalSectors		; Volume is NTFS
 	_DebugOut("Could not find NTFS:", $sector)		; Volume is not NTFS
     Return 0
 EndFunc   ;==>_TestNTFS
@@ -1086,8 +1161,11 @@ Func _ParserCodeOldVersion($MFTEntry)
 		$HDR_MFTREcordNumber = StringMid($MFTEntry, 91, 8)
 		$HDR_MFTREcordNumber = Dec(_SwapEndian($HDR_MFTREcordNumber),2)
 	Else
-		$HDR_MFTREcordNumber = "NT style"
+		$HDR_MFTREcordNumber = $GlobalRefCounter
+		$style = "NT style"
+		$HDR_Flags = ''
 	EndIf
+	$GlobalRefCounter+=1
 	$NextAttributeOffset = (Dec(StringMid($MFTEntry, 43, 2)) * 2) + 3
 	$AttributeType = StringMid($MFTEntry, $NextAttributeOffset, 8)
 	$AttributeSize = StringMid($MFTEntry, $NextAttributeOffset + 8, 8)
@@ -1101,86 +1179,86 @@ Func _ParserCodeOldVersion($MFTEntry)
 		Select
 			Case $AttributeType = $STANDARD_INFORMATION
 				$AttributeKnown = 1
-				$SI_ON = "TRUE"
+				$SI_ON = 1
 				_Get_StandardInformation($MFTEntry, $NextAttributeOffset, $AttributeSize)
 
 			Case $AttributeType = $ATTRIBUTE_LIST
 				$AttributeKnown = 1
-				$AL_ON = "TRUE"
+				$AL_ON = 1
 				;			_Get_AttributeList()
 
 			Case $AttributeType = $FILE_NAME
 				$AttributeKnown = 1
-				$FN_ON = "TRUE"
+				$FN_ON = 1
 				$FN_Number += 1 ; Need to come up with something smarter than this
 				If $FN_Number > 4 Then ContinueCase
 				_Get_FileName($MFTEntry, $NextAttributeOffset, $AttributeSize, $FN_Number)
 
 			Case $AttributeType = $OBJECT_ID
 				$AttributeKnown = 1
-				$OI_ON = "TRUE"
+				$OI_ON = 1
 				If $DoDefaultAll Then _Get_ObjectID($MFTEntry, $NextAttributeOffset, $AttributeSize)
 
 			Case $AttributeType = $SECURITY_DESCRIPTOR
 				$AttributeKnown = 1
-				$SD_ON = "TRUE"
+				$SD_ON = 1
 				;			_Get_SecurityDescriptor()
 
 			Case $AttributeType = $VOLUME_NAME
 				$AttributeKnown = 1
-				$VN_ON = "TRUE"
+				$VN_ON = 1
 				If $DoDefaultAll Then _Get_VolumeName($MFTEntry, $NextAttributeOffset, $AttributeSize)
 
 			Case $AttributeType = $VOLUME_INFORMATION
 				$AttributeKnown = 1
-				$VI_ON = "TRUE"
+				$VI_ON = 1
 				If $DoDefaultAll Then _Get_VolumeInformation($MFTEntry, $NextAttributeOffset, $AttributeSize)
 
 			Case $AttributeType = $DATA
 				$AttributeKnown = 1
-				$DT_ON = "TRUE"
+				$DT_ON = 1
 				$DT_Number += 1
 				If $DT_Number > 3 Then ContinueCase
 				_Get_Data($MFTEntry, $NextAttributeOffset, $AttributeSize, $DT_Number)
 
 			Case $AttributeType = $INDEX_ROOT
 				$AttributeKnown = 1
-				$IR_ON = "TRUE"
+				$IR_ON = 1
 				;			_Get_IndexRoot()
 
 			Case $AttributeType = $INDEX_ALLOCATION
 				$AttributeKnown = 1
-				$IA_ON = "TRUE"
+				$IA_ON = 1
 				;			_Get_IndexAllocation()
 
 			Case $AttributeType = $BITMAP
 				$AttributeKnown = 1
-				$BITMAP_ON = "TRUE"
+				$BITMAP_ON = 1
 				;			_Get_Bitmap()
 
 			Case $AttributeType = $REPARSE_POINT
 				$AttributeKnown = 1
-				$RP_ON = "TRUE"
+				$RP_ON = 1
 				;			_Get_ReparsePoint()
 
 			Case $AttributeType = $EA_INFORMATION
 				$AttributeKnown = 1
-				$EAI_ON = "TRUE"
+				$EAI_ON = 1
 				;			_Get_EaInformation()
 
 			Case $AttributeType = $EA
 				$AttributeKnown = 1
-				$EA_ON = "TRUE"
+				$EA_ON = 1
 				;			_Get_Ea()
 
 			Case $AttributeType = $PROPERTY_SET
 				$AttributeKnown = 1
-				$PS_ON = "TRUE"
+				$PS_ON = 1
 				;			_Get_PropertySet()
 
 			Case $AttributeType = $LOGGED_UTILITY_STREAM
 				$AttributeKnown = 1
-				$LUS_ON = "TRUE"
+				$LUS_ON = 1
 				;			_Get_LoggedUtilityStream()
 
 			Case $AttributeType = $ATTRIBUTE_END_MARKER
@@ -1202,30 +1280,99 @@ Func _Get_StandardInformation($MFTEntry, $SI_Offset, $SI_Size)
 	$SI_HEADER_Flags = _SwapEndian($SI_HEADER_Flags)
 	$SI_HEADER_Flags = _AttribHeaderFlags("0x" & $SI_HEADER_Flags)
 	;
+;	$SI_CTime = StringMid($MFTEntry, $SI_Offset + 48, 16)
+;	$SI_CTime = _SwapEndian($SI_CTime)
+;	$SI_CTime_tmp = _WinTime_UTCFileTimeToLocalFileTime("0x" & $SI_CTime)
+;	$SI_CTime = _WinTime_UTCFileTimeFormat(Dec($SI_CTime,2) - $tDelta, $DateTimeFormat, $TimestampPrecision)
+;	$SI_CTime = $SI_CTime & ":" & _FillZero(StringRight($SI_CTime_tmp, 4))
+;	$MSecTest = _Test_MilliSec($SI_CTime)
+;
 	$SI_CTime = StringMid($MFTEntry, $SI_Offset + 48, 16)
 	$SI_CTime = _SwapEndian($SI_CTime)
 	$SI_CTime_tmp = _WinTime_UTCFileTimeToLocalFileTime("0x" & $SI_CTime)
-	$SI_CTime = _WinTime_UTCFileTimeFormat(Dec($SI_CTime,2) - $tDelta, $DateTimeFormat, 2)
-	$SI_CTime = $SI_CTime & ":" & _FillZero(StringRight($SI_CTime_tmp, 4))
-	$MSecTest = _Test_MilliSec($SI_CTime)
+	$SI_CTime = _WinTime_UTCFileTimeFormat(Dec($SI_CTime,2) - $tDelta, $DateTimeFormat, $TimestampPrecision)
+	If @error Then
+		$SI_CTime = "-"
+	ElseIf $TimestampPrecision = 2 Then
+		$SI_CTime_Core = StringMid($SI_CTime,1,StringLen($SI_CTime)-4)
+		$SI_CTime_Precision = StringRight($SI_CTime,3)
+	ElseIf $TimestampPrecision = 3 Then
+		$SI_CTime = $SI_CTime & ":" & _FillZero(StringRight($SI_CTime_tmp, 4))
+		$MSecTest = _Test_MilliSec($SI_CTime)
+		$SI_CTime_Core = StringMid($SI_CTime,1,StringLen($SI_CTime)-9)
+		$SI_CTime_Precision = StringRight($SI_CTime,8)
+	Else
+		$SI_CTime_Core = $SI_CTime
+	EndIf
+	;
+;	$SI_ATime = StringMid($MFTEntry, $SI_Offset + 64, 16)
+;	$SI_ATime = _SwapEndian($SI_ATime)
+;	$SI_ATime_tmp = _WinTime_UTCFileTimeToLocalFileTime("0x" & $SI_ATime)
+;	$SI_ATime = _WinTime_UTCFileTimeFormat(Dec($SI_ATime,2) - $tDelta, $DateTimeFormat, $TimestampPrecision)
+;	$SI_ATime = $SI_ATime & ":" & _FillZero(StringRight($SI_ATime_tmp, 4))
 	;
 	$SI_ATime = StringMid($MFTEntry, $SI_Offset + 64, 16)
 	$SI_ATime = _SwapEndian($SI_ATime)
 	$SI_ATime_tmp = _WinTime_UTCFileTimeToLocalFileTime("0x" & $SI_ATime)
-	$SI_ATime = _WinTime_UTCFileTimeFormat(Dec($SI_ATime,2) - $tDelta, $DateTimeFormat, 2)
-	$SI_ATime = $SI_ATime & ":" & _FillZero(StringRight($SI_ATime_tmp, 4))
+	$SI_ATime = _WinTime_UTCFileTimeFormat(Dec($SI_ATime,2) - $tDelta, $DateTimeFormat, $TimestampPrecision)
+	If @error Then
+		$SI_ATime = "-"
+	ElseIf $TimestampPrecision = 2 Then
+		$SI_ATime_Core = StringMid($SI_ATime,1,StringLen($SI_ATime)-4)
+		$SI_ATime_Precision = StringRight($SI_ATime,3)
+	ElseIf $TimestampPrecision = 3 Then
+		$SI_ATime = $SI_ATime & ":" & _FillZero(StringRight($SI_ATime_tmp, 4))
+		$SI_ATime_Core = StringMid($SI_ATime,1,StringLen($SI_ATime)-9)
+		$SI_ATime_Precision = StringRight($SI_ATime,8)
+	Else
+		$SI_ATime_Core = $SI_ATime
+	EndIf
+	;
+;	$SI_MTime = StringMid($MFTEntry, $SI_Offset + 80, 16)
+;	$SI_MTime = _SwapEndian($SI_MTime)
+;	$SI_MTime_tmp = _WinTime_UTCFileTimeToLocalFileTime("0x" & $SI_MTime)
+;	$SI_MTime = _WinTime_UTCFileTimeFormat(Dec($SI_MTime,2) - $tDelta, $DateTimeFormat, $TimestampPrecision)
+;	$SI_MTime = $SI_MTime & ":" & _FillZero(StringRight($SI_MTime_tmp, 4))
 	;
 	$SI_MTime = StringMid($MFTEntry, $SI_Offset + 80, 16)
 	$SI_MTime = _SwapEndian($SI_MTime)
 	$SI_MTime_tmp = _WinTime_UTCFileTimeToLocalFileTime("0x" & $SI_MTime)
-	$SI_MTime = _WinTime_UTCFileTimeFormat(Dec($SI_MTime,2) - $tDelta, $DateTimeFormat, 2)
-	$SI_MTime = $SI_MTime & ":" & _FillZero(StringRight($SI_MTime_tmp, 4))
+	$SI_MTime = _WinTime_UTCFileTimeFormat(Dec($SI_MTime,2) - $tDelta, $DateTimeFormat, $TimestampPrecision)
+	If @error Then
+		$SI_MTime = "-"
+	ElseIf $TimestampPrecision = 2 Then
+		$SI_MTime_Core = StringMid($SI_MTime,1,StringLen($SI_MTime)-4)
+		$SI_MTime_Precision = StringRight($SI_MTime,3)
+	ElseIf $TimestampPrecision = 3 Then
+		$SI_MTime = $SI_MTime & ":" & _FillZero(StringRight($SI_MTime_tmp, 4))
+		$SI_MTime_Core = StringMid($SI_MTime,1,StringLen($SI_MTime)-9)
+		$SI_MTime_Precision = StringRight($SI_MTime,8)
+	Else
+		$SI_MTime_Core = $SI_MTime
+	EndIf
+	;
+;	$SI_RTime = StringMid($MFTEntry, $SI_Offset + 96, 16)
+;	$SI_RTime = _SwapEndian($SI_RTime)
+;	$SI_RTime_tmp = _WinTime_UTCFileTimeToLocalFileTime("0x" & $SI_RTime)
+;	$SI_RTime = _WinTime_UTCFileTimeFormat(Dec($SI_RTime,2) - $tDelta, $DateTimeFormat, $TimestampPrecision)
+;	$SI_RTime = $SI_RTime & ":" & _FillZero(StringRight($SI_RTime_tmp, 4))
 	;
 	$SI_RTime = StringMid($MFTEntry, $SI_Offset + 96, 16)
 	$SI_RTime = _SwapEndian($SI_RTime)
 	$SI_RTime_tmp = _WinTime_UTCFileTimeToLocalFileTime("0x" & $SI_RTime)
-	$SI_RTime = _WinTime_UTCFileTimeFormat(Dec($SI_RTime,2) - $tDelta, $DateTimeFormat, 2)
-	$SI_RTime = $SI_RTime & ":" & _FillZero(StringRight($SI_RTime_tmp, 4))
+	$SI_RTime = _WinTime_UTCFileTimeFormat(Dec($SI_RTime,2) - $tDelta, $DateTimeFormat, $TimestampPrecision)
+	If @error Then
+		$SI_RTime = "-"
+	ElseIf $TimestampPrecision = 2 Then
+		$SI_RTime_Core = StringMid($SI_RTime,1,StringLen($SI_RTime)-4)
+		$SI_RTime_Precision = StringRight($SI_RTime,3)
+	ElseIf $TimestampPrecision = 3 Then
+		$SI_RTime = $SI_RTime & ":" & _FillZero(StringRight($SI_RTime_tmp, 4))
+		$SI_RTime_Core = StringMid($SI_RTime,1,StringLen($SI_RTime)-9)
+		$SI_RTime_Precision = StringRight($SI_RTime,8)
+	Else
+		$SI_RTime_Core = $SI_RTime
+	EndIf
 	;
 	If Not $DoDefaultAll Then Return
 	$SI_FilePermission = StringMid($MFTEntry, $SI_Offset + 112, 8)
@@ -1257,29 +1404,97 @@ Func _Get_FileName($MFTEntry, $FN_Offset, $FN_Size, $FN_Number)
 		$FN_ParentSeqNo = StringMid($MFTEntry, $FN_Offset + 60, 4)
 		$FN_ParentSeqNo = Dec(_SwapEndian($FN_ParentSeqNo),2)
 		;
+;		$FN_CTime = StringMid($MFTEntry, $FN_Offset + 64, 16)
+;		$FN_CTime = _SwapEndian($FN_CTime)
+;		$FN_CTime_tmp = _WinTime_UTCFileTimeToLocalFileTime("0x" & $FN_CTime)
+;		$FN_CTime = _WinTime_UTCFileTimeFormat(Dec($FN_CTime,2) - $tDelta, $DateTimeFormat, $TimestampPrecision)
+;		$FN_CTime = $FN_CTime & ":" & _FillZero(StringRight($FN_CTime_tmp, 4))
+		;
 		$FN_CTime = StringMid($MFTEntry, $FN_Offset + 64, 16)
 		$FN_CTime = _SwapEndian($FN_CTime)
 		$FN_CTime_tmp = _WinTime_UTCFileTimeToLocalFileTime("0x" & $FN_CTime)
-		$FN_CTime = _WinTime_UTCFileTimeFormat(Dec($FN_CTime,2) - $tDelta, $DateTimeFormat, 2)
-		$FN_CTime = $FN_CTime & ":" & _FillZero(StringRight($FN_CTime_tmp, 4))
+		$FN_CTime = _WinTime_UTCFileTimeFormat(Dec($FN_CTime,2) - $tDelta, $DateTimeFormat, $TimestampPrecision)
+		If @error Then
+			$FN_CTime = "-"
+		ElseIf $TimestampPrecision = 2 Then
+			$FN_CTime_Core = StringMid($FN_CTime,1,StringLen($FN_CTime)-4)
+			$FN_CTime_Precision = StringRight($FN_CTime,3)
+		ElseIf $TimestampPrecision = 3 Then
+			$FN_CTime = $FN_CTime & ":" & _FillZero(StringRight($FN_CTime_tmp, 4))
+			$FN_CTime_Core = StringMid($FN_CTime,1,StringLen($FN_CTime)-9)
+			$FN_CTime_Precision = StringRight($FN_CTime,8)
+		Else
+			$FN_CTime_Core = $FN_CTime
+		EndIf
+		;
+;		$FN_ATime = StringMid($MFTEntry, $FN_Offset + 80, 16)
+;		$FN_ATime = _SwapEndian($FN_ATime)
+;		$FN_ATime_tmp = _WinTime_UTCFileTimeToLocalFileTime("0x" & $FN_ATime)
+;		$FN_ATime = _WinTime_UTCFileTimeFormat(Dec($FN_ATime,2) - $tDelta, $DateTimeFormat, $TimestampPrecision)
+;		$FN_ATime = $FN_ATime & ":" & _FillZero(StringRight($FN_ATime_tmp, 4))
 		;
 		$FN_ATime = StringMid($MFTEntry, $FN_Offset + 80, 16)
 		$FN_ATime = _SwapEndian($FN_ATime)
 		$FN_ATime_tmp = _WinTime_UTCFileTimeToLocalFileTime("0x" & $FN_ATime)
-		$FN_ATime = _WinTime_UTCFileTimeFormat(Dec($FN_ATime,2) - $tDelta, $DateTimeFormat, 2)
-		$FN_ATime = $FN_ATime & ":" & _FillZero(StringRight($FN_ATime_tmp, 4))
+		$FN_ATime = _WinTime_UTCFileTimeFormat(Dec($FN_ATime,2) - $tDelta, $DateTimeFormat, $TimestampPrecision)
+		If @error Then
+			$FN_ATime = "-"
+		ElseIf $TimestampPrecision = 2 Then
+			$FN_ATime_Core = StringMid($FN_ATime,1,StringLen($FN_ATime)-4)
+			$FN_ATime_Precision = StringRight($FN_ATime,3)
+		ElseIf $TimestampPrecision = 3 Then
+			$FN_ATime = $FN_ATime & ":" & _FillZero(StringRight($FN_ATime_tmp, 4))
+			$FN_ATime_Core = StringMid($FN_ATime,1,StringLen($FN_ATime)-9)
+			$FN_ATime_Precision = StringRight($FN_ATime,8)
+		Else
+			$FN_ATime_Core = $FN_ATime
+		EndIf
+		;
+;		$FN_MTime = StringMid($MFTEntry, $FN_Offset + 96, 16)
+;		$FN_MTime = _SwapEndian($FN_MTime)
+;		$FN_MTime_tmp = _WinTime_UTCFileTimeToLocalFileTime("0x" & $FN_MTime)
+;		$FN_MTime = _WinTime_UTCFileTimeFormat(Dec($FN_MTime,2) - $tDelta, $DateTimeFormat, $TimestampPrecision)
+;		$FN_MTime = $FN_MTime & ":" & _FillZero(StringRight($FN_MTime_tmp, 4))
 		;
 		$FN_MTime = StringMid($MFTEntry, $FN_Offset + 96, 16)
 		$FN_MTime = _SwapEndian($FN_MTime)
 		$FN_MTime_tmp = _WinTime_UTCFileTimeToLocalFileTime("0x" & $FN_MTime)
-		$FN_MTime = _WinTime_UTCFileTimeFormat(Dec($FN_MTime,2) - $tDelta, $DateTimeFormat, 2)
-		$FN_MTime = $FN_MTime & ":" & _FillZero(StringRight($FN_MTime_tmp, 4))
+		$FN_MTime = _WinTime_UTCFileTimeFormat(Dec($FN_MTime,2) - $tDelta, $DateTimeFormat, $TimestampPrecision)
+		If @error Then
+			$FN_MTime = "-"
+		ElseIf $TimestampPrecision = 2 Then
+			$FN_MTime_Core = StringMid($FN_MTime,1,StringLen($FN_MTime)-4)
+			$FN_MTime_Precision = StringRight($FN_MTime,3)
+		ElseIf $TimestampPrecision = 3 Then
+			$FN_MTime = $FN_MTime & ":" & _FillZero(StringRight($FN_MTime_tmp, 4))
+			$FN_MTime_Core = StringMid($FN_MTime,1,StringLen($FN_MTime)-9)
+			$FN_MTime_Precision = StringRight($FN_MTime,8)
+		Else
+			$FN_MTime_Core = $FN_MTime
+		EndIf
+		;
+;		$FN_RTime = StringMid($MFTEntry, $FN_Offset + 112, 16)
+;		$FN_RTime = _SwapEndian($FN_RTime)
+;		$FN_RTime_tmp = _WinTime_UTCFileTimeToLocalFileTime("0x" & $FN_RTime)
+;		$FN_RTime = _WinTime_UTCFileTimeFormat(Dec($FN_RTime,2) - $tDelta, $DateTimeFormat, $TimestampPrecision)
+;		$FN_RTime = $FN_RTime & ":" & _FillZero(StringRight($FN_RTime_tmp, 4))
 		;
 		$FN_RTime = StringMid($MFTEntry, $FN_Offset + 112, 16)
 		$FN_RTime = _SwapEndian($FN_RTime)
 		$FN_RTime_tmp = _WinTime_UTCFileTimeToLocalFileTime("0x" & $FN_RTime)
-		$FN_RTime = _WinTime_UTCFileTimeFormat(Dec($FN_RTime,2) - $tDelta, $DateTimeFormat, 2)
-		$FN_RTime = $FN_RTime & ":" & _FillZero(StringRight($FN_RTime_tmp, 4))
+		$FN_RTime = _WinTime_UTCFileTimeFormat(Dec($FN_RTime,2) - $tDelta, $DateTimeFormat, $TimestampPrecision)
+		If @error Then
+			$FN_RTime = "-"
+		ElseIf $TimestampPrecision = 2 Then
+			$FN_RTime_Core = StringMid($FN_RTime,1,StringLen($FN_RTime)-4)
+			$FN_RTime_Precision = StringRight($FN_RTime,3)
+		ElseIf $TimestampPrecision = 3 Then
+			$FN_RTime = $FN_RTime & ":" & _FillZero(StringRight($FN_RTime_tmp, 4))
+			$FN_RTime_Core = StringMid($FN_RTime,1,StringLen($FN_RTime)-9)
+			$FN_RTime_Precision = StringRight($FN_RTime,8)
+		Else
+			$FN_RTime_Core = $FN_RTime
+		EndIf
 		;
 		$FN_AllocSize = StringMid($MFTEntry, $FN_Offset + 128, 16)
 		$FN_AllocSize = Dec(_SwapEndian($FN_AllocSize),2)
@@ -1312,29 +1527,97 @@ Func _Get_FileName($MFTEntry, $FN_Offset, $FN_Size, $FN_Number)
 		$FN_ParentRefNo_2 = Dec(_SwapEndian($FN_ParentRefNo_2),2)
 		$FN_ParentSeqNo_2 = StringMid($MFTEntry, $FN_Offset + 60, 4)
 		$FN_ParentSeqNo_2 = Dec(_SwapEndian($FN_ParentSeqNo_2),2)
+;		$FN_CTime_2 = StringMid($MFTEntry, $FN_Offset + 64, 16)
+;		$FN_CTime_2 = _SwapEndian($FN_CTime_2)
+;		$FN_CTime_2_tmp = _WinTime_UTCFileTimeToLocalFileTime("0x" & $FN_CTime_2)
+;		$FN_CTime_2 = _WinTime_UTCFileTimeFormat(Dec($FN_CTime_2,2) - $tDelta, $DateTimeFormat, $TimestampPrecision)
+;		$FN_CTime_2 = $FN_CTime_2 & ":" & _FillZero(StringRight($FN_CTime_2_tmp, 4))
+		;
 		$FN_CTime_2 = StringMid($MFTEntry, $FN_Offset + 64, 16)
 		$FN_CTime_2 = _SwapEndian($FN_CTime_2)
 		$FN_CTime_2_tmp = _WinTime_UTCFileTimeToLocalFileTime("0x" & $FN_CTime_2)
-		$FN_CTime_2 = _WinTime_UTCFileTimeFormat(Dec($FN_CTime_2,2) - $tDelta, $DateTimeFormat, 2)
-		$FN_CTime_2 = $FN_CTime_2 & ":" & _FillZero(StringRight($FN_CTime_2_tmp, 4))
+		$FN_CTime_2 = _WinTime_UTCFileTimeFormat(Dec($FN_CTime_2,2) - $tDelta, $DateTimeFormat, $TimestampPrecision)
+		If @error Then
+			$FN_CTime_2 = "-"
+		ElseIf $TimestampPrecision = 2 Then
+			$FN_CTime_2_Core = StringMid($FN_CTime_2,1,StringLen($FN_CTime_2)-4)
+			$FN_CTime_2_Precision = StringRight($FN_CTime_2,3)
+		ElseIf $TimestampPrecision = 3 Then
+			$FN_CTime_2 = $FN_CTime_2 & ":" & _FillZero(StringRight($FN_CTime_2_tmp, 4))
+			$FN_CTime_2_Core = StringMid($FN_CTime_2,1,StringLen($FN_CTime_2)-9)
+			$FN_CTime_2_Precision = StringRight($FN_CTime_2,8)
+		Else
+			$FN_CTime_2_Core = $FN_CTime_2
+		EndIf
+		;
+;		$FN_ATime_2 = StringMid($MFTEntry, $FN_Offset + 80, 16)
+;		$FN_ATime_2 = _SwapEndian($FN_ATime_2)
+;		$FN_ATime_2_tmp = _WinTime_UTCFileTimeToLocalFileTime("0x" & $FN_ATime_2)
+;		$FN_ATime_2 = _WinTime_UTCFileTimeFormat(Dec($FN_ATime_2,2) - $tDelta, $DateTimeFormat, $TimestampPrecision)
+;		$FN_ATime_2 = $FN_ATime_2 & ":" & _FillZero(StringRight($FN_ATime_2_tmp, 4))
 		;
 		$FN_ATime_2 = StringMid($MFTEntry, $FN_Offset + 80, 16)
 		$FN_ATime_2 = _SwapEndian($FN_ATime_2)
 		$FN_ATime_2_tmp = _WinTime_UTCFileTimeToLocalFileTime("0x" & $FN_ATime_2)
-		$FN_ATime_2 = _WinTime_UTCFileTimeFormat(Dec($FN_ATime_2,2) - $tDelta, $DateTimeFormat, 2)
-		$FN_ATime_2 = $FN_ATime_2 & ":" & _FillZero(StringRight($FN_ATime_2_tmp, 4))
+		$FN_ATime_2 = _WinTime_UTCFileTimeFormat(Dec($FN_ATime_2,2) - $tDelta, $DateTimeFormat, $TimestampPrecision)
+		If @error Then
+			$FN_ATime_2 = "-"
+		ElseIf $TimestampPrecision = 2 Then
+			$FN_ATime_2_Core = StringMid($FN_ATime_2,1,StringLen($FN_ATime_2)-4)
+			$FN_ATime_2_Precision = StringRight($FN_ATime_2,3)
+		ElseIf $TimestampPrecision = 3 Then
+			$FN_ATime_2 = $FN_ATime_2 & ":" & _FillZero(StringRight($FN_ATime_2_tmp, 4))
+			$FN_ATime_2_Core = StringMid($FN_ATime_2,1,StringLen($FN_ATime_2)-9)
+			$FN_ATime_2_Precision = StringRight($FN_ATime_2,8)
+		Else
+			$FN_ATime_2_Core = $FN_ATime_2
+		EndIf
+		;
+;		$FN_MTime_2 = StringMid($MFTEntry, $FN_Offset + 96, 16)
+;		$FN_MTime_2 = _SwapEndian($FN_MTime_2)
+;		$FN_MTime_2_tmp = _WinTime_UTCFileTimeToLocalFileTime("0x" & $FN_MTime_2)
+;		$FN_MTime_2 = _WinTime_UTCFileTimeFormat(Dec($FN_MTime_2,2) - $tDelta, $DateTimeFormat, $TimestampPrecision)
+;		$FN_MTime_2 = $FN_MTime_2 & ":" & _FillZero(StringRight($FN_MTime_2_tmp, 4))
 		;
 		$FN_MTime_2 = StringMid($MFTEntry, $FN_Offset + 96, 16)
 		$FN_MTime_2 = _SwapEndian($FN_MTime_2)
 		$FN_MTime_2_tmp = _WinTime_UTCFileTimeToLocalFileTime("0x" & $FN_MTime_2)
-		$FN_MTime_2 = _WinTime_UTCFileTimeFormat(Dec($FN_MTime_2,2) - $tDelta, $DateTimeFormat, 2)
-		$FN_MTime_2 = $FN_MTime_2 & ":" & _FillZero(StringRight($FN_MTime_2_tmp, 4))
+		$FN_MTime_2 = _WinTime_UTCFileTimeFormat(Dec($FN_MTime_2,2) - $tDelta, $DateTimeFormat, $TimestampPrecision)
+		If @error Then
+			$FN_MTime_2 = "-"
+		ElseIf $TimestampPrecision = 2 Then
+			$FN_MTime_2_Core = StringMid($FN_MTime_2,1,StringLen($FN_MTime_2)-4)
+			$FN_MTime_2_Precision = StringRight($FN_MTime_2,3)
+		ElseIf $TimestampPrecision = 3 Then
+			$FN_MTime_2 = $FN_MTime_2 & ":" & _FillZero(StringRight($FN_MTime_2_tmp, 4))
+			$FN_MTime_2_Core = StringMid($FN_MTime_2,1,StringLen($FN_MTime_2)-9)
+			$FN_MTime_2_Precision = StringRight($FN_MTime_2,8)
+		Else
+			$FN_MTime_2_Core = $FN_MTime_2
+		EndIf
+		;
+;		$FN_RTime_2 = StringMid($MFTEntry, $FN_Offset + 112, 16)
+;		$FN_RTime_2 = _SwapEndian($FN_RTime_2)
+;		$FN_RTime_2_tmp = _WinTime_UTCFileTimeToLocalFileTime("0x" & $FN_RTime_2)
+;		$FN_RTime_2 = _WinTime_UTCFileTimeFormat(Dec($FN_RTime_2,2) - $tDelta, $DateTimeFormat, $TimestampPrecision)
+;		$FN_RTime_2 = $FN_RTime_2 & ":" & _FillZero(StringRight($FN_RTime_2_tmp, 4))
 		;
 		$FN_RTime_2 = StringMid($MFTEntry, $FN_Offset + 112, 16)
 		$FN_RTime_2 = _SwapEndian($FN_RTime_2)
 		$FN_RTime_2_tmp = _WinTime_UTCFileTimeToLocalFileTime("0x" & $FN_RTime_2)
-		$FN_RTime_2 = _WinTime_UTCFileTimeFormat(Dec($FN_RTime_2,2) - $tDelta, $DateTimeFormat, 2)
-		$FN_RTime_2 = $FN_RTime_2 & ":" & _FillZero(StringRight($FN_RTime_2_tmp, 4))
+		$FN_RTime_2 = _WinTime_UTCFileTimeFormat(Dec($FN_RTime_2,2) - $tDelta, $DateTimeFormat, $TimestampPrecision)
+		If @error Then
+			$FN_RTime_2 = "-"
+		ElseIf $TimestampPrecision = 2 Then
+			$FN_RTime_2_Core = StringMid($FN_RTime_2,1,StringLen($FN_RTime_2)-4)
+			$FN_RTime_2_Precision = StringRight($FN_RTime_2,3)
+		ElseIf $TimestampPrecision = 3 Then
+			$FN_RTime_2 = $FN_RTime_2 & ":" & _FillZero(StringRight($FN_RTime_2_tmp, 4))
+			$FN_RTime_2_Core = StringMid($FN_RTime_2,1,StringLen($FN_RTime_2)-9)
+			$FN_RTime_2_Precision = StringRight($FN_RTime_2,8)
+		Else
+			$FN_RTime_2_Core = $FN_RTime_2
+		EndIf
 		;
 		$FN_AllocSize_2 = StringMid($MFTEntry, $FN_Offset + 128, 16)
 		$FN_AllocSize_2 = Dec(_SwapEndian($FN_AllocSize_2),2)
@@ -1365,29 +1648,97 @@ Func _Get_FileName($MFTEntry, $FN_Offset, $FN_Size, $FN_Number)
 		$FN_ParentRefNo_3 = Dec(_SwapEndian($FN_ParentRefNo_3),2)
 		$FN_ParentSeqNo_3 = StringMid($MFTEntry, $FN_Offset + 60, 4)
 		$FN_ParentSeqNo_3 = Dec(_SwapEndian($FN_ParentSeqNo_3),2)
+;		$FN_CTime_3 = StringMid($MFTEntry, $FN_Offset + 64, 16)
+;		$FN_CTime_3 = _SwapEndian($FN_CTime_3)
+;		$FN_CTime_3_tmp = _WinTime_UTCFileTimeToLocalFileTime("0x" & $FN_CTime_3)
+;		$FN_CTime_3 = _WinTime_UTCFileTimeFormat(Dec($FN_CTime_3,2) - $tDelta, $DateTimeFormat, $TimestampPrecision)
+;		$FN_CTime_3 = $FN_CTime_3 & ":" & _FillZero(StringRight($FN_CTime_3_tmp, 4))
+		;
 		$FN_CTime_3 = StringMid($MFTEntry, $FN_Offset + 64, 16)
 		$FN_CTime_3 = _SwapEndian($FN_CTime_3)
 		$FN_CTime_3_tmp = _WinTime_UTCFileTimeToLocalFileTime("0x" & $FN_CTime_3)
-		$FN_CTime_3 = _WinTime_UTCFileTimeFormat(Dec($FN_CTime_3,2) - $tDelta, $DateTimeFormat, 2)
-		$FN_CTime_3 = $FN_CTime_3 & ":" & _FillZero(StringRight($FN_CTime_3_tmp, 4))
+		$FN_CTime_3 = _WinTime_UTCFileTimeFormat(Dec($FN_CTime_3,2) - $tDelta, $DateTimeFormat, $TimestampPrecision)
+		If @error Then
+			$FN_CTime_3 = "-"
+		ElseIf $TimestampPrecision = 2 Then
+			$FN_CTime_3_Core = StringMid($FN_CTime_3,1,StringLen($FN_CTime_3)-4)
+			$FN_CTime_3_Precision = StringRight($FN_CTime_3,3)
+		ElseIf $TimestampPrecision = 3 Then
+			$FN_CTime_3 = $FN_CTime_3 & ":" & _FillZero(StringRight($FN_CTime_3_tmp, 4))
+			$FN_CTime_3_Core = StringMid($FN_CTime_3,1,StringLen($FN_CTime_3)-9)
+			$FN_CTime_3_Precision = StringRight($FN_CTime_3,8)
+		Else
+			$FN_CTime_3_Core = $FN_CTime_3
+		EndIf
+		;
+;		$FN_ATime_3 = StringMid($MFTEntry, $FN_Offset + 80, 16)
+;		$FN_ATime_3 = _SwapEndian($FN_ATime_3)
+;		$FN_ATime_3_tmp = _WinTime_UTCFileTimeToLocalFileTime("0x" & $FN_ATime_3)
+;		$FN_ATime_3 = _WinTime_UTCFileTimeFormat(Dec($FN_ATime_3,2) - $tDelta, $DateTimeFormat, $TimestampPrecision)
+;		$FN_ATime_3 = $FN_ATime_3 & ":" & _FillZero(StringRight($FN_ATime_3_tmp, 4))
 		;
 		$FN_ATime_3 = StringMid($MFTEntry, $FN_Offset + 80, 16)
 		$FN_ATime_3 = _SwapEndian($FN_ATime_3)
 		$FN_ATime_3_tmp = _WinTime_UTCFileTimeToLocalFileTime("0x" & $FN_ATime_3)
-		$FN_ATime_3 = _WinTime_UTCFileTimeFormat(Dec($FN_ATime_3,2) - $tDelta, $DateTimeFormat, 2)
-		$FN_ATime_3 = $FN_ATime_3 & ":" & _FillZero(StringRight($FN_ATime_3_tmp, 4))
+		$FN_ATime_3 = _WinTime_UTCFileTimeFormat(Dec($FN_ATime_3,2) - $tDelta, $DateTimeFormat, $TimestampPrecision)
+		If @error Then
+			$FN_ATime_3 = "-"
+		ElseIf $TimestampPrecision = 2 Then
+			$FN_ATime_3_Core = StringMid($FN_ATime_3,1,StringLen($FN_ATime_3)-4)
+			$FN_ATime_3_Precision = StringRight($FN_ATime_3,3)
+		ElseIf $TimestampPrecision = 3 Then
+			$FN_ATime_3 = $FN_ATime_3 & ":" & _FillZero(StringRight($FN_ATime_3_tmp, 4))
+			$FN_ATime_3_Core = StringMid($FN_ATime_3,1,StringLen($FN_ATime_3)-9)
+			$FN_ATime_3_Precision = StringRight($FN_ATime_3,8)
+		Else
+			$FN_ATime_3_Core = $FN_ATime_3
+		EndIf
+		;
+;		$FN_MTime_3 = StringMid($MFTEntry, $FN_Offset + 96, 16)
+;		$FN_MTime_3 = _SwapEndian($FN_MTime_3)
+;		$FN_MTime_3_tmp = _WinTime_UTCFileTimeToLocalFileTime("0x" & $FN_MTime_3)
+;		$FN_MTime_3 = _WinTime_UTCFileTimeFormat(Dec($FN_MTime_3,2) - $tDelta, $DateTimeFormat, $TimestampPrecision)
+;		$FN_MTime_3 = $FN_MTime_3 & ":" & _FillZero(StringRight($FN_MTime_3_tmp, 4))
 		;
 		$FN_MTime_3 = StringMid($MFTEntry, $FN_Offset + 96, 16)
 		$FN_MTime_3 = _SwapEndian($FN_MTime_3)
 		$FN_MTime_3_tmp = _WinTime_UTCFileTimeToLocalFileTime("0x" & $FN_MTime_3)
-		$FN_MTime_3 = _WinTime_UTCFileTimeFormat(Dec($FN_MTime_3,2) - $tDelta, $DateTimeFormat, 2)
-		$FN_MTime_3 = $FN_MTime_3 & ":" & _FillZero(StringRight($FN_MTime_3_tmp, 4))
+		$FN_MTime_3 = _WinTime_UTCFileTimeFormat(Dec($FN_MTime_3,2) - $tDelta, $DateTimeFormat, $TimestampPrecision)
+		If @error Then
+			$FN_MTime_3 = "-"
+		ElseIf $TimestampPrecision = 2 Then
+			$FN_MTime_3_Core = StringMid($FN_MTime_3,1,StringLen($FN_MTime_3)-4)
+			$FN_MTime_3_Precision = StringRight($FN_MTime_3,3)
+		ElseIf $TimestampPrecision = 3 Then
+			$FN_MTime_3 = $FN_MTime_3 & ":" & _FillZero(StringRight($FN_MTime_3_tmp, 4))
+			$FN_MTime_3_Core = StringMid($FN_MTime_3,1,StringLen($FN_MTime_3)-9)
+			$FN_MTime_3_Precision = StringRight($FN_MTime_3,8)
+		Else
+			$FN_MTime_3_Core = $FN_MTime_3
+		EndIf
+		;
+;		$FN_RTime_3 = StringMid($MFTEntry, $FN_Offset + 112, 16)
+;		$FN_RTime_3 = _SwapEndian($FN_RTime_3)
+;		$FN_RTime_3_tmp = _WinTime_UTCFileTimeToLocalFileTime("0x" & $FN_RTime_3)
+;		$FN_RTime_3 = _WinTime_UTCFileTimeFormat(Dec($FN_RTime_3,2) - $tDelta, $DateTimeFormat, $TimestampPrecision)
+;		$FN_RTime_3 = $FN_RTime_3 & ":" & _FillZero(StringRight($FN_RTime_3_tmp, 4))
 		;
 		$FN_RTime_3 = StringMid($MFTEntry, $FN_Offset + 112, 16)
 		$FN_RTime_3 = _SwapEndian($FN_RTime_3)
 		$FN_RTime_3_tmp = _WinTime_UTCFileTimeToLocalFileTime("0x" & $FN_RTime_3)
-		$FN_RTime_3 = _WinTime_UTCFileTimeFormat(Dec($FN_RTime_3,2) - $tDelta, $DateTimeFormat, 2)
-		$FN_RTime_3 = $FN_RTime_3 & ":" & _FillZero(StringRight($FN_RTime_3_tmp, 4))
+		$FN_RTime_3 = _WinTime_UTCFileTimeFormat(Dec($FN_RTime_3,2) - $tDelta, $DateTimeFormat, $TimestampPrecision)
+		If @error Then
+			$FN_RTime_3 = "-"
+		ElseIf $TimestampPrecision = 2 Then
+			$FN_RTime_3_Core = StringMid($FN_RTime_3,1,StringLen($FN_RTime_3)-4)
+			$FN_RTime_3_Precision = StringRight($FN_RTime_3,3)
+		ElseIf $TimestampPrecision = 3 Then
+			$FN_RTime_3 = $FN_RTime_3 & ":" & _FillZero(StringRight($FN_RTime_3_tmp, 4))
+			$FN_RTime_3_Core = StringMid($FN_RTime_3,1,StringLen($FN_RTime_3)-9)
+			$FN_RTime_3_Precision = StringRight($FN_RTime_3,8)
+		Else
+			$FN_RTime_3_Core = $FN_RTime_3
+		EndIf
 		;
 		$FN_AllocSize_3 = StringMid($MFTEntry, $FN_Offset + 128, 16)
 		$FN_AllocSize_3 = Dec(_SwapEndian($FN_AllocSize_3),2)
@@ -1622,22 +1973,22 @@ Func _Get_LoggedUtilityStream()
 EndFunc   ;==>_Get_LoggedUtilityStream
 
 Func _ClearVar()
-	$SI_ON = "FALSE"
-	$AL_ON = "FALSE"
-	$FN_ON = "FALSE"
-	$OI_ON = "FALSE"
-	$SD_ON = "FALSE"
-	$VN_ON = "FALSE"
-	$VI_ON = "FALSE"
-	$DT_ON = "FALSE"
-	$IR_ON = "FALSE"
-	$IA_ON = "FALSE"
-	$BITMAP_ON = "FALSE"
-	$RP_ON = "FALSE"
-	$EAI_ON = "FALSE"
-	$EA_ON = "FALSE"
-	$PS_ON = "FALSE"
-	$LUS_ON = "FALSE"
+	$SI_ON = 0
+	$AL_ON = 0
+	$FN_ON = 0
+	$OI_ON = 0
+	$SD_ON = 0
+	$VN_ON = 0
+	$VI_ON = 0
+	$DT_ON = 0
+	$IR_ON = 0
+	$IA_ON = 0
+	$BITMAP_ON = 0
+	$RP_ON = 0
+	$EAI_ON = 0
+	$EA_ON = 0
+	$PS_ON = 0
+	$LUS_ON = 0
 	$SI_CTime = ""
 	$SI_ATime = ""
 	$SI_MTime = ""
@@ -1773,23 +2124,58 @@ Func _ClearVar()
 	$HDR_BaseRecord = ""
 	$HDR_NextAttribID = ""
 	$HDR_MFTREcordNumber = ""
+	$style = ""
+	If $DoSplitCsv Then
+		$SI_CTime_Core = ""
+		$SI_ATime_Core = ""
+		$SI_MTime_Core = ""
+		$SI_RTime_Core = ""
+		$SI_CTime_Precision = ""
+		$SI_ATime_Precision = ""
+		$SI_MTime_Precision = ""
+		$SI_RTime_Precision = ""
+		$FN_CTime_Core = ""
+		$FN_ATime_Core = ""
+		$FN_MTime_Core = ""
+		$FN_RTime_Core = ""
+		$FN_CTime_Precision = ""
+		$FN_ATime_Precision = ""
+		$FN_MTime_Precision = ""
+		$FN_RTime_Precision = ""
+		$FN_CTime_2_Core = ""
+		$FN_ATime_2_Core = ""
+		$FN_MTime_2_Core = ""
+		$FN_RTime_2_Core = ""
+		$FN_CTime_2_Precision = ""
+		$FN_ATime_2_Precision = ""
+		$FN_MTime_2_Precision = ""
+		$FN_RTime_2_Precision = ""
+		$FN_CTime_3_Core = ""
+		$FN_ATime_3_Core = ""
+		$FN_MTime_3_Core = ""
+		$FN_RTime_3_Core = ""
+		$FN_CTime_3_Precision = ""
+		$FN_ATime_3_Precision = ""
+		$FN_MTime_3_Precision = ""
+		$FN_RTime_3_Precision = ""
+	EndIf
 EndFunc   ;==>_ClearVar
 
 Func _Test_MilliSec($timestamp)
 	If StringRight($timestamp, 8) = '000:0000' Then
 		;If StringRight($timestamp,4) = '000' Then
-		$MSecTest = 'YES'
+		$MSecTest = 1
 	Else
-		$MSecTest = 'NO'
+		$MSecTest = 0
 	EndIf
 	Return $MSecTest
 EndFunc   ;==>_Test_MilliSec
 
 Func _Test_SI2FN_CTime($SI_CTime, $FN_CTime)
 	If $SI_CTime < $FN_CTime Then
-		$CTimeTest = 'YES'
+		$CTimeTest = 1
 	Else
-		$CTimeTest = 'NO'
+		$CTimeTest = 0
 	EndIf
 	Return $CTimeTest
 EndFunc   ;==>_Test_SI2FN_CTime
@@ -1913,8 +2299,15 @@ Func _WriteCSV2withQuotes()
 	EndIf
 EndFunc
 
+Func _WriteCSVExtra()
+	FileWriteLine($csvextra, $HDR_MFTREcordNumber & $de & $SI_CTime_Core & $de & $SI_CTime_Precision & $de & $SI_ATime_Core & $de & $SI_ATime_Precision & $de & $SI_MTime_Core & $de & $SI_MTime_Precision & $de & $SI_RTime_Core & $de & $SI_RTime_Precision & $de & _
+	$FN_CTime_Core & $de & $FN_CTime_Precision & $de & $FN_ATime_Core & $de & $FN_ATime_Precision & $de & $FN_MTime_Core & $de & $FN_MTime_Precision & $de & $FN_RTime_Core & $de & $FN_RTime_Precision & $de & _
+	$FN_CTime_2_Core & $de & $FN_CTime_2_Precision & $de & $FN_ATime_2_Core & $de & $FN_ATime_2_Precision & $de & $FN_MTime_2_Core & $de & $FN_MTime_2_Precision & $de & $FN_RTime_2_Core & $de & $FN_RTime_2_Precision & $de & _
+	$FN_CTime_3_Core & $de & $FN_CTime_3_Precision & $de & $FN_ATime_3_Core & $de & $FN_ATime_3_Precision & $de & $FN_MTime_3_Core & $de & $FN_MTime_3_Precision & $de & $FN_RTime_3_Core & $de & $FN_RTime_3_Precision & @CRLF)
+EndFunc
+
 Func _WriteCSV()
-	FileWriteLine($csv, $RecordOffset & $de & $Signature & $de & $IntegrityCheck & $de & $HDR_MFTREcordNumber & $de & $HDR_SequenceNo & $de & $HDR_HardLinkCount & $de & $FN_ParentRefNo & $de & $FN_ParentSeqNo & $de & $FN_Name & $de & $FN_NamePath & $de & $HDR_Flags & $de & $RecordActive & $de & $FileSizeBytes & $de & $SI_FilePermission & $de & $FN_Flags & $de & $FN_NameType & $de & $ADS & $de & $SI_CTime & $de & $SI_ATime & $de & $SI_MTime & $de & $SI_RTime & $de & _
+	FileWriteLine($csv, $RecordOffset & $de & $Signature & $de & $IntegrityCheck & $de & $style & $de & $HDR_MFTREcordNumber & $de & $HDR_SequenceNo & $de & $HDR_HardLinkCount & $de & $FN_ParentRefNo & $de & $FN_ParentSeqNo & $de & $FN_Name & $de & $FN_NamePath & $de & $HDR_Flags & $de & $RecordActive & $de & $FileSizeBytes & $de & $SI_FilePermission & $de & $FN_Flags & $de & $FN_NameType & $de & $ADS & $de & $SI_CTime & $de & $SI_ATime & $de & $SI_MTime & $de & $SI_RTime & $de & _
 			$MSecTest & $de & $FN_CTime & $de & $FN_ATime & $de & $FN_MTime & $de & $FN_RTime & $de & $CTimeTest & $de & $FN_AllocSize & $de & $FN_RealSize & $de & $SI_USN & $de & $DT_Name & $de & $DT_Flags & $de & $DT_LengthOfAttribute & $de & $DT_IndexedFlag & $de & $DT_VCNs & $de & $DT_NonResidentFlag & $de & $DT_ComprUnitSize & $de & $HDR_LSN & $de & _
 			$HDR_RecRealSize & $de & $HDR_RecAllocSize & $de & $HDR_BaseRecord & $de & $HDR_BaseRecSeqNo & $de & $HDR_NextAttribID & $de & $DT_AllocSize & $de & $DT_RealSize & $de & $DT_InitStreamSize & $de & $SI_HEADER_Flags & $de & $SI_MaxVersions & $de & $SI_VersionNumber & $de & $SI_ClassID & $de & $SI_OwnerID & $de & $SI_SecurityID & $de & $FN_CTime_2 & $de & $FN_ATime_2 & $de & _
 			$FN_MTime_2 & $de & $FN_RTime_2 & $de & $FN_AllocSize_2 & $de & $FN_RealSize_2 & $de & $FN_Flags_2 & $de & $FN_NameLen_2 & $de & $FN_NameType_2 & $de & $FN_Name_2 & $de & $GUID_ObjectID & $de & $GUID_BirthVolumeID & $de & $GUID_BirthObjectID & $de & $GUID_BirthDomainID & $de & $VOLUME_NAME_NAME & $de & $VOL_INFO_NTFS_VERSION & $de & $VOL_INFO_FLAGS & $de & $FN_CTime_3 & $de & $FN_ATime_3 & $de & $FN_MTime_3 & $de & $FN_RTime_3 & $de & $FN_AllocSize_3 & $de & $FN_RealSize_3 & $de & $FN_Flags_3 & $de & $FN_NameLen_3 & $de & $FN_NameType_3 & $de & $FN_Name_3 & $de & _
@@ -1923,8 +2316,15 @@ Func _WriteCSV()
 			$DT_RealSize_3 & $de & $DT_InitStreamSize_3 & $de & $SI_ON & $de & $AL_ON & $de & $FN_ON & $de & $OI_ON & $de & $SD_ON & $de & $VN_ON & $de & $VI_ON & $de & $DT_ON & $de & $IR_ON & $de & $IA_ON & $de & $BITMAP_ON & $de & $RP_ON & $de & $EAI_ON & $de & $EA_ON & $de & $PS_ON & $de & $LUS_ON & @CRLF)
 EndFunc
 
+Func _WriteCSVExtraWithQuotes()
+	FileWriteLine($csvextra, $HDR_MFTREcordNumber&'"'&$de&'"'&$SI_CTime_Core&'"'&$de&'"'&$SI_CTime_Precision&'"'&$de&'"'&$SI_ATime_Core&'"'&$de&'"'&$SI_ATime_Precision&'"'&$de&'"'&$SI_MTime_Core&'"'&$de&'"'&$SI_MTime_Precision&'"'&$de&'"'&$SI_RTime_Core&'"'&$de&'"'&$SI_RTime_Precision&'"'&$de&'"'& _
+	$FN_CTime_Core&'"'&$de&'"'&$FN_CTime_Precision&'"'&$de&'"'&$FN_ATime_Core&'"'&$de&'"'&$FN_ATime_Precision&'"'&$de&'"'&$FN_MTime_Core&'"'&$de&'"'&$FN_MTime_Precision&'"'&$de&'"'&$FN_RTime_Core&'"'&$de&'"'&$FN_RTime_Precision&'"'&$de&'"'& _
+	$FN_CTime_2_Core&'"'&$de&'"'&$FN_CTime_2_Precision&'"'&$de&'"'&$FN_ATime_2_Core&'"'&$de&'"'&$FN_ATime_2_Precision&'"'&$de&'"'&$FN_MTime_2_Core&'"'&$de&'"'&$FN_MTime_2_Precision&'"'&$de&'"'&$FN_RTime_2_Core&'"'&$de&'"'&$FN_RTime_2_Precision&'"'&$de&'"'& _
+	$FN_CTime_3_Core&'"'&$de&'"'&$FN_CTime_3_Precision&'"'&$de&'"'&$FN_ATime_3_Core&'"'&$de&'"'&$FN_ATime_3_Precision&'"'&$de&'"'&$FN_MTime_3_Core&'"'&$de&'"'&$FN_MTime_3_Precision&'"'&$de&'"'&$FN_RTime_3_Core&'"'&$de&'"'&$FN_RTime_3_Precision&'"'&@CRLF)
+EndFunc
+
 Func _WriteCSVwithQuotes()
-	FileWriteLine($csv, '"'&$RecordOffset&'"'&$de&'"'&$Signature&'"'&$de&'"'&$IntegrityCheck&'"'&$de&'"'&$HDR_MFTREcordNumber&'"'&$de&'"'&$HDR_SequenceNo&'"'&$de&'"'&$HDR_HardLinkCount&'"'&$de&'"'&$FN_ParentRefNo&'"'&$de&'"'&$FN_ParentSeqNo&'"'&$de&'"'&$FN_Name&'"'&$de&'"'&$FN_NamePath&'"'&$de&'"'&$HDR_Flags&'"'&$de&'"'&$RecordActive&'"'&$de&'"'&$FileSizeBytes&'"'&$de&'"'&$SI_FilePermission&'"'&$de&'"'&$FN_Flags&'"'&$de&'"'&$FN_NameType&'"'&$de&'"'&$ADS&'"'&$de&'"'&$SI_CTime&'"'&$de&'"' & _
+	FileWriteLine($csv, '"'&$RecordOffset&'"'&$de&'"'&$Signature&'"'&$de&'"'&$IntegrityCheck&'"'&$de&'"'&$style&'"'&$de&'"'&$HDR_MFTREcordNumber&'"'&$de&'"'&$HDR_SequenceNo&'"'&$de&'"'&$HDR_HardLinkCount&'"'&$de&'"'&$FN_ParentRefNo&'"'&$de&'"'&$FN_ParentSeqNo&'"'&$de&'"'&$FN_Name&'"'&$de&'"'&$FN_NamePath&'"'&$de&'"'&$HDR_Flags&'"'&$de&'"'&$RecordActive&'"'&$de&'"'&$FileSizeBytes&'"'&$de&'"'&$SI_FilePermission&'"'&$de&'"'&$FN_Flags&'"'&$de&'"'&$FN_NameType&'"'&$de&'"'&$ADS&'"'&$de&'"'&$SI_CTime&'"'&$de&'"' & _
 		$SI_ATime&'"'&$de&'"'&$SI_MTime&'"'&$de&'"'&$SI_RTime&'"'&$de&'"'&$MSecTest&'"'&$de&'"'&$FN_CTime&'"'&$de&'"'&$FN_ATime&'"'&$de&'"'&$FN_MTime&'"'&$de&'"'&$FN_RTime&'"'&$de&'"'&$CTimeTest&'"'&$de&'"'&$FN_AllocSize&'"'&$de&'"'&$FN_RealSize&'"'&$de&'"'&$SI_USN&'"'&$de&'"'&$DT_Name&'"'&$de&'"'&$DT_Flags&'"'&$de&'"'&$DT_LengthOfAttribute&'"'&$de&'"'&$DT_IndexedFlag&'"'&$de&'"'&$DT_VCNs&'"'&$de&'"'&$DT_NonResidentFlag&'"'&$de&'"'&$DT_ComprUnitSize&'"'&$de&'"'&$HDR_LSN&'"'&$de&'"' & _
 		$HDR_RecRealSize&'"'&$de&'"'&$HDR_RecAllocSize&'"'&$de&'"'&$HDR_BaseRecord&'"'&$de&'"'&$HDR_BaseRecSeqNo&'"'&$de&'"'&$HDR_NextAttribID&'"'&$de&'"'&$DT_AllocSize&'"'&$de&'"'&$DT_RealSize&'"'&$de&'"'&$DT_InitStreamSize&'"'&$de&'"'&$SI_HEADER_Flags&'"'&$de&'"'&$SI_MaxVersions&'"'&$de&'"'&$SI_VersionNumber&'"'&$de&'"'&$SI_ClassID&'"'&$de&'"'&$SI_OwnerID&'"'&$de&'"'&$SI_SecurityID&'"'&$de&'"'&$FN_CTime_2&'"'&$de&'"'&$FN_ATime_2&'"'&$de&'"' & _
 		$FN_MTime_2&'"'&$de&'"'&$FN_RTime_2&'"'&$de&'"'&$FN_AllocSize_2&'"'&$de&'"'&$FN_RealSize_2&'"'&$de&'"'&$FN_Flags_2&'"'&$de&'"'&$FN_NameLen_2&'"'&$de&'"'&$FN_NameType_2&'"'&$de&'"'&$FN_Name_2&'"'&$de&'"'&$GUID_ObjectID&'"'&$de&'"'&$GUID_BirthVolumeID&'"'&$de&'"'&$GUID_BirthObjectID&'"'&$de&'"'&$GUID_BirthDomainID&'"'&$de&'"'&$VOLUME_NAME_NAME&'"'&$de&'"'&$VOL_INFO_NTFS_VERSION&'"'&$de&'"'&$VOL_INFO_FLAGS&'"'&$de&'"'&$FN_CTime_3&'"'&$de&'"'&$FN_ATime_3&'"'&$de&'"'&$FN_MTime_3&'"'&$de&'"'&$FN_RTime_3&'"'&$de&'"'&$FN_AllocSize_3&'"'&$de&'"' & _
@@ -1933,18 +2333,10 @@ Func _WriteCSVwithQuotes()
 		$DT_RealSize_3&'"'&$de&'"'&$DT_InitStreamSize_3&'"'&$de&'"'&$SI_ON&'"'&$de&'"'&$AL_ON&'"'&$de&'"'&$FN_ON&'"'&$de&'"'&$OI_ON&'"'&$de&'"'&$SD_ON&'"'&$de&'"'&$VN_ON&'"'&$de&'"'&$VI_ON&'"'&$de&'"'&$DT_ON&'"'&$de&'"'&$IR_ON&'"'&$de&'"'&$IA_ON&'"'&$de&'"'&$BITMAP_ON&'"'&$de&'"'&$RP_ON&'"'&$de&'"'&$EAI_ON&'"'&$de&'"'&$EA_ON&'"'&$de&'"'&$PS_ON&'"'&$de&'"'&$LUS_ON&'"'&@CRLF)
 EndFunc
 
-Func _SelectCsv()
-$csvfile = FileSaveDialog("Choose a csv name.", @ScriptDir, "All (*.csv)", 2, "MFTdump.csv")
-If @error Then Return
-$csv = FileOpen($csvfile, 2)
-If @error Then Return
-_DisplayInfo("Output CSV file: " & $csvfile & @CRLF)
-EndFunc
 
 Func _WriteCSVHeader()
-FileWriteLine($csv, "#	Timestamps presented in UTC " & $UTCconfig & @CRLF)
 If $DoDefaultAll Then
-	$csv_header = "RecordOffset"&$de&"Signature"&$de&"IntegrityCheck"&$de&"HEADER_MFTREcordNumber"&$de&"HEADER_SequenceNo"&$de&"Header_HardLinkCount"&$de&"FN_ParentReferenceNo"&$de&"FN_ParentSequenceNo"&$de&"FN_FileName"&$de&"FilePath"&$de&"HEADER_Flags"&$de&"RecordActive"&$de&"FileSizeBytes"&$de&"SI_FilePermission"&$de&"FN_Flags"&$de&"FN_NameType"&$de&"ADS"&$de&"SI_CTime"&$de&"SI_ATime"&$de&"SI_MTime"&$de&"SI_RTime"&$de&"MSecTest"&$de
+	$csv_header = "RecordOffset"&$de&"Signature"&$de&"IntegrityCheck"&$de&"Style"&$de&"HEADER_MFTREcordNumber"&$de&"HEADER_SequenceNo"&$de&"Header_HardLinkCount"&$de&"FN_ParentReferenceNo"&$de&"FN_ParentSequenceNo"&$de&"FN_FileName"&$de&"FilePath"&$de&"HEADER_Flags"&$de&"RecordActive"&$de&"FileSizeBytes"&$de&"SI_FilePermission"&$de&"FN_Flags"&$de&"FN_NameType"&$de&"ADS"&$de&"SI_CTime"&$de&"SI_ATime"&$de&"SI_MTime"&$de&"SI_RTime"&$de&"MSecTest"&$de
 	$csv_header &= "FN_CTime"&$de&"FN_ATime"&$de&"FN_MTime"&$de&"FN_RTime"&$de&"CTimeTest"&$de&"FN_AllocSize"&$de&"FN_RealSize"&$de&"SI_USN"&$de&"DATA_Name"&$de&"DATA_Flags"&$de&"DATA_LengthOfAttribute"&$de&"DATA_IndexedFlag"&$de&"DATA_VCNs"&$de&"DATA_NonResidentFlag"&$de&"DATA_CompressionUnitSize"&$de&"HEADER_LSN"&$de&"HEADER_RecordRealSize"&$de
 	$csv_header &= "HEADER_RecordAllocSize"&$de&"HEADER_BaseRecord"&$de&"HEADER_BaseRecSeqNo"&$de&"HEADER_NextAttribID"&$de&"DATA_AllocatedSize"&$de&"DATA_RealSize"&$de&"DATA_InitializedStreamSize"&$de&"SI_HEADER_Flags"&$de&"SI_MaxVersions"&$de&"SI_VersionNumber"&$de&"SI_ClassID"&$de&"SI_OwnerID"&$de&"SI_SecurityID"&$de&"FN_CTime_2"&$de&"FN_ATime_2"&$de&"FN_MTime_2"&$de
 	$csv_header &= "FN_RTime_2"&$de&"FN_AllocSize_2"&$de&"FN_RealSize_2"&$de&"FN_Flags_2"&$de&"FN_NameLength_2"&$de&"FN_NameType_2"&$de&"FN_FileName_2"&$de&"GUID_ObjectID"&$de&"GUID_BirthVolumeID"&$de&"GUID_BirthObjectID"&$de&"GUID_BirthDomainID"&$de&"VOLUME_NAME_NAME"&$de&"VOL_INFO_NTFS_VERSION"&$de&"VOL_INFO_FLAGS"&$de&"FN_CTime_3"&$de&"FN_ATime_3"&$de&"FN_MTime_3"&$de&"FN_RTime_3"&$de&"FN_AllocSize_3"&$de&"FN_RealSize_3"&$de&"FN_Flags_3"&$de&"FN_NameLength_3"&$de&"FN_NameType_3"&$de&"FN_FileName_3"&$de
@@ -1957,6 +2349,16 @@ ElseIf $DoBodyfile Then
 	$csv_header = "MD5"&$de&"name"&$de&"inode"&$de&"mode_as_string"&$de&"UID"&$de&"GID"&$de&"size"&$de&"atime"&$de&"mtime"&$de&"ctime"&$de&"crtime"
 EndIf
 FileWriteLine($csv, $csv_header & @CRLF)
+EndFunc
+
+Func _WriteCSVExtraHeader()
+	Local $csv_extra_header
+	$csvextra = @ScriptDir&"\MftExtra_"&$TimestampStart&".csv"
+	$csv_extra_header = "HEADER_MFTREcordNumber"&$de&"SI_CTime_Core"&$de&"SI_CTime_Precision"&$de&"SI_ATime_Core"&$de&"SI_ATime_Precision"&$de&"SI_MTime_Core"&$de&"SI_MTime_Precision"&$de&"SI_RTime_Core"&$de&"SI_RTime_Precision"&$de
+	$csv_extra_header &= "FN_CTime_Core"&$de&"FN_CTime_Precision"&$de&"FN_ATime_Core"&$de&"FN_ATime_Precision"&$de&"FN_MTime_Core"&$de&"FN_MTime_Precision"&$de&"FN_RTime_Core"&$de&"FN_RTime_Precision"&$de
+	$csv_extra_header &= "FN_CTime_2_Core"&$de&"FN_CTime_2_Precision"&$de&"FN_ATime_2_Core"&$de&"FN_ATime_2_Precision"&$de&"FN_MTime_2_Core"&$de&"FN_MTime_2_Precision"&$de&"FN_RTime_2_Core"&$de&"FN_RTime_2_Precision"&$de
+	$csv_extra_header &= "FN_CTime_3_Core"&$de&"FN_CTime_3_Precision"&$de&"FN_ATime_3_Core"&$de&"FN_ATime_3_Precision"&$de&"FN_MTime_3_Core"&$de&"FN_MTime_3_Precision"&$de&"FN_RTime_3_Core"&$de&"FN_RTime_3_Precision"
+	FileWriteLine($csvextra, $csv_extra_header & @CRLF)
 EndFunc
 
 Func _InjectTimeZoneInfo()
@@ -2279,17 +2681,24 @@ Func _SetExtractionPath()
 	If @error Then Return
 EndFunc
 
-Func _GetPhysicalDrives()
+Func _GetPhysicalDrives($InputDevice)
 	Local $PhysicalDriveString, $hFile0
+	If StringLeft($InputDevice,10) = "GLOBALROOT" Then ; Shadow copies starts at 1 whereas physical drive starts at 0
+		$i=1
+	Else
+		$i=0
+	EndIf
+	GUICtrlSetData($Combo,"","")
+	$Entries = ''
 	GUICtrlSetData($ComboPhysicalDrives,"","")
-	$sDrivePath = '\\.\PhysicalDrive'
-	$i=0
+	$sDrivePath = '\\.\'&$InputDevice
+	ConsoleWrite("$sDrivePath: " & $sDrivePath & @CRLF)
 	Do
 		$hFile0 = _WinAPI_CreateFile($sDrivePath & $i,2,2,2)
 		If $hFile0 <> 0 Then
-;			ConsoleWrite("Found: " & $sDrivePath & $i & @CRLF)
+			ConsoleWrite("Found: " & $sDrivePath & $i & @CRLF)
 			_WinAPI_CloseHandle($hFile0)
-			$PhysicalDriveString &= "PhysicalDrive"&$i&"|"
+			$PhysicalDriveString &= $sDrivePath&$i&"|"
 		EndIf
 		$i+=1
 	Until $hFile0=0
@@ -2299,13 +2708,67 @@ EndFunc
 Func _TestPhysicalDrive()
 	$TargetImageFile = GUICtrlRead($ComboPhysicalDrives)
 	If @error then Return
-	_DisplayInfo("Target is \\.\" & $TargetImageFile & @CRLF)
+	_DisplayInfo("Target is " & $TargetImageFile & @CRLF)
 	GUICtrlSetData($Combo,"","")
 	$Entries = ''
 	_CheckMBR()
 	GUICtrlSetData($Combo,$Entries,StringMid($Entries, 1, StringInStr($Entries, "|") -1))
-	$IsPhysicalDrive=True
-	If $Entries = "" Then _DisplayInfo("Sorry, no NTFS volume found on that PhysicalDrive" & @CRLF)
+	If $Entries = "" Then _DisplayInfo("Sorry, no NTFS volume found" & @CRLF)
+	If StringInStr($TargetImageFile,"GLOBALROOT") Then
+		$IsShadowCopy=True
+		$IsPhysicalDrive=False
+		$IsImage=False
+	ElseIf StringInStr($TargetImageFile,"PhysicalDrive") Then
+		$IsShadowCopy=False
+		$IsPhysicalDrive=True
+		$IsImage=False
+	EndIf
 EndFunc
 
+Func _InjectTimestampFormat()
+Local $Formats = "1|" & _
+	"2|" & _
+	"3|" & _
+	"4|" & _
+	"5|" & _
+	"6|"
+	GUICtrlSetData($ComboTimestampFormat,$Formats,"6")
+EndFunc
+
+Func _InjectTimestampPrecision()
+Local $Precision = "None|" & _
+	"MilliSec|" & _
+	"NanoSec|"
+	GUICtrlSetData($ComboTimestampPrecision,$Precision,"NanoSec")
+EndFunc
+
+Func _TranslateTimestamp()
+	Local $lPrecision,$lTimestamp,$lTimestampTmp
+	$DateTimeFormat = StringLeft(GUICtrlRead($ComboTimestampFormat),1)
+	$lPrecision = GUICtrlRead($ComboTimestampPrecision)
+	Select
+		Case $lPrecision = "None"
+			$TimestampPrecision = 1
+		Case $lPrecision = "MilliSec"
+			$TimestampPrecision = 2
+		Case $lPrecision = "NanoSec"
+			$TimestampPrecision = 3
+	EndSelect
+	$lTimestampTmp = _WinTime_UTCFileTimeToLocalFileTime("0x" & $ExampleTimestampVal)
+	$lTimestamp = _WinTime_UTCFileTimeFormat(Dec($ExampleTimestampVal,2), $DateTimeFormat, $TimestampPrecision)
+	If @error Then
+		$lTimestamp = "-"
+	ElseIf $TimestampPrecision = 3 Then
+		$lTimestamp = $lTimestamp & ":" & _FillZero(StringRight($lTimestampTmp, 4))
+	EndIf
+	GUICtrlSetData($InputExampleTimestamp,$lTimestamp)
+EndFunc
+
+Func _SelectCsv()
+	$csvfile = @ScriptDir&"\MftDump_"&$TimestampStart&".csv"
+	$csv = FileOpen($csvfile, 2)
+	If @error Then Return
+	_DisplayInfo("Output CSV file: " & $csvfile & @CRLF)
+	_DebugOut("Output CSV file: " & $csvfile)
+EndFunc
 
