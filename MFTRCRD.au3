@@ -4,7 +4,7 @@
 #AutoIt3Wrapper_Change2CUI=y
 #AutoIt3Wrapper_Res_Comment=Quick $MFT record dump
 #AutoIt3Wrapper_Res_Description=Decode a file's attributes from $MFT
-#AutoIt3Wrapper_Res_Fileversion=1.0.0.25
+#AutoIt3Wrapper_Res_Fileversion=1.0.0.28
 #AutoIt3Wrapper_Res_LegalCopyright=Joakim Schicht
 #AutoIt3Wrapper_Res_requestedExecutionLevel=asInvoker
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
@@ -90,7 +90,7 @@ Global $FormattedTimestamp
 Global $Timerstart = TimerInit()
 ConsoleWrite("" & @CRLF)
 ConsoleWrite("Starting MFTRCRD by Joakim Schicht" & @CRLF)
-ConsoleWrite("Version 1.0.0.25" & @CRLF)
+ConsoleWrite("Version 1.0.0.28" & @CRLF)
 ConsoleWrite("" & @CRLF)
 _validate_parameters()
 $TargetDrive = StringMid($cmdline[1],1,1)&":"
@@ -727,7 +727,7 @@ $RecordHdrArr[3][1] = $HEADER_LSN
 $RecordHdrArr[4][1] = $HEADER_SequenceNo
 $RecordHdrArr[5][1] = $Header_HardLinkCount
 $RecordHdrArr[6][1] = $AttributeOffset
-$RecordHdrArr[7][1] = $HEADER_Flags
+$RecordHdrArr[7][1] = $HEADER_Flags&"+"&$RecordActive
 $RecordHdrArr[8][1] = $HEADER_RecordRealSize
 $RecordHdrArr[9][1] = $HEADER_RecordAllocSize
 $RecordHdrArr[10][1] = $HEADER_BaseRecord
@@ -1047,7 +1047,7 @@ Func _FindFileMFTRecord($TargetFile)
 	$record = DllStructGetData($tBuffer, 1)
 	If StringMid($record,91,8) = $TargetFile Then
 		$TmpOffset = DllCall('kernel32.dll', 'int', 'SetFilePointerEx', 'ptr', $hFile, 'int64', 0, 'int64*', 0, 'dword', 1)
-		ConsoleWrite("Record number: " & Dec(_SwapEndian($TargetFile),2) & " found at disk offset: " & $TmpOffset[3] & " -> 0x" & Hex($TmpOffset[3]) & @CRLF)
+		ConsoleWrite("Record number: " & Dec(_SwapEndian($TargetFile),2) & " found at disk offset: 0x" & Hex($TmpOffset[3]-1024) & @CRLF)
 		_WinAPI_CloseHandle($hFile)
 		Return $record
 	Else
@@ -2657,8 +2657,7 @@ Func _DecodeIndxEntries($Entry,$Current_Attrib_Number,$CurrentAttributeName)
 	$Indx_RealSize = StringMid($Entry,$NewLocalAttributeOffset+128,16)
 	$Indx_RealSize = Dec(StringMid($Indx_RealSize,15,2) & StringMid($Indx_RealSize,13,2) & StringMid($Indx_RealSize,11,2) & StringMid($Indx_RealSize,9,2) & StringMid($Indx_RealSize,7,2) & StringMid($Indx_RealSize,5,2) & StringMid($Indx_RealSize,3,2) & StringMid($Indx_RealSize,1,2))
 	$Indx_File_Flags = StringMid($Entry,$NewLocalAttributeOffset+144,16)
-	$Indx_File_Flags = StringMid($Indx_File_Flags,15,2) & StringMid($Indx_File_Flags,13,2) & StringMid($Indx_File_Flags,11,2) & StringMid($Indx_File_Flags,9,2)&StringMid($Indx_File_Flags,7,2) & StringMid($Indx_File_Flags,5,2) & StringMid($Indx_File_Flags,3,2) & StringMid($Indx_File_Flags,1,2)
-	$Indx_File_Flags = StringMid($Indx_File_Flags,13,8)
+	$Indx_File_Flags = StringMid(_SwapEndian($Indx_File_Flags),9,8)
 	$Indx_File_Flags = _File_Attributes("0x" & $Indx_File_Flags)
 	$Indx_NameLength = StringMid($Entry,$NewLocalAttributeOffset+160,2)
 	$Indx_NameLength = Dec($Indx_NameLength)
@@ -2764,30 +2763,38 @@ Func _DecodeIndxEntries($Entry,$Current_Attrib_Number,$CurrentAttributeName)
 		$Indx_CTime = StringMid($Indx_CTime,15,2) & StringMid($Indx_CTime,13,2) & StringMid($Indx_CTime,11,2) & StringMid($Indx_CTime,9,2) & StringMid($Indx_CTime,7,2) & StringMid($Indx_CTime,5,2) & StringMid($Indx_CTime,3,2) & StringMid($Indx_CTime,1,2)
 		$Indx_CTime_tmp = _WinTime_UTCFileTimeToLocalFileTime("0x" & $Indx_CTime)
 		$Indx_CTime = _WinTime_UTCFileTimeFormat(Dec($Indx_CTime)-$tDelta,$DateTimeFormat,2)
-		$Indx_CTime = $Indx_CTime & ":" & _FillZero(StringRight($Indx_CTime_tmp,4))
-;		ConsoleWrite("$Indx_CTime = " & $Indx_CTime & @crlf)
-;
+		If @error Then
+			$Indx_CTime = "-"
+		Else
+			$Indx_CTime = $Indx_CTime & ":" & _FillZero(StringRight($Indx_CTime_tmp,4))
+		EndIf
 		$Indx_ATime = StringMid($Entry,$NextEntryOffset+64,16)
 		$Indx_ATime = StringMid($Indx_ATime,15,2) & StringMid($Indx_ATime,13,2) & StringMid($Indx_ATime,11,2) & StringMid($Indx_ATime,9,2) & StringMid($Indx_ATime,7,2) & StringMid($Indx_ATime,5,2) & StringMid($Indx_ATime,3,2) & StringMid($Indx_ATime,1,2)
 		$Indx_ATime_tmp = _WinTime_UTCFileTimeToLocalFileTime("0x" & $Indx_ATime)
 		$Indx_ATime = _WinTime_UTCFileTimeFormat(Dec($Indx_ATime)-$tDelta,$DateTimeFormat,2)
-		$Indx_ATime = $Indx_ATime & ":" & _FillZero(StringRight($Indx_ATime_tmp,4))
-;		ConsoleWrite("$Indx_ATime = " & $Indx_ATime & @crlf)
-;
+		If @error Then
+			$Indx_ATime = "-"
+		Else
+			$Indx_ATime = $Indx_ATime & ":" & _FillZero(StringRight($Indx_ATime_tmp,4))
+		EndIf
 		$Indx_MTime = StringMid($Entry,$NextEntryOffset+80,16)
 		$Indx_MTime = StringMid($Indx_MTime,15,2) & StringMid($Indx_MTime,13,2) & StringMid($Indx_MTime,11,2) & StringMid($Indx_MTime,9,2) & StringMid($Indx_MTime,7,2) & StringMid($Indx_MTime,5,2) & StringMid($Indx_MTime,3,2) & StringMid($Indx_MTime,1,2)
 		$Indx_MTime_tmp = _WinTime_UTCFileTimeToLocalFileTime("0x" & $Indx_MTime)
 		$Indx_MTime = _WinTime_UTCFileTimeFormat(Dec($Indx_MTime)-$tDelta,$DateTimeFormat,2)
-		$Indx_MTime = $Indx_MTime & ":" & _FillZero(StringRight($Indx_MTime_tmp,4))
-;		ConsoleWrite("$Indx_MTime = " & $Indx_MTime & @crlf)
-;
+		If @error Then
+			$Indx_MTime = "-"
+		Else
+			$Indx_MTime = $Indx_MTime & ":" & _FillZero(StringRight($Indx_MTime_tmp,4))
+		EndIf
 		$Indx_RTime = StringMid($Entry,$NextEntryOffset+96,16)
 		$Indx_RTime = StringMid($Indx_RTime,15,2) & StringMid($Indx_RTime,13,2) & StringMid($Indx_RTime,11,2) & StringMid($Indx_RTime,9,2) & StringMid($Indx_RTime,7,2) & StringMid($Indx_RTime,5,2) & StringMid($Indx_RTime,3,2) & StringMid($Indx_RTime,1,2)
 		$Indx_RTime_tmp = _WinTime_UTCFileTimeToLocalFileTime("0x" & $Indx_RTime)
 		$Indx_RTime = _WinTime_UTCFileTimeFormat(Dec($Indx_RTime)-$tDelta,$DateTimeFormat,2)
-		$Indx_RTime = $Indx_RTime & ":" & _FillZero(StringRight($Indx_RTime_tmp,4))
-;		ConsoleWrite("$Indx_RTime = " & $Indx_RTime & @crlf)
-;
+		If @error Then
+			$Indx_RTime = "-"
+		Else
+			$Indx_RTime = $Indx_RTime & ":" & _FillZero(StringRight($Indx_RTime_tmp,4))
+		EndIf
 		$Indx_AllocSize = StringMid($Entry,$NextEntryOffset+112,16)
 		$Indx_AllocSize = Dec(StringMid($Indx_AllocSize,15,2) & StringMid($Indx_AllocSize,13,2) & StringMid($Indx_AllocSize,11,2) & StringMid($Indx_AllocSize,9,2) & StringMid($Indx_AllocSize,7,2) & StringMid($Indx_AllocSize,5,2) & StringMid($Indx_AllocSize,3,2) & StringMid($Indx_AllocSize,1,2))
 ;		ConsoleWrite("$Indx_AllocSize = " & $Indx_AllocSize & @crlf)
@@ -2796,9 +2803,8 @@ Func _DecodeIndxEntries($Entry,$Current_Attrib_Number,$CurrentAttributeName)
 ;		ConsoleWrite("$Indx_RealSize = " & $Indx_RealSize & @crlf)
 		$Indx_File_Flags = StringMid($Entry,$NextEntryOffset+144,16)
 ;		ConsoleWrite("$Indx_File_Flags = " & $Indx_File_Flags & @crlf)
-		$Indx_File_Flags = StringMid($Indx_File_Flags,15,2) & StringMid($Indx_File_Flags,13,2) & StringMid($Indx_File_Flags,11,2) & StringMid($Indx_File_Flags,9,2)&StringMid($Indx_File_Flags,7,2) & StringMid($Indx_File_Flags,5,2) & StringMid($Indx_File_Flags,3,2) & StringMid($Indx_File_Flags,1,2)
 ;		ConsoleWrite("$Indx_File_Flags = " & $Indx_File_Flags & @crlf)
-		$Indx_File_Flags = StringMid($Indx_File_Flags,13,8)
+		$Indx_File_Flags = StringMid(_SwapEndian($Indx_File_Flags),9,8)
 		$Indx_File_Flags = _File_Attributes("0x" & $Indx_File_Flags)
 ;		ConsoleWrite("$Indx_File_Flags = " & $Indx_File_Flags & @crlf)
 		$Indx_NameLength = StringMid($Entry,$NextEntryOffset+160,2)
