@@ -3,7 +3,7 @@
 #AutoIt3Wrapper_UseX64=y
 #AutoIt3Wrapper_Res_Comment=Decode $MFT and write to CSV
 #AutoIt3Wrapper_Res_Description=Decode $MFT and write to CSV
-#AutoIt3Wrapper_Res_Fileversion=2.0.0.13
+#AutoIt3Wrapper_Res_Fileversion=2.0.0.15
 #AutoIt3Wrapper_Res_requestedExecutionLevel=asInvoker
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
 
@@ -105,7 +105,7 @@ Global Const $RecordSignature = '46494C45' ; FILE signature
 
 Opt("GUIOnEventMode", 1)  ; Change to OnEvent mode
 
-$Form = GUICreate("MFT2CSV 2.0.0.13", 560, 450, -1, -1)
+$Form = GUICreate("MFT2CSV 2.0.0.15", 560, 450, -1, -1)
 GUISetOnEvent($GUI_EVENT_CLOSE, "_HandleExit", $Form)
 
 $Combo = GUICtrlCreateCombo("", 20, 30, 390, 20)
@@ -478,104 +478,115 @@ Func _ExtractSystemfile()
 EndFunc
 
 Func _DoFileTree()
-   Local $nBytes, $ParentRef, $FileRef, $BaseRef, $tag, $PrintName, $testvar=0
-   $Total = Int($MFT_Size/$MFT_Record_Size)
-   Global $FileTree[$Total]
-   Global $MFTTree[$Total]
-   $ref = -1
-   $Pos=0
+	Local $nBytes, $ParentRef, $FileRef, $BaseRef, $tag, $PrintName, $testvar=0
+	$Total = Int($MFT_Size/$MFT_Record_Size)
+	Global $FileTree[$Total+1]
+	Global $MFTTree[$Total+1]
+	$ref = -1
+	$Pos=0
 	if $IsMftFile Then _WinAPI_SetFilePointerEx($hDisk, $Pos, $FILE_BEGIN)
-   AdlibRegister("_DoFileTreeProgress", 500)
-   $begin = TimerInit()
-   For $r = 1 To Ubound($MFT_RUN_VCN)-1
+	AdlibRegister("_DoFileTreeProgress", 500)
+	$begin = TimerInit()
+	For $r = 1 To Ubound($MFT_RUN_VCN)-1
 		If Not $IsMftFile Then
 			$Pos = $MFT_RUN_VCN[$r]*$BytesPerCluster
 			_WinAPI_SetFilePointerEx($hDisk, $ImageOffset+$Pos, $FILE_BEGIN)
 		Else
 			$Pos = $testvar*1024
 		EndIf
-      For $i = 0 To $MFT_RUN_Clusters[$r]*$BytesPerCluster-$MFT_Record_Size Step $MFT_Record_Size
-         $ref += 1
-		 $testvar += 1
-		 $CurrentProgress = $ref
-		 _WinAPI_ReadFile($hDisk, DllStructGetPtr($rBuffer), $MFT_Record_Size, $nBytes)
-         $record = DllStructGetData($rBuffer, 1)
-         If StringMid($record,3,8) <> $RecordSignature Then
-			_DebugOut($ref & " The record signature is bad", StringMid($record, 1, 34))
-			ContinueLoop
-		EndIf
-		 $CurrentMFTOffset = DllCall('kernel32.dll', 'int', 'SetFilePointerEx', 'ptr', $hDisk, 'int64', 0, 'int64*', 0, 'dword', 1)
-		 $MFTTree[$ref] = $CurrentMFTOffset[3]-$MFT_Record_Size
-		 $Flags = Dec(StringMid($record,47,4))
-         If Not $SkipFixups Then $record = _DoFixup($record, $ref)
-         If $record = "" then ContinueLoop   ;corrupt, failed fixup
-         $FileRef = $ref
-         $BaseRef = Dec(_SwapEndian(StringMid($record,67,8)),2)
-         If $BaseRef <> 0 Then
-            $FileTree[$FileRef] = $Pos + $i      ;may contain data attribute
-            $FileRef = $BaseRef
-         EndIf
-		 $Offset = (Dec(StringMid($record,43,2))*2)+3
-         $FileName = ""
-		 While 1     ;only want names and reparse
-            $Type = Dec(StringMid($record,$Offset,8),2)
-            If $Type > Dec("C0000000",2) Then ExitLoop   ;no more names or reparse
-            $Size = Dec(_SwapEndian(StringMid($record,$Offset+8,8)),2)
-            If $Type = Dec("30000000",2) Then
-               $attr = StringMid($record,$Offset,$Size*2)
-                $ParentRef = Dec(_SwapEndian(StringMid($attr,49,8)),2)
-               $NameSpace = StringMid($attr,179,2)
-               If $NameSpace <> "02" Then
-                  $NameLength = Dec(StringMid($attr,177,2))
-                  $FileName = StringMid($attr,181,$NameLength*4)
-                  $FileName = _UnicodeHexToStr($FileName)
-                  $FileTree[$FileRef] &= "**" & $ParentRef & "*" & $FileName
-               EndIf
-            ElseIf $Type = Dec("C0000000",2) Then
-			   $tag = StringMid($record,$Offset + 48,8)
-			   $PrintNameOffset = Dec(_SwapEndian(StringMid($record,$Offset+72,4)),2)
-			   $PrintNameLength = Dec(_SwapEndian(StringMid($record,$Offset+76,4)),2)
-			   If $tag = "030000A0" Then	;JUNCTION
-				  $PrintName = _UnicodeHexToStr(StringMid($record, $Offset+80+$PrintNameOffset*2, $PrintNameLength*2))
-			   ElseIf $tag = "0C0000A0" Then	;SYMLINKD
-				  $PrintName = _UnicodeHexToStr(StringMid($record, $Offset+80+$PrintNameOffset*2+8, $PrintNameLength*2))
-			   Else
-			   _DebugOut($ref & " Unhandled Reparse Tag: " & $tag, $record)
-			   EndIf
-			   $Reparse &= $ref & "*" & $tag & "*" & $PrintName & "?"
+		For $i = 0 To $MFT_RUN_Clusters[$r]*$BytesPerCluster-$MFT_Record_Size Step $MFT_Record_Size
+			$ref += 1
+			If $ref > $Total Then ExitLoop
+			$testvar += 1
+			$CurrentProgress = $ref
+			_WinAPI_ReadFile($hDisk, DllStructGetPtr($rBuffer), $MFT_Record_Size, $nBytes)
+			$record = DllStructGetData($rBuffer, 1)
+			If StringMid($record,3,8) <> $RecordSignature Then
+				_DebugOut($ref & " The record signature is bad", StringMid($record, 1, 34))
+				ContinueLoop
 			EndIf
-            $Offset += $Size*2
-         WEnd
-         If Not BitAND($Flags,Dec("0200")) And $BaseRef = 0 And $FileTree[$FileRef] <> "" Then $FileTree[$FileRef] &= "?" & ($Pos + $i)     ;file also add FilePointer
-         If StringInStr($FileTree[$FileRef], "**") = 1 Then $FileTree[$FileRef] = StringTrimLeft($FileTree[$FileRef],2)    ;remove leading **
-      Next
-   Next
-   AdlibUnRegister()
-	$FileTree[5] = ""
-   $begin = TimerInit()
-   AdlibRegister("_FolderStrucProgress", 500)
-   For $i = 0 to UBound($FileTree)-1
-      $CurrentProgress = $i
-	  If StringInStr($FileTree[$i], "**") = 0 Then
-         While StringInStr($FileTree[$i], "*") > 0   ;single file
-            $Parent=StringMid($Filetree[$i], 1, StringInStr($FileTree[$i], "*")-1)
-               $FileTree[$i] = StringReplace($FileTree[$i], $Parent & "*", $Filetree[$Parent] & "\")
-         WEnd
-      Else
-         $Names = StringSplit($FileTree[$i], "**",3)     ;hard links
-         $str = ""
-		 For $n = 0 to UBound($Names) - 1
-            While StringInStr($Names[$n], "*") > 0
-               $Parent=StringMid($Names[$n], 1, StringInStr($Names[$n], "*")-1)
-                  $Names[$n] = StringReplace($Names[$n], $Parent & "*", $Filetree[$Parent] & "\")
-            WEnd
-			$str &= $Names[$n] & "*"
-         Next
-		 $FileTree[$i] = StringTrimRight($str,1)
-	  EndIf
-  Next
-  $FileTree[5] = $FileTree[5] & "\"
-   AdlibUnRegister()
+			$CurrentMFTOffset = DllCall('kernel32.dll', 'int', 'SetFilePointerEx', 'ptr', $hDisk, 'int64', 0, 'int64*', 0, 'dword', 1)
+			$MFTTree[$ref] = $CurrentMFTOffset[3]-$MFT_Record_Size
+			$Flags = Dec(StringMid($record,47,4))
+			If Not $SkipFixups Then $record = _DoFixup($record, $ref)
+			If $record = "" then ContinueLoop   ;corrupt, failed fixup
+			$FileRef = $ref
+			$BaseRef = Dec(_SwapEndian(StringMid($record,67,8)),2)
+			If $BaseRef <> 0 Then
+				$FileTree[$FileRef] = $Pos + $i      ;may contain data attribute
+				$FileRef = $BaseRef
+			EndIf
+			$Offset = (Dec(StringMid($record,43,2))*2)+3
+			$FileName = ""
+			While 1     ;only want names and reparse
+				$Type = Dec(StringMid($record,$Offset,8),2)
+				If $Type > Dec("C0000000",2) Then ExitLoop   ;no more names or reparse
+				$Size = Dec(_SwapEndian(StringMid($record,$Offset+8,8)),2)
+				If $Type = Dec("30000000",2) Then
+					$attr = StringMid($record,$Offset,$Size*2)
+					$ParentRef = Dec(_SwapEndian(StringMid($attr,49,8)),2)
+					$NameSpace = StringMid($attr,179,2)
+					If $NameSpace <> "02" Then
+						$NameLength = Dec(StringMid($attr,177,2))
+						$FileName = StringMid($attr,181,$NameLength*4)
+						$FileName = _UnicodeHexToStr($FileName)
+						If Not BitAND($Flags,Dec("0100")) Then $FileName = "[DEL" & $ref & "]" & $FileName     ;deleted record
+						$FileTree[$FileRef] &= "**" & $ParentRef & "*" & $FileName
+					EndIf
+				ElseIf $Type = Dec("C0000000",2) Then
+					$tag = StringMid($record,$Offset + 48,8)
+					$PrintNameOffset = Dec(_SwapEndian(StringMid($record,$Offset+72,4)),2)
+					$PrintNameLength = Dec(_SwapEndian(StringMid($record,$Offset+76,4)),2)
+					If $tag = "030000A0" Then	;JUNCTION
+						$PrintName = _UnicodeHexToStr(StringMid($record, $Offset+80+$PrintNameOffset*2, $PrintNameLength*2))
+					ElseIf $tag = "0C0000A0" Then	;SYMLINKD
+						$PrintName = _UnicodeHexToStr(StringMid($record, $Offset+80+$PrintNameOffset*2+8, $PrintNameLength*2))
+					Else
+						_DebugOut($ref & " Unhandled Reparse Tag: " & $tag, $record)
+					EndIf
+					$Reparse &= $ref & "*" & $tag & "*" & $PrintName & "?"
+				EndIf
+				$Offset += $Size*2
+			WEnd
+			If Not BitAND($Flags,Dec("0200")) And $BaseRef = 0 And $FileTree[$FileRef] <> "" Then $FileTree[$FileRef] &= "?" & ($Pos + $i)     ;file also add FilePointer
+			If StringInStr($FileTree[$FileRef], "**") = 1 Then $FileTree[$FileRef] = StringTrimLeft($FileTree[$FileRef],2)    ;remove leading **
+		Next
+	Next
+	AdlibUnRegister()
+	$FileTree[5] = ":"
+	$begin = TimerInit()
+	AdlibRegister("_FolderStrucProgress", 500)
+	For $i = 0 to UBound($FileTree)-1
+;	   ConsoleWrite("$FileTree[$i:"&$i&"]: " & $FileTree[$i] & @CRLF)
+		$CurrentProgress = $i
+		If StringInStr($FileTree[$i], "**") = 0 Then
+			While StringInStr($FileTree[$i], "*") > 0   ;single file
+				$Parent=StringMid($Filetree[$i], 1, StringInStr($FileTree[$i], "*")-1)
+				If StringInStr($Filetree[$Parent],"?")=0 And (StringInStr($Filetree[$Parent],"*")>0 Or StringInStr($Filetree[$Parent],":")>0) Then
+					$FileTree[$i] = StringReplace($FileTree[$i], $Parent & "*", $Filetree[$Parent] & "\")
+				Else
+					$FileTree[$i] = StringReplace($FileTree[$i], $Parent & "*", $Filetree[5] & "\ORPHAN\")
+				EndIf
+			WEnd
+		Else
+			$Names = StringSplit($FileTree[$i], "**",3)     ;hard links
+			$str = ""
+			For $n = 0 to UBound($Names) - 1
+				While StringInStr($Names[$n], "*") > 0
+					$Parent=StringMid($Names[$n], 1, StringInStr($Names[$n], "*")-1)
+					If StringInStr($Filetree[$Parent],"?")=0 And (StringInStr($Filetree[$Parent],"*")>0 Or StringInStr($Filetree[$Parent],":")>0) Then
+						$Names[$n] = StringReplace($Names[$n], $Parent & "*", $Filetree[$Parent] & "\")
+					Else
+						$Names[$n] = StringReplace($Names[$n], $Parent & "*", $Filetree[5] & "\ORPHAN\")
+					EndIf
+				WEnd
+				$str &= $Names[$n] & "*"
+			Next
+			$FileTree[$i] = StringTrimRight($str,1)
+		EndIf
+	Next
+	$FileTree[5] &= "\"
+	AdlibUnRegister()
 EndFunc
 
 Func _DecodeAttrList($FileRef, $AttrList)
