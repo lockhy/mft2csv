@@ -182,9 +182,11 @@ See the readme included in the download package.
 
 = Latest Version =
 
-v2.0.0.13
+v2.0.0.15
 
 = Changelog =
+
+v2.0.0.15. Fixed a bug where file paths for certain deleted objects got wrong. Only source of the latest version is available at this site now, since google code don't support new downloads. Binaries will be available again soon, when project is moved somewhere else. 
 
 v2.0.0.13. Fixed bug that prevented single records containing $ATTRIBUTE_LIST (Broken $MFT configured) to be decoded.
 
