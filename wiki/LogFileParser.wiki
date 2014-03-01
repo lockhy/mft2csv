@@ -1,5 +1,7 @@
 #summary Parser for the $LogFile on NTFS.
 
+= Project have been moved to: https://github.com/jschicht =
+
 = Features =
 
   * Decode and dump $LogFile records.
