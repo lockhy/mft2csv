@@ -1,5 +1,7 @@
 #summary Extract $MFT record info and log it to a csv file.
 
+= Project have been moved to: https://github.com/jschicht =
+
 = Introduction =
 
 This AutoIt script is parsing, decoding and logging information from the Master File Table ($MFT) to a csv. It is logging a large amount of data and that has been the main purpose from the very start. Having all this data in a csv is therefore nice for easy further analysis. What also should make it appealing is the easyness of understanding the script and the ability for easy customization of it. 
