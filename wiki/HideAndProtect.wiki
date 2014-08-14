@@ -45,7 +45,7 @@ Due to the very hacky nature of this application, you must understand that this 
 The tool has been tested with success on XP SP2 32-bit and Windows 7 SP1 64-bit. 
 
 = Current Version =
-v1.0.0.1
+v1.0.0.2
 
 = Changelog =
 v1.0.0.1. Added option to wipe/delete previous hack. Added help/usage printed to console. More understandable and direct information for how to and when to use chkdsk after modification.
