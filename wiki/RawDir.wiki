@@ -39,7 +39,7 @@ Timestamps are presented in UTC 0.00 at the nanosec precision. Format is YYYY-MM
 Will not show files marked as deleted.
 
 = Current version =
-v1.0.0.0
+v1.0.0.2
 
 = Changelog =
 v1.0.0.0: First version.
