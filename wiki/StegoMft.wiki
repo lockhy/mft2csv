@@ -97,7 +97,7 @@ Dump to console the slack data in record 50 at volume D:
 
 
 = Current version =
-v1.0.0.2
+v1.0.0.3
 
 = Changelog =
 
