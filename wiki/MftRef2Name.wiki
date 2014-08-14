@@ -22,7 +22,7 @@ MftRef2Name.exe Target
 If the target has been marked as deleted, resolving the path is aborted, as it may turn incorrect.
 
 = Current version =
-v1.0.0.0
+v1.0.0.1
 
 = Changelog =
 v1.0.0.0: First version.
