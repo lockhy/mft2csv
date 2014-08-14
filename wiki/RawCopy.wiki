@@ -38,7 +38,7 @@ So how do you get the index number of a given file. That can be retrived by usin
 
 = Latest version =
 
-v.1.0.0.7
+v.1.0.0.9
 
 = Changelog =
 
