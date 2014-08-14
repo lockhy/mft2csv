@@ -71,7 +71,7 @@ Running the tool without any parameter will display help information.
 
 
 = Latest version =
-v1.0.0.28
+v1.0.0.29
 
 = Changelog =
 
