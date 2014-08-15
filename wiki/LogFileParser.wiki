@@ -151,7 +151,7 @@ http://i1100.photobucket.com/albums/g407/joakimschicht/NTFSFileExtractor402_zpse
   * The 64-bit version seems to sometimes have issues with sqlite3, so better stick to 32-bit which is stable.
 
 = Latest version =
-v1.0.0.17
+v1.0.0.20
 
 = Changelog =
 v1.0.0.17. Another major improvement in the identification of the current attribute.
