@@ -1,5 +1,7 @@
 #summary Quickly resolves MFT reference to filename and path or vice versa.
 
+= Project have been moved to: https://github.com/jschicht =
+
 = Introduction =
 
 A simpel tool that just converts MFT reference number to file name and path, or the other way around. It is handy to have and very easy to use. It takes only 1 parameter, the target. It should be able to resolve any reference number if it is present in $MFT. Also any filename and path will work, as long as it is valid on the filesystem.
