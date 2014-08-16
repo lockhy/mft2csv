@@ -1,5 +1,7 @@
 #summary NTFS timestamps and how to manipulate it with SetMACE.
 
+= Project have been moved to: https://github.com/jschicht =
+
 = Introduction =
 
 The SetMACE tool is a timestomp re-invention, and more like a timestomp on steriods. It is basically a tool to manipulate/dump timestamps on NTFS volumes. 
