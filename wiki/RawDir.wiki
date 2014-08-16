@@ -1,5 +1,7 @@
 #summary A low level dir command for NTFS volumes.
 
+= Project have been moved to: https://github.com/jschicht =
+
 = Introduction =
 
 The tool resolves content in directories by resolving INDX ($I30) records. It is very powerful and easy to use. It has 2 mode, one verbose output and one compact output.
