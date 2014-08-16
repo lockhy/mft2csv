@@ -1,5 +1,7 @@
 #summary Tool to decode the NTFS change journal.
 
+= Project have been moved to: https://github.com/jschicht =
+
 = Introduction =
 
 The journal is a log of changes to files on an NTFS volume. Such changes can for instance be the creation, deletion or modification of files or directories. It is optional to have it on, and can be configured with fsutil.exe on Windows. However, it was not turned on by default until Vista and later. 
