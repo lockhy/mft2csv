@@ -1,5 +1,7 @@
 #summary Hiding data within $MFT.
 
+= Project have been moved to: https://github.com/jschicht =
+
 = Introduction =
 
 This is a simple PoC showing how it is possible to hide data within $MFT. The tool utilizes the record slack, which is the leftover in record after the header and the attributes are defined. Usually a record is 1024 bytes, but in the later nt6.2 (Windows 8/2012) you have an option to define it as higher. The end marker of a given record is always FFFFFFFF and can easily be spotted. The data beyond that are ignored, with the exception of the fixup values (the last 2 bytes of every sector within a record). So this unused space can be used to store data.
