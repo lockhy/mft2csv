@@ -103,7 +103,7 @@ setmace.exe C:0 -d
 Handle index entries.
 
 = Latest version =
-v1.0.0.12
+v1.0.0.13
 
 = Changelog=
 v1.0.0.9. Added support for dumping timestamp information also from within shadow copies with the -d switch.
