@@ -1,5 +1,7 @@
 #summary Utility to convert regular files into NTFS system files.
 
+= Project have been moved to: https://github.com/jschicht =
+
 = Introduction =
 
 This program will turn a regular file into an NTFS system file, by changing it's MFT reference number to one between 12 and 15, which are reserved by the filesystem. By doing this, the file becomes invisible and protected from modification. By invisible it means, no tool depending on the filsystem like for instance explorer or the dir command will see it. However the filesystem regard it as a systemfile, and will thus prevent writing any file to that location with that name. It is like when you try to create a file named $MFT in the root of the volume, which the filesystem will prevent you from doing. The only way to modify this file is by a hex editor writing to physical disk. Alternatively you could extract the file from volume (datarecovery), modify the extracted file, and then lastly use the tool to inject it back into the same MFT reference number as it was. In other words it is impossible to overwrite such a file.
