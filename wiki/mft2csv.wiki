@@ -184,7 +184,7 @@ See the readme included in the download package.
 
 = Latest Version =
 
-v2.0.0.19
+v2.0.0.20
 
 = Changelog =
 
